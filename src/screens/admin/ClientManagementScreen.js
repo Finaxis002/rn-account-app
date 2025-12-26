@@ -14,6 +14,7 @@ import {
   StatusBar,
   RefreshControl,
   Animated,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -156,9 +157,9 @@ const AlertDialog = ({ visible, onClose, title, description, onConfirm }) => (
 
 // ---------- MAIN COMPONENT ----------
 export default function ClientManagementPage() {
-  // Animation refs - MUST BE DECLARED BEFORE ANY useEffect
+  // Animation refs
   const scrollY = useRef(new Animated.Value(0)).current;
-  const HEADER_HEIGHT = 160;
+  const HEADER_HEIGHT = 180;
   const diffClamp = Animated.diffClamp(scrollY, 0, HEADER_HEIGHT);
   const headerTranslateY = diffClamp.interpolate({
     inputRange: [0, HEADER_HEIGHT],
@@ -496,14 +497,8 @@ export default function ClientManagementPage() {
     setUsernameFilter('');
   };
 
-  const renderAnimatedHeader = () => (
-    <Animated.View
-      style={[
-        styles.animatedHeader,
-        styles.headerContainer,
-        { transform: [{ translateY: headerTranslateY }] },
-      ]}
-    >
+  const renderHeader = () => (
+    <View style={[styles.headerContainer, { height: HEADER_HEIGHT }]}>
       <SafeAreaView style={styles.headerSafeArea}>
         <View style={styles.headerContent}>
           <View style={styles.titleSection}>
@@ -544,15 +539,9 @@ export default function ClientManagementPage() {
               </TouchableOpacity>
             )}
           </View>
-          {/* <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handleClearFilters}
-          >
-            <Text style={styles.clearButtonText}>Clear</Text>
-          </TouchableOpacity> */}
         </View>
       </SafeAreaView>
-    </Animated.View>
+    </View>
   );
 
   const renderEmptyState = () => (
@@ -586,8 +575,10 @@ export default function ClientManagementPage() {
   return (
     <AppLayout>
       <SafeAreaView style={styles.container}>
-        {renderAnimatedHeader()}
-
+        {/* Fixed Header */}
+        {renderHeader()}
+        
+        {/* Content with Refresh Control */}
         <Animated.FlatList
           data={filteredClients}
           renderItem={({ item: client }) => (
@@ -608,18 +599,28 @@ export default function ClientManagementPage() {
             filteredClients.length === 0
               ? styles.emptyListContent
               : styles.listContent,
-            { paddingTop: 140 },
+            { paddingTop: 120 }, // Add padding to show content below header
           ]}
+          style={styles.listContainer}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: true },
           )}
           scrollEventThrottle={16}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              progressViewOffset={HEADER_HEIGHT} // This is the key change - offset for refresh indicator
+              colors={['#007AFF']}
+              tintColor="#007AFF"
+            />
           }
           ListEmptyComponent={renderEmptyState}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={{ height: 20 }} /> // Small padding at top of list
+          }
         />
 
         {/* Add/Edit Modal */}
@@ -843,7 +844,14 @@ export default function ClientManagementPage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f8fafc' 
+  },
+  
+  listContainer: {
+    flex: 1,
+  },
 
   loadingContainer: {
     flex: 1,
@@ -851,9 +859,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f8fafc',
   },
-  loadingText: { marginTop: 12, fontSize: 16, color: '#6b7280' },
+  loadingText: { 
+    marginTop: 12, 
+    fontSize: 16, 
+    color: '#6b7280' 
+  },
 
-  animatedHeader: {
+  headerContainer: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -863,24 +875,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
     zIndex: 10,
     elevation: 6,
-    width: '100%',
-  },
-  headerContainer: {
-    backgroundColor: '#FFF',
-    // paddingTop: 16,
     paddingHorizontal: 20,
-    // paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    paddingTop: 10,
   },
-  headerSafeArea: {
-    backgroundColor: '#fff',
-  },
+  
   headerInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -974,8 +972,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  emptyListContent: { flexGrow: 1, justifyContent: 'center' },
-  listContent: { paddingHorizontal: 10 },
+  emptyListContent: { 
+    flexGrow: 1, 
+    justifyContent: 'center',
+    minHeight: height - 160, // Ensure empty state is visible below header
+  },
+  listContent: { 
+    paddingHorizontal: 10,
+    paddingBottom: 20,
+  },
 
   card: {
     backgroundColor: '#fff',
@@ -1012,9 +1017,10 @@ const styles = StyleSheet.create({
   // Empty State
   emptyStateCard: {
     alignItems: 'center',
-    // padding: 48,
+    padding: 48,
     margin: 16,
     backgroundColor: '#fff',
+    marginTop: 20, // Add margin to push it below header area
   },
   emptyStateTitle: {
     fontSize: 20,
