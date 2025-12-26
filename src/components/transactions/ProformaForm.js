@@ -19,7 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomDropdown from '../../components/ui/CustomDropdown';
-
+import HsnSacDropdown from '../ui/HsnSacDropdown.js';
 import { Combobox } from '../../components/ui/Combobox';
 import QuillEditor from '../../components/ui/QuillEditor';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -1244,7 +1244,7 @@ export default function ProformaForm({
               <View style={styles.formRow}>
                 <View style={styles.formField}>
                   <Text style={styles.label}>HSN Code</Text>
-                  <CustomDropdown
+                  <HsnSacDropdown
                     items={hsnOptions}
                     value={form.watch(`items.${index}.hsn`) || ''}
                     onChange={hsnCodeValue => {
@@ -1445,7 +1445,7 @@ export default function ProformaForm({
               <View style={styles.formRow}>
                 <View style={styles.formField}>
                   <Text style={styles.label}>SAC Code</Text>
-                  <CustomDropdown
+                  <HsnSacDropdown
                     items={sacOptions}
                     value={form.watch(`items.${index}.sac`) || ''}
                     onChange={sacCodeValue => {
