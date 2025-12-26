@@ -1,5 +1,5 @@
 // UsersScreen.js
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   Clipboard,
   Dimensions,
+  RefreshControl, // Added import
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../../config';
@@ -72,6 +73,7 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [viewMode, setViewMode] = useState('card');
   const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // Added refreshing state
 
   const { toast } = useToast();
 
@@ -101,7 +103,7 @@ export default function UsersPage() {
     }
   };
 
-  const fetchUsersAndCompanies = async () => {
+  const fetchUsersAndCompanies = useCallback(async (forceRefresh = false) => {
     setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
@@ -146,11 +148,30 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchUsersAndCompanies();
-  }, []);
+  }, [fetchUsersAndCompanies]);
+
+  // Added refresh functionality
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchUsersAndCompanies(true);
+      toast({
+        title: 'Users data refreshed successfully',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Refresh Failed',
+        description: error.message || 'Failed to refresh data',
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchUsersAndCompanies, toast]);
 
   const handleOpenForm = (user = null) => {
     setSelectedUser(user);
@@ -272,7 +293,17 @@ export default function UsersPage() {
     return (
       <AppLayout>
         <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={['#2563eb']}
+                tintColor="#2563eb"
+              />
+            }
+          >
             <View style={styles.noCompanyContainer}>
               <Card style={styles.noCompanyCard}>
                 <CardContent style={styles.noCompanyContent}>
@@ -311,7 +342,17 @@ export default function UsersPage() {
   return (
     <AppLayout>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView style={styles.container}>
+        <ScrollView 
+          style={styles.container}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#2563eb']}
+              tintColor="#2563eb"
+            />
+          }
+        >
           <View style={styles.content}>
             <View style={styles.header}>
               <View>
@@ -319,6 +360,20 @@ export default function UsersPage() {
                 <Text style={styles.subtitle}>Manage your users</Text>
               </View>
               <View style={styles.headerActions}>
+                {/* Added Refresh Button */}
+                {/* <TouchableOpacity
+                  onPress={handleRefresh}
+                  style={[styles.refreshButton, refreshing && styles.refreshButtonActive]}
+                  disabled={refreshing}
+                >
+                  <Icon 
+                    name="refresh-cw" 
+                    size={18} 
+                    color="#2563eb"
+                    style={[styles.refreshIcon, refreshing && styles.refreshIconActive]}
+                  />
+                </TouchableOpacity> */}
+                
                 <View style={styles.viewToggle}>
                   {/* Web ki tarah Toggle Logic add ki (commented UI touch nahi ki) */}
                   {/* <Button
@@ -553,9 +608,9 @@ const styles = StyleSheet.create({
   urlCard: {
     backgroundColor: '#dbeafe',
     borderColor: '#93c5fd',
-    marginBottom: 8,
-    marginTop: 8,
-    paddingVertical: 10,
+    marginBottom: 6,
+    marginTop: 6,
+    paddingVertical: 6,
   },
   urlCardContent: {
     flexDirection: 'row',
@@ -609,6 +664,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  // Refresh Button Styles
+  refreshButton: {
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+  },
+  refreshButtonActive: {
+    backgroundColor: 'rgba(37, 99, 235, 0.2)',
+  },
+  refreshIcon: {
+    opacity: 0.9,
+  },
+  refreshIconActive: {
+    transform: [{ rotate: '360deg' }],
   },
   viewToggle: {
     flexDirection: 'row',

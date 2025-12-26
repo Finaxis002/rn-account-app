@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   Modal,
   useWindowDimensions,
+  RefreshControl, // Added this import
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -23,6 +24,7 @@ import {
   PlusCircle,
   Package,
   X,
+  RefreshCw,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -176,6 +178,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isTransactionFormOpen, setIsTransactionFormOpen] = useState(false);
   const [isProformaFormOpen, setIsProformaFormOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const selectedCompany = useMemo(
     () =>
@@ -190,18 +193,20 @@ export default function DashboardPage() {
   }, []);
 
   // Optimized data fetching with request batching
-  const fetchDashboardData = useCallback(async () => {
+  const fetchDashboardData = useCallback(async (forceRefresh = false) => {
     setIsLoading(true);
 
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Authentication token not found.');
 
-      // Check cache first for immediate response
-      const cached = await AsyncStorage.getItem(CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        setDashboardData(parsed);
+      // Check cache first for immediate response (unless force refresh)
+      if (!forceRefresh) {
+        const cached = await AsyncStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setDashboardData(parsed);
+        }
       }
 
       const queryParam = selectedCompanyId
@@ -265,6 +270,28 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   }, [selectedCompanyId, showToast]);
+
+  // Refresh functionality
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Clear cache to force fresh data
+      await AsyncStorage.removeItem(CACHE_KEY);
+      
+      // Fetch fresh data
+      await fetchDashboardData(true);
+      
+     
+    } catch (error) {
+      showToast(
+        'Refresh Failed',
+        error instanceof Error ? error.message : 'Failed to refresh data',
+        true,
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchDashboardData, showToast]);
 
   const fetchSecondaryData = async (token, queryParam, initialData) => {
     try {
@@ -400,6 +427,19 @@ export default function DashboardPage() {
           </Text>
 
           <View style={styles.buttonGroup}>
+            {/* Refresh Button */}
+            {/* <TouchableOpacity
+              onPress={handleRefresh}
+              style={[styles.refreshButton, refreshing && styles.refreshButtonActive]}
+              disabled={refreshing}
+            >
+              <RefreshCw
+                size={18}
+                color="#3b82f6"
+                style={[styles.refreshIcon, refreshing && styles.refreshIconActive]}
+              />
+            </TouchableOpacity> */}
+
             <Suspense fallback={null}>
               <UpdateWalkthrough />
             </Suspense>
@@ -447,6 +487,14 @@ export default function DashboardPage() {
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#3b82f6']}
+            tintColor="#3b82f6"
+          />
+        }
       >
         {/* Account Validity Notice - Placeholder */}
         <Suspense
@@ -624,6 +672,22 @@ const styles = StyleSheet.create({
   smallButtonLabel: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  // Refresh Button Styles
+  refreshButton: {
+    padding: 6,
+    marginRight: 4,
+    borderRadius: 20,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  refreshButtonActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  refreshIcon: {
+    opacity: 0.9,
+  },
+  refreshIconActive: {
+    transform: [{ rotate: '360deg' }],
   },
   // Button Styles
   button: {
