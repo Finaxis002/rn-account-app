@@ -143,7 +143,7 @@ export default function UserSidebar() {
               isActive('UserDashboard')
             }
             onPress={() =>
-              navigation.navigate('MainTabs', { screen: 'CustomerDashboard' })
+              navigation.navigate('MainTabs', { screen: 'UserDashboard' })
             }
             isBottomNav={true}
             showAlways={true}
@@ -184,9 +184,7 @@ export default function UserSidebar() {
             icon="settings-outline"
             title="Settings"
             isActive={isActive('Settings')}
-            onPress={() =>
-              navigation.navigate('ProfileScreen')
-            }
+            onPress={() => navigation.navigate('ProfileScreen')}
             isBottomNav={true}
             showAlways={true}
           />
