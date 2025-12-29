@@ -19,6 +19,7 @@ import { State, City } from 'country-state-city';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL as baseURL } from '../../config';
 import CustomDropdown from '../../components/ui/CustomDropdown';
+import { grey300 } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 
 
 const gstRegistrationTypes = [
@@ -154,6 +155,7 @@ export function CustomerForm({
   customer,
   initialName,
   onSuccess,
+  onCancel,
   hideHeader = false,
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -280,14 +282,21 @@ export function CustomerForm({
         {/* Header Section */}
         {!hideHeader && (
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {customer ? 'Edit Customer' : 'Create New Customer'}
-            </Text>
-            <Text style={styles.headerSubtitle}>
-              {customer
-                ? 'Update customer details'
-                : 'Add new customer to your records'}
-            </Text>
+            <View style={styles.headerLeft}>
+              <Text style={styles.headerTitle}>
+                {customer ? 'Edit Customer' : 'Create New Customer'}
+              </Text>
+              <Text style={styles.headerSubtitle}>
+                {customer
+                  ? 'Update customer details'
+                  : 'Add new customer to your records'}
+              </Text>
+            </View>
+            {onCancel && (
+              <TouchableOpacity onPress={onCancel} style={styles.headerCloseButton}>
+                <Text style={styles.headerCloseButtonText}>✕</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -683,6 +692,24 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerCloseButton: {
+    width: 30,
+    height: 30,
+    backgroundColor: '#cfceceff',
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCloseButtonText: {
+    fontSize: 20,
+    color: '#666',
   },
   headerTitle: {
     fontSize: 24,
