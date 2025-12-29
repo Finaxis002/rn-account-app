@@ -363,7 +363,7 @@ const CompaniesScreen = () => {
 
   return (
     <AppLayout>
-      <SafeAreaView style={styles.safeArea}>
+      {/* <SafeAreaView style={styles.safeArea}> */}
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -428,7 +428,7 @@ const CompaniesScreen = () => {
             </View>
           </Modal>
         </View>
-      </SafeAreaView>
+      {/* </SafeAreaView> */}
     </AppLayout>
   );
 };

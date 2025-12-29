@@ -375,14 +375,23 @@ const templateOptions = [
   },
 ];
 
+let isGeneratingPdfLocked = false;
+
 // Helper function to generate PDF and save to file
 const generateAndSavePdf = async templateKey => {
+  if (isGeneratingPdfLocked) {
+    console.log(
+      `Queueing PDF generation for ${templateKey} as lock is active.`,
+    );
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    return generateAndSavePdf(templateKey);
+  }
+
+  isGeneratingPdfLocked = true;
   try {
-    // Use appropriate data based on template
     const companyData =
       templateKey === 'template18' ? thermalCompany : dummyCompany;
 
-    // Call the appropriate template function
     let pdfResult;
     switch (templateKey) {
       case 'template1':
@@ -567,104 +576,36 @@ const generateAndSavePdf = async templateKey => {
         );
     }
 
-    // Generate unique filename
-    const fileName = `template_preview_${templateKey}_${Date.now()}.pdf`;
-    const filePath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
-
-    // Handle different return types from PDF functions
-    let base64Data;
-
-    const arrayBufferToBase64 = buffer => {
-      try {
-        if (typeof Buffer !== 'undefined' && Buffer.from) {
-          return Buffer.from(buffer).toString('base64');
-        }
-      } catch (e) {
-        // fallthrough
-      }
-
-      const bytes = new Uint8Array(buffer);
-      const chunkSize = 0x8000;
-      let binary = '';
-      for (let i = 0; i < bytes.length; i += chunkSize) {
-        binary += String.fromCharCode.apply(
-          null,
-          Array.from(bytes.subarray(i, i + chunkSize)),
-        );
-      }
-      if (typeof btoa === 'function') return btoa(binary);
-      if (typeof global !== 'undefined' && typeof global.btoa === 'function')
-        return global.btoa(binary);
-      throw new Error('No base64 encoder available');
-    };
-
-    const tryDataUri = val => {
-      if (typeof val === 'string' && val.startsWith('data:'))
-        return val.split(',')[1];
-      return null;
-    };
-
-    // 1) Data URI string
-    base64Data = tryDataUri(pdfResult);
-
-    // 2) Plain base64 string
-    if (!base64Data && typeof pdfResult === 'string') {
-      base64Data = pdfResult;
-    }
-
-    // 3) jsPDF instance with output()
-    if (!base64Data && pdfResult && typeof pdfResult.output === 'function') {
-      try {
-        const dataUri = pdfResult.output('datauristring');
-        base64Data = tryDataUri(dataUri) || null;
-      } catch (e) {
-        try {
-          const arr = pdfResult.output('arraybuffer');
-          if (arr) base64Data = arrayBufferToBase64(arr);
-        } catch (e2) {
-          // ignore
-        }
+    let finalPath;
+    if (pdfResult && typeof pdfResult === 'object' && pdfResult.filePath) {
+      finalPath = pdfResult.filePath;
+    } else if (typeof pdfResult === 'string') {
+      const trimmedResult = pdfResult.trim();
+      if (trimmedResult.startsWith('/')) {
+        finalPath = trimmedResult;
       }
     }
 
-    // 4) ArrayBuffer / Uint8Array
-    if (
-      !base64Data &&
-      pdfResult &&
-      (pdfResult instanceof ArrayBuffer ||
-        pdfResult.buffer instanceof ArrayBuffer)
-    ) {
-      const buf =
-        pdfResult instanceof ArrayBuffer ? pdfResult : pdfResult.buffer;
-      base64Data = arrayBufferToBase64(buf);
-    }
-
-    // 5) Object containing base64 property
-    if (!base64Data && pdfResult && typeof pdfResult === 'object') {
-      if (typeof pdfResult.base64 === 'string') base64Data = pdfResult.base64;
-      else if (typeof pdfResult.data === 'string') base64Data = pdfResult.data;
-    }
-
-    if (!base64Data || typeof base64Data !== 'string') {
-      console.error(
-        'Unable to convert PDF result to base64',
-        typeof pdfResult,
-        pdfResult,
+    if (!finalPath) {
+      throw new Error(
+        `PDF generation for ${templateKey} did not return a valid file path or result object. Result: ${JSON.stringify(
+          pdfResult,
+        )}`,
       );
-      throw new Error('Failed to convert generated PDF to base64');
     }
 
-    // Write PDF to file (base64)
-    await RNFS.writeFile(filePath, base64Data, 'base64');
+    const fileName = finalPath.split('/').pop();
 
     return {
-      uri: `file://${filePath}`,
+      uri: Platform.OS === 'android' ? `file://${finalPath}` : finalPath,
       fileName: fileName,
-      filePath: filePath,
+      filePath: finalPath,
     };
   } catch (error) {
-    console.error('PDF generation error:', error);
-    throw new Error(`Failed to generate PDF: ${error.message}`);
+    console.error(`PDF generation error for ${templateKey}:`, error);
+    throw error;
+  } finally {
+    isGeneratingPdfLocked = false;
   }
 };
 
@@ -1088,7 +1029,6 @@ const TemplateSettings = () => {
     'Thermal',
   ]);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [windowDimensions, setWindowDimensions] = useState(
     Dimensions.get('window'),
@@ -1101,7 +1041,6 @@ const TemplateSettings = () => {
     });
 
     return () => {
-      // Correct way to remove event listener in React Native >= 0.65
       subscription?.remove();
     };
   }, []);
@@ -1256,14 +1195,6 @@ const TemplateSettings = () => {
     }
   }, [selectedTemplate, fetchedTemplate]);
 
-  // Handle refresh
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadTemplateSetting();
-    setRefreshing(false);
-  }, [loadTemplateSetting]);
-
-  // Initialize
   useEffect(() => {
     loadTemplateSetting();
   }, [loadTemplateSetting]);
@@ -1434,32 +1365,24 @@ const TemplateSettings = () => {
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          data={filteredTemplates}
-          renderItem={({ item }) => (
-            <TemplateThumbnail
-              template={item}
-              isSelected={selectedTemplate === item.value}
-              onSelect={setSelectedTemplate}
-              onPreview={handlePreview}
-              isGenerating={
-                isGeneratingPdf && previewTemplate?.value === item.value
-              }
-            />
-          )}
-          keyExtractor={item => item.value}
-          numColumns={numColumns}
-          contentContainerStyle={styles.templatesGrid}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#3B82F6']}
-              tintColor="#3B82F6"
-            />
-          }
-        />
+        <View style={styles.templatesGrid}>
+          {filteredTemplates.map(item => (
+            <View
+              key={item.value}
+              style={{ width: `${100 / numColumns}%` }}
+            >
+              <TemplateThumbnail
+                template={item}
+                isSelected={selectedTemplate === item.value}
+                onSelect={setSelectedTemplate}
+                onPreview={handlePreview}
+                isGenerating={
+                  isGeneratingPdf && previewTemplate?.value === item.value
+                }
+              />
+            </View>
+          ))}
+        </View>
       </View>
 
       {/* Preview Modal */}
@@ -1488,7 +1411,6 @@ const TemplateSettings = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#F9FAFB',
   },
   loadingScreen: {
@@ -1704,7 +1626,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
   },
   templatesSection: {
-    flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
   },
@@ -1718,11 +1639,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   templatesGrid: {
-    paddingBottom: 30,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -6, // Counteract card margin
   },
   templateCard: {
-    flex: 1,
-    margin: 6,
     backgroundColor: 'white',
     borderRadius: 16,
     borderWidth: 1,
@@ -1734,6 +1655,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
     minHeight: 220,
+    // Removed flex: 1 and margin to be handled by wrapper
   },
   templateCardSelected: {
     borderColor: '#3B82F6',
@@ -1742,7 +1664,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   templateCardContent: {
-    padding: 16,
+    padding: 12, // Reduced padding
     flex: 1,
   },
   templateHeader: {
@@ -1751,21 +1673,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   templateIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 40, // Smaller icon
+    height: 40,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   templateIconText: {
-    fontSize: 24,
+    fontSize: 20, // Smaller icon text
   },
   templateInfo: {
     flex: 1,
   },
   templateLabel: {
-    fontSize: 16,
+    fontSize: 15, // Slightly smaller
     fontWeight: '600',
     color: '#111827',
   },
@@ -1783,15 +1705,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   templateDescription: {
-    fontSize: 13,
+    fontSize: 12, // Smaller
     color: '#6B7280',
-    lineHeight: 18,
-    marginBottom: 12,
+    lineHeight: 16,
+    marginBottom: 10,
   },
   templateStats: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   statItem: {
     flexDirection: 'row',
@@ -1799,7 +1721,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 12,
+    fontSize: 11, // Smaller
     color: '#6B7280',
   },
   templateFooter: {
@@ -1812,13 +1734,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#EFF6FF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10, // Smaller
+    paddingVertical: 6,
     borderRadius: 8,
     gap: 6,
   },
   previewButtonText: {
-    fontSize: 13,
+    fontSize: 12, // Smaller
     fontWeight: '500',
     color: '#3B82F6',
   },
