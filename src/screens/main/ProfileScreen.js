@@ -11,7 +11,7 @@ import {
   useWindowDimensions,
   RefreshControl,
   Platform,
-  BackHandler, // Added BackHandler for Android hardware back button
+  BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,14 +28,12 @@ import {
   Check,
   X,
   AlertTriangle,
-  Settings,
   UserCircle,
   MessageSquare,
   Users,
   CheckCircle,
   XCircle,
-  Mail,
-  ArrowLeft, // Added back arrow icon
+  ArrowLeft,
 } from 'lucide-react-native';
 
 import { BASE_URL } from '../../config';
@@ -52,11 +50,6 @@ import ServiceSettings from '../../components/settings/ServiceSettings';
 import BankSettings from '../../components/settings/BankSettings';
 import TemplateSettings from '../../components/settings/TemplateSettings';
 import { EmailSendingConsent } from '../../components/settings/EmailSendingConsent';
-
-// Add these navigation imports based on your setup
-// If using React Navigation v5/6:
-// import { useNavigation } from '@react-navigation/native';
-// If using a different navigation solution, import accordingly
 
 const PermissionsTab = React.memo(() => {
   const { permissions } = usePermissions();
@@ -428,29 +421,27 @@ const UserPermissionsTab = React.memo(() => {
 
 UserPermissionsTab.displayName = 'UserPermissionsTab';
 
-export default function ProfilePage({ navigation }) { // Added navigation prop
+export default function ProfilePage({ navigation }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
-
-  // Alternative: If you're using React Navigation hooks
-  // const navigation = useNavigation();
 
   const {
     permissions,
     isLoading: permissionsLoading,
-    fetchPermissions,
+    refetch: refetchPermissions,
   } = usePermissions();
+  
   const {
     permissions: userCaps,
     isLoading: userCapsLoading,
-    fetchUserPermissions,
+    refetch: refetchUserPermissions,
   } = useUserPermissions();
 
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedTab, setSelectedTab] = useState('profile');
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Back button handler (works with navigation prop)
   const handleBackPress = useCallback(() => {
     try {
       if (navigation && typeof navigation.canGoBack === 'function') {
@@ -459,14 +450,25 @@ export default function ProfilePage({ navigation }) { // Added navigation prop
           return true;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error in back press:', e);
+    }
     return false;
   }, [navigation]);
 
   useEffect(() => {
-    loadCurrentUser();
-    
-    // Handle Android hardware back button
+    const initializeData = async () => {
+      try {
+        await loadCurrentUser();
+      } catch (error) {
+        console.error('Error during initial load:', error);
+      } finally {
+        setInitialLoadComplete(true);
+      }
+    };
+
+    initializeData();
+
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
       handleBackPress
@@ -495,7 +497,11 @@ export default function ProfilePage({ navigation }) { // Added navigation prop
         }
         setSelectedTab(initialTab);
       }
-    } catch (error) {}
+      return user;
+    } catch (error) {
+      console.error('Error loading current user:', error);
+      throw error;
+    }
   };
 
   const role = currentUser?.role;
@@ -505,15 +511,30 @@ export default function ProfilePage({ navigation }) { // Added navigation prop
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadCurrentUser();
-    if (isClient) {
-      await fetchPermissions();
+    try {
+      // Refresh all data sequentially
+      await loadCurrentUser();
+      
+      // Refresh permissions based on current user role
+      if (isClient && refetchPermissions) {
+        await refetchPermissions();
+      }
+      
+      if (isUser && refetchUserPermissions) {
+        await refetchUserPermissions();
+      }
+    } catch (error) {
+      console.error('Error during refresh:', error);
+    } finally {
+      setRefreshing(false);
     }
-    if (isUser) {
-      await fetchUserPermissions();
-    }
-    setRefreshing(false);
-  }, [isClient, isUser, fetchPermissions, fetchUserPermissions]);
+  }, [
+    isClient, 
+    isUser, 
+    refetchPermissions, 
+    refetchUserPermissions,
+    loadCurrentUser
+  ]);
 
   const allow = useCallback(
     (clientFlag, userFlag) => {
@@ -626,12 +647,8 @@ export default function ProfilePage({ navigation }) { // Added navigation prop
     return isMember ? memberTabs : adminTabs;
   }, [isMember, isUser, isClient, role, permissions, userCaps, allow]);
 
-  const isInitialLoading =
-    !currentUser || (isMember && (permissionsLoading || userCapsLoading));
-
-  
-
-  if (isInitialLoading) {
+  // Only show loading screen during initial load
+  if (!initialLoadComplete) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -655,26 +672,24 @@ export default function ProfilePage({ navigation }) { // Added navigation prop
             onRefresh={onRefresh}
             colors={['#3b82f6']}
             tintColor="#3b82f6"
+            progressViewOffset={Platform.OS === 'android' ? 50 : 0}
           />
         }
       >
         <View style={styles.contentContainer}>
-          {/* Header with Back Button */}
           <View style={styles.headerContainer}>
             <View style={styles.headerTextContainer}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' , }}>
-              <TouchableOpacity 
-              style={styles.backButton}
-              onPress={handleBackPress}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <ArrowLeft size={24} color="#3b82f6"/>
-              
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Settings</Text>
-
-            </View>
+              <View style={styles.headerTitleRow}>
+                <TouchableOpacity 
+                  style={styles.backButton}
+                  onPress={handleBackPress}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <ArrowLeft size={24} color="#3b82f6"/>
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Settings</Text>
+              </View>
               
               <Text style={styles.headerSubtitle}>
                 Manage your account, preferences, and business entities.
@@ -761,26 +776,14 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginBottom: 24,
+  },
+  headerTitleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   backButton: {
     marginRight: 12,
-    // marginTop: 4,
-    // padding: 8,
-    // borderRadius: 8,
-   
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 40,
-    minWidth: 10,
-  },
-  backButtonText: {
-    marginLeft: 4,
-    color: '#3b82f6',
-    fontSize: 14,
-    fontWeight: '500',
   },
   headerTextContainer: {
     flex: 1,
@@ -789,7 +792,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 8,
   },
   headerSubtitle: {
     fontSize: 16,
@@ -959,33 +961,6 @@ const styles = StyleSheet.create({
   },
   emailConsentSection: {
     marginTop: 20,
-  },
-  emailConsentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f8fafc',
-    marginBottom: 16,
-  },
-  emailConsentIcon: {
-    marginRight: 12,
-  },
-  emailConsentText: {
-    flex: 1,
-  },
-  emailConsentTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  emailConsentDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    lineHeight: 20,
   },
   permissionsContainer: {
     flex: 1,

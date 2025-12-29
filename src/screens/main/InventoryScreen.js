@@ -1,17 +1,8 @@
-// screens/InventoryScreen.js
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
-  Alert,
   RefreshControl,
   FlatList,
   Modal,
@@ -19,18 +10,25 @@ import {
   StyleSheet,
   Dimensions,
   Linking,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePermissions } from '../../contexts/permission-context';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { useToast } from '../../components/hooks/useToast';
 import { BASE_URL } from '../../config';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../../components/ui/Dialog';
 
 // Icons
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Feather from 'react-native-vector-icons/Feather';
 
-// Custom components (you'll need to create these React Native versions)
+// Custom components
 import ProductForm from '../../components/products/ProductForm';
 import ServiceForm from '../../components/services/ServiceForm';
 import ExcelImportExport from '../../components/ui/ExcelImportExport';
@@ -62,8 +60,16 @@ const extractNumber = value => {
 export default function InventoryScreen() {
   const { permissions: userCaps, isLoading: isLoadingPermissions } =
     useUserPermissions();
-  const [activeTab, setActiveTab] = useState('products');
+  const { permissions, refetch, isLoading: isLoadingPerms } = usePermissions();
 
+  console.log('Permissions in InventoryScreen:', {
+    permissions: permissions,
+    canCreateProducts: permissions?.canCreateProducts,
+    userCaps: userCaps,
+    canCreateInventory: userCaps?.canCreateInventory,
+  });
+
+  const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -90,7 +96,6 @@ export default function InventoryScreen() {
   const [openNameDialog, setOpenNameDialog] = useState(null);
 
   const { toast } = useToast();
-  const { permissions } = usePermissions();
 
   const getCompanyId = c => (typeof c === 'object' ? c?._id : c) || null;
 
@@ -175,11 +180,18 @@ export default function InventoryScreen() {
   }, [fetchCompanies, fetchProducts, fetchServices]);
 
   const onRefresh = useCallback(() => {
+    console.log('🔄 Refreshing all data including permissions...');
     setRefreshing(true);
-    Promise.all([fetchCompanies(), fetchProducts(), fetchServices()]).finally(
-      () => setRefreshing(false),
-    );
-  }, [fetchCompanies, fetchProducts, fetchServices]);
+    Promise.all([
+      fetchCompanies(),
+      fetchProducts(),
+      fetchServices(),
+      refetch ? refetch() : Promise.resolve(), // Add permission refresh here
+    ]).finally(() => {
+      setRefreshing(false);
+      console.log('✅ Refresh complete');
+    });
+  }, [fetchCompanies, fetchProducts, fetchServices, refetch]);
 
   const openCreateProduct = () => {
     setProductToEdit(null);
@@ -380,7 +392,15 @@ export default function InventoryScreen() {
   };
 
   const renderActionButtons = () => {
-    if (!(permissions?.canCreateProducts || userCaps?.canCreateInventory)) {
+    console.log('Checking permissions for buttons:', {
+      canCreateProducts: permissions?.canCreateProducts,
+      canCreateInventory: userCaps?.canCreateInventory,
+      shouldShow: !!(
+        permissions?.canCreateProducts || userCaps?.canCreateInventory
+      ),
+    });
+
+    if (!permissions?.canCreateProducts) {
       return null;
     }
 
@@ -476,182 +496,178 @@ export default function InventoryScreen() {
     }
   };
 
- const renderProductCard = (item, index) => {
-  const absoluteIndex = (productCurrentPage - 1) * ITEMS_PER_PAGE + index;
-  return (
-    <View style={styles.card} key={item._id}>
-      <View style={styles.cardHeader}>
-        <View style={styles.productInfo}>
-          <View style={styles.productIcon}>
-            <Icon name="inventory" size={20} color="#007AFF" />
+  const renderProductCard = (item, index) => {
+    const absoluteIndex = (productCurrentPage - 1) * ITEMS_PER_PAGE + index;
+    return (
+      <View style={styles.card} key={item._id}>
+        <View style={styles.cardHeader}>
+          <View style={styles.productInfo}>
+            <View style={styles.productIcon}>
+              <Icon name="inventory" size={20} color="#007AFF" />
+            </View>
+            <View style={styles.productDetails}>
+              <Text style={styles.productName}>
+                {item.name?.charAt(0).toUpperCase() + item.name?.slice(1)}
+              </Text>
+              <Text style={styles.companyName}>
+                {typeof item.company === 'object' && item.company
+                  ? item.company.businessName
+                  : '-'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.productDetails}>
-            <Text style={styles.productName}>
-              {item.name?.charAt(0).toUpperCase() + item.name?.slice(1)}
-            </Text>
-            <Text style={styles.companyName}>
-              {typeof item.company === 'object' && item.company
-                ? item.company.businessName
-                : '-'}
-            </Text>
+
+          <View style={styles.priceSection}>
+            <View style={styles.priceItem}>
+              <Text style={styles.priceLabel}>Cost Price</Text>
+              <Text style={styles.priceValue}>
+                {item.costPrice ? formatCurrencyINR(item.costPrice) : '-'}
+              </Text>
+            </View>
+            <View style={styles.priceItem}>
+              <Text style={styles.priceLabel}>Selling Price</Text>
+              <Text style={styles.priceValue}>
+                {item.sellingPrice ? formatCurrencyINR(item.sellingPrice) : '-'}
+              </Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.priceSection}>
-          <View style={styles.priceItem}>
-            <Text style={styles.priceLabel}>Cost Price</Text>
-            <Text style={styles.priceValue}>
-              {item.costPrice ? formatCurrencyINR(item.costPrice) : '-'}
+        <View style={styles.stockSection}>
+          <Text style={styles.stockLabel}>Stock</Text>
+          <View style={styles.stockInfo}>
+            <Text
+              style={[
+                styles.stockValue,
+                (item.stocks ?? 0) > 10
+                  ? styles.stockHigh
+                  : (item.stocks ?? 0) > 0
+                  ? styles.stockMedium
+                  : styles.stockLow,
+              ]}
+            >
+              {item.stocks ?? 0}
             </Text>
+            <Text style={styles.unit}>{item.unit ?? 'Piece'}</Text>
           </View>
-          <View style={styles.priceItem}>
-            <Text style={styles.priceLabel}>Selling Price</Text>
-            <Text style={styles.priceValue}>
-              {item.sellingPrice ? formatCurrencyINR(item.sellingPrice) : '-'}
-            </Text>
-          </View>
+          {(item.stocks ?? 0) <= 10 && (item.stocks ?? 0) > 0 && (
+            <Text style={styles.lowStockWarning}>Low stock</Text>
+          )}
         </View>
-      </View>
 
-      <View style={styles.stockSection}>
-        <Text style={styles.stockLabel}>Stock</Text>
-        <View style={styles.stockInfo}>
-          <Text
-            style={[
-              styles.stockValue,
-              (item.stocks ?? 0) > 10
-                ? styles.stockHigh
-                : (item.stocks ?? 0) > 0
-                ? styles.stockMedium
-                : styles.stockLow,
-            ]}
-          >
-            {item.stocks ?? 0}
-          </Text>
-          <Text style={styles.unit}>{item.unit ?? 'Piece'}</Text>
-        </View>
-        {(item.stocks ?? 0) <= 10 && (item.stocks ?? 0) > 0 && (
-          <Text style={styles.lowStockWarning}>Low stock</Text>
+        {item.hsn && (
+          <View style={styles.hsnSection}>
+            <Text style={styles.hsnLabel}>HSN</Text>
+            <Text style={styles.hsnValue}>{item.hsn}</Text>
+          </View>
         )}
-      </View>
 
-      {item.hsn && (
-        <View style={styles.hsnSection}>
-          <Text style={styles.hsnLabel}>HSN</Text>
-          <Text style={styles.hsnValue}>{item.hsn}</Text>
-        </View>
-      )}
-
-      <View style={styles.cardActions}>
-        {/* Date moved here, aligned to left */}
-        <View style={styles.dateContainer}>
-          <Text style={styles.createdDate}>
-            {item.createdAt
-              ? new Date(item.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })
-              : '—'}
-          </Text>
-        </View>
-
-        {/* Action buttons aligned to right */}
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.editButton]}
-            onPress={() => openEditProduct(item)}
-          >
-            <Icon name="edit" size={16} color="#007AFF" />
-            <Text style={[styles.actionButtonText, styles.editButtonText]}>
-              Edit
+        <View style={styles.cardActions}>
+          <View style={styles.dateContainer}>
+            <Text style={styles.createdDate}>
+              {item.createdAt
+                ? new Date(item.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : '—'}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => confirmDeleteProduct(item)}
-          >
-            <Icon name="delete" size={16} color="#DC2626" />
-            <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
-              Delete
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
-
- const renderServiceCard = item => {
-  return (
-    <View style={styles.card} key={item._id}>
-      <View style={styles.cardHeader}>
-        <View style={styles.serviceInfo}>
-          <View style={[styles.serviceIcon, { backgroundColor: '#EC4899' }]}>
-            <Icon name="build" size={20} color="white" />
           </View>
-          <View style={styles.serviceDetails}>
-            <Text style={styles.serviceName}>{item.serviceName}</Text>
+
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.editButton]}
+              onPress={() => openEditProduct(item)}
+            >
+              <Icon name="edit" size={16} color="#007AFF" />
+              <Text style={[styles.actionButtonText, styles.editButtonText]}>
+                Edit
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={() => confirmDeleteProduct(item)}
+            >
+              <Icon name="delete" size={16} color="#DC2626" />
+              <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
+                Delete
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderServiceCard = item => {
+    return (
+      <View style={styles.card} key={item._id}>
+        <View style={styles.cardHeader}>
+          <View style={styles.serviceInfo}>
+            <View style={[styles.serviceIcon, { backgroundColor: '#EC4899' }]}>
+              <Icon name="build" size={20} color="white" />
+            </View>
+            <View style={styles.serviceDetails}>
+              <Text style={styles.serviceName}>{item.serviceName}</Text>
+            </View>
+          </View>
+
+          <View style={styles.amountSection}>
+            <Text style={styles.amountLabel}>Amount</Text>
+            <Text style={styles.amountValue}>
+              {formatCurrencyINR(item.amount)}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.amountSection}>
-          <Text style={styles.amountLabel}>Amount</Text>
-          <Text style={styles.amountValue}>
-            {formatCurrencyINR(item.amount)}
-          </Text>
+        {item.sac && (
+          <View style={styles.sacSection}>
+            <Text style={styles.sacLabel}>SAC</Text>
+            <Text style={styles.sacValue}>{item.sac}</Text>
+          </View>
+        )}
+
+        <View style={styles.cardActions}>
+          <View style={styles.dateContainer}>
+            <Text style={styles.createdDate}>
+              {item.createdAt
+                ? new Date(item.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : '—'}
+            </Text>
+          </View>
+
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.editButton]}
+              onPress={() => openEditService(item)}
+            >
+              <Icon name="edit" size={16} color="#007AFF" />
+              <Text style={[styles.actionButtonText, styles.editButtonText]}>
+                Edit
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={() => confirmDeleteService(item)}
+            >
+              <Icon name="delete" size={16} color="#DC2626" />
+              <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
+                Delete
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
+    );
+  };
 
-      {item.sac && (
-        <View style={styles.sacSection}>
-          <Text style={styles.sacLabel}>SAC</Text>
-          <Text style={styles.sacValue}>{item.sac}</Text>
-        </View>
-      )}
-
-      <View style={styles.cardActions}>
-        {/* Date moved here, aligned to left */}
-        <View style={styles.dateContainer}>
-          <Text style={styles.createdDate}>
-            {item.createdAt
-              ? new Date(item.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })
-              : '—'}
-          </Text>
-        </View>
-
-        {/* Action buttons aligned to right */}
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.editButton]}
-            onPress={() => openEditService(item)}
-          >
-            <Icon name="edit" size={16} color="#007AFF" />
-            <Text style={[styles.actionButtonText, styles.editButtonText]}>
-              Edit
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => confirmDeleteService(item)}
-          >
-            <Icon name="delete" size={16} color="#DC2626" />
-            <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
-              Delete
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
   const renderHeader = () => (
     <View>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Inventory Management</Text>
@@ -663,7 +679,6 @@ export default function InventoryScreen() {
         {renderActionButtons()}
       </View>
 
-      {/* Tabs */}
       <View style={styles.tabsContainer}>
         <View style={styles.tabs}>
           <TouchableOpacity
@@ -695,7 +710,6 @@ export default function InventoryScreen() {
         </View>
       </View>
 
-      {/* Bulk actions for desktop */}
       {activeTab === 'products' && selectedProducts.length > 0 && (
         <View style={styles.bulkActions}>
           <TouchableOpacity
@@ -707,13 +721,6 @@ export default function InventoryScreen() {
               Delete ({selectedProducts.length})
             </Text>
           </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Loading or Empty States */}
-      {activeTab === 'products' && isLoadingProducts && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
         </View>
       )}
 
@@ -738,12 +745,6 @@ export default function InventoryScreen() {
             )}
           </View>
         )}
-
-      {activeTab === 'services' && isLoadingServices && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
-      )}
 
       {activeTab === 'services' &&
         !isLoadingServices &&
@@ -913,7 +914,7 @@ export default function InventoryScreen() {
     }
   };
 
-  // Loading State
+  // Loading State - Only for initial load
   if (isLoadingCompanies) {
     return (
       <AppLayout>
@@ -986,46 +987,60 @@ export default function InventoryScreen() {
             windowSize={5}
           />
 
-          {/* Modals */}
-          <Modal
-            visible={isProductFormOpen}
-            animationType="slide"
-            presentationStyle="pageSheet"
-            onRequestClose={() => {
-              setIsProductFormOpen(false);
-              setProductToEdit(null);
-            }}
-          >
-            <ProductForm
-              product={productToEdit}
-              onSuccess={onProductSaved}
-              onClose={() => {
-                setIsProductFormOpen(false);
+          <Dialog
+            open={isProductFormOpen}
+            onOpenChange={isOpen => {
+              if (!isOpen) {
                 setProductToEdit(null);
-              }}
-            />
-          </Modal>
-
-          <Modal
-            visible={isServiceFormOpen}
-            animationType="slide"
-            presentationStyle="pageSheet"
-            onRequestClose={() => {
-              setIsServiceFormOpen(false);
-              setServiceToEdit(null);
+                setIsProductFormOpen(false);
+              }
             }}
           >
-            <ServiceForm
-              service={serviceToEdit}
-              onSuccess={onServiceSaved}
-              onClose={() => {
-                setIsServiceFormOpen(false);
-                setServiceToEdit(null);
-              }}
-            />
-          </Modal>
+            <DialogContent>
+              <View>
+                <DialogHeader>
+                  <DialogTitle>
+                    {productToEdit ? 'Edit Product' : 'Create New Product'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {productToEdit
+                      ? 'Update the product details.'
+                      : 'Fill in the form to add a new product.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <ScrollView>
+                  <ProductForm
+                    product={productToEdit}
+                    onSuccess={onProductSaved}
+                    onClose={() => {
+                      setIsProductFormOpen(false);
+                      setProductToEdit(null);
+                    }}
+                  />
+                </ScrollView>
+              </View>
+            </DialogContent>
+          </Dialog>
 
-          {/* Alert Dialog */}
+          <Dialog
+            open={isServiceFormOpen}
+            onOpenChange={isOpen => {
+              if (!isOpen) setServiceToEdit(null);
+              setIsServiceFormOpen(isOpen);
+            }}
+          >
+            <DialogContent>
+              <ServiceForm
+                service={serviceToEdit}
+                onSuccess={onServiceSaved}
+                onClose={() => {
+                  setIsServiceFormOpen(false);
+                  setServiceToEdit(null);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+
           <Modal
             visible={isAlertOpen}
             transparent
@@ -1216,9 +1231,9 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   actionButtonsContainer: {
-  flexDirection: 'row',
-  gap: 8,
-},
+    flexDirection: 'row',
+    gap: 8,
+  },
   priceSection: {
     alignItems: 'flex-end',
   },
@@ -1339,17 +1354,17 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   cardActions: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  borderTopWidth: 1,
-  borderTopColor: '#f0f0f0',
-  paddingTop: 12,
-  marginTop: 8,
-},
-dateContainer: {
-  flex: 1,
-},
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 12,
+    marginTop: 8,
+  },
+  dateContainer: {
+    flex: 1,
+  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
