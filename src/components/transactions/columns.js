@@ -1006,7 +1006,7 @@ const TransactionActions = ({
   serviceNameById,
   parties = [],
 }) => {
-  console.log('TRANSACTION ACTIONS RENDERED:', transaction._id);
+  // console.log('TRANSACTION ACTIONS RENDERED:', transaction._id);
   const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [mailSentDialogOpen, setMailSentDialogOpen] = useState(false);

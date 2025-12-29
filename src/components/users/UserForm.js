@@ -341,7 +341,7 @@ export const UserForm = ({ user, allCompanies, onSave, onCancel }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  form: { padding: 20 },
+  form: { padding: 10 },
   fieldGroup: { marginBottom: 18 },
   label: {
     fontSize: 13,
