@@ -45,6 +45,13 @@ import ProductForm from '../products/ProductForm';
 import ExcelImportExport from '../ui/ExcelImportExport';
 import { BASE_URL } from '../../config';
 import CheckBox from '@react-native-community/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../../components/ui/Dialog';
 
 export function ProductSettings() {
   const [products, setProducts] = useState([]);
@@ -706,7 +713,7 @@ export function ProductSettings() {
       </ScrollView>
 
       {/* Product Form Modal */}
-      <Modal
+      {/* <Modal
         visible={isFormOpen}
         animationType="slide"
         transparent={true}
@@ -739,7 +746,42 @@ export function ProductSettings() {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </Modal> */}
+
+      <Dialog
+        open={isFormOpen}
+        onOpenChange={isOpen => {
+          if (!isOpen) {
+             setSelectedProduct(null);
+          setIsFormOpen(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <View>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedProduct ? 'Edit Product' : 'Create New Product'}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedProduct
+                  ? 'Update the product details.'
+                  : 'Fill in the form to add a new product.'}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollView>
+              <ProductForm
+                product={selectedProduct || undefined}
+                onSuccess={handleFormSuccess}
+                onClose={() => {
+                  setIsFormOpen(false);
+                  setSelectedProduct(null);
+                }}
+              />
+            </ScrollView>
+          </View>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Alert */}
       <Modal visible={isAlertOpen} animationType="fade" transparent={true}>

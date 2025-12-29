@@ -47,6 +47,13 @@ import {
 } from 'lucide-react-native';
 import { BASE_URL } from '../../config';
 import ServiceForm from '../services/ServiceForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../../components/ui/Dialog';
 
 const { width } = Dimensions.get('window');
 const ITEMS_PER_PAGE = 10;
@@ -638,7 +645,7 @@ const ServiceSettings = () => {
       </ScrollView>
 
       {/* Service Form Modal */}
-      <Modal
+      {/* <Modal
         visible={isFormOpen}
         animationType="slide"
         onRequestClose={() => {
@@ -654,7 +661,42 @@ const ServiceSettings = () => {
             setIsFormOpen(false);
           }}
         />
-      </Modal>
+      </Modal> */}
+
+      <Dialog
+        open={isFormOpen}
+        onOpenChange={isOpen => {
+          if (!isOpen) {
+            setSelectedService(null);
+            setIsFormOpen(false);
+          }
+        }}
+      >
+        <DialogContent>
+          <View>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedService ? 'Edit Service' : 'Create New Service'}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedService
+                  ? 'Update the service details.'
+                  : 'Fill in the form to add a new service.'}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollView>
+              <ServiceForm
+                service={selectedService || undefined}
+                onSuccess={handleFormSuccess}
+                onCancel={() => {
+                  setSelectedService(null);
+                  setIsFormOpen(false);
+                }}
+              />
+            </ScrollView>
+          </View>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Modal */}
       <Modal
