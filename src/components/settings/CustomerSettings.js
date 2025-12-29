@@ -21,8 +21,6 @@ import * as XLSX from 'xlsx';
 import Toast from 'react-native-toast-message';
 import {
   MoreHorizontal,
-  Edit,
-  Trash2,
   PlusCircle,
   Building,
   Check,
@@ -945,7 +943,7 @@ export function CustomerSettings() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+            {/* <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {selectedCustomer ? 'Edit Customer' : 'Create New Customer'}
               </Text>
@@ -954,7 +952,7 @@ export function CustomerSettings() {
                   ? 'Update the details for this customer.'
                   : 'Fill in the form to add a new customer.'}
               </Text>
-            </View>
+            </View> */}
             <ScrollView style={styles.modalContent}>
               <CustomerForm
                 customer={selectedCustomer || undefined}
