@@ -159,7 +159,7 @@ const AlertDialog = ({ visible, onClose, title, description, onConfirm }) => (
 export default function ClientManagementPage() {
   // Animation refs
   const scrollY = useRef(new Animated.Value(0)).current;
-  const HEADER_HEIGHT = 180;
+  const HEADER_HEIGHT = 130;
   const diffClamp = Animated.diffClamp(scrollY, 0, HEADER_HEIGHT);
   const headerTranslateY = diffClamp.interpolate({
     inputRange: [0, HEADER_HEIGHT],
@@ -499,48 +499,43 @@ export default function ClientManagementPage() {
 
   const renderHeader = () => (
     <View style={[styles.headerContainer, { height: HEADER_HEIGHT }]}>
-      <SafeAreaView style={styles.headerSafeArea}>
-        <View style={styles.headerContent}>
-          <View style={styles.titleSection}>
-            <Text style={styles.mainTitle}>Client Management</Text>
-            <Text style={styles.mainSubtitle}>Manage your clients</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.modernAddButton}
-            onPress={handleAddNew}
-          >
-            <View style={styles.addButtonIcon}>
-              <PlusCircle size={18} color="#007AFF" />
-            </View>
-            <Text style={styles.modernAddButtonText}>Add Client</Text>
-          </TouchableOpacity>
+      <View style={styles.headerContent}>
+        <View style={styles.titleSection}>
+          <Text style={styles.mainTitle}>Client Management</Text>
+          <Text style={styles.mainSubtitle}>Manage your clients</Text>
         </View>
+        <TouchableOpacity style={styles.modernAddButton} onPress={handleAddNew}>
+          <View style={styles.addButtonIcon}>
+            <PlusCircle size={18} color="#007AFF" />
+          </View>
+          <Text style={styles.modernAddButtonText}>Add Client</Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputWrapper}>
-            <Filter size={18} color="#999" style={styles.searchIcon} />
-            <TextInput
-              style={styles.modernSearchInput}
-              placeholder="Search by name/username"
-              placeholderTextColor="#999"
-              value={contactNameFilter || usernameFilter}
-              onChangeText={text => {
-                setContactNameFilter(text);
-                setUsernameFilter(text);
-              }}
-            />
-            {(contactNameFilter || usernameFilter) && (
-              <TouchableOpacity
-                onPress={handleClearFilters}
-                style={styles.clearIconButton}
-              >
-                <X size={16} color="#999" />
-              </TouchableOpacity>
-            )}
-          </View>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputWrapper}>
+          <Filter size={18} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.modernSearchInput}
+            placeholder="Search by name/username"
+            placeholderTextColor="#999"
+            value={contactNameFilter || usernameFilter}
+            onChangeText={text => {
+              setContactNameFilter(text);
+              setUsernameFilter(text);
+            }}
+          />
+          {(contactNameFilter || usernameFilter) && (
+            <TouchableOpacity
+              onPress={handleClearFilters}
+              style={styles.clearIconButton}
+            >
+              <X size={16} color="#999" />
+            </TouchableOpacity>
+          )}
         </View>
-      </SafeAreaView>
+      </View>
     </View>
   );
 
@@ -565,19 +560,20 @@ export default function ClientManagementPage() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
         <Text style={styles.loadingText}>Loading clients...</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
     <AppLayout>
-      <SafeAreaView style={styles.container}>
+      {/* Container without SafeAreaView */}
+      <View style={styles.container}>
         {/* Fixed Header */}
         {renderHeader()}
-        
+
         {/* Content with Refresh Control */}
         <Animated.FlatList
           data={filteredClients}
@@ -599,7 +595,7 @@ export default function ClientManagementPage() {
             filteredClients.length === 0
               ? styles.emptyListContent
               : styles.listContent,
-            { paddingTop: 120 }, // Add padding to show content below header
+            { paddingTop: HEADER_HEIGHT }, // Add padding to show content below header
           ]}
           style={styles.listContainer}
           onScroll={Animated.event(
@@ -611,7 +607,7 @@ export default function ClientManagementPage() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              progressViewOffset={HEADER_HEIGHT} // This is the key change - offset for refresh indicator
+              progressViewOffset={HEADER_HEIGHT}
               colors={['#007AFF']}
               tintColor="#007AFF"
             />
@@ -838,17 +834,17 @@ export default function ClientManagementPage() {
             </View>
           </SafeAreaView>
         </Modal>
-      </SafeAreaView>
+      </View>
     </AppLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f8fafc' 
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
   },
-  
+
   listContainer: {
     flex: 1,
   },
@@ -859,10 +855,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f8fafc',
   },
-  loadingText: { 
-    marginTop: 12, 
-    fontSize: 16, 
-    color: '#6b7280' 
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6b7280',
   },
 
   headerContainer: {
@@ -876,28 +872,19 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 6,
     paddingHorizontal: 20,
-    paddingTop: 10,
+    // paddingTop: 50, // Added padding for status bar
+    paddingBottom: 0,
   },
-  
-  headerInner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 8,
-  },
+
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 2,
+
+  titleSection: {
+    flex: 1,
   },
 
   mainTitle: {
@@ -912,6 +899,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     letterSpacing: 0.2,
   },
+
   modernAddButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -930,6 +918,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -958,26 +947,13 @@ const styles = StyleSheet.create({
   clearIconButton: {
     padding: 4,
   },
-  clearButton: {
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-  },
-  clearButtonText: {
-    color: '#666',
-    fontWeight: '600',
-    fontSize: 14,
-  },
 
-  emptyListContent: { 
-    flexGrow: 1, 
+  emptyListContent: {
+    flexGrow: 1,
     justifyContent: 'center',
-    minHeight: height - 160, // Ensure empty state is visible below header
+    minHeight: height - 180, // Ensure empty state is visible below header
   },
-  listContent: { 
+  listContent: {
     paddingHorizontal: 10,
     paddingBottom: 20,
   },
@@ -1020,7 +996,7 @@ const styles = StyleSheet.create({
     padding: 48,
     margin: 16,
     backgroundColor: '#fff',
-    marginTop: 20, // Add margin to push it below header area
+    marginTop: 20,
   },
   emptyStateTitle: {
     fontSize: 20,
@@ -1090,7 +1066,7 @@ const styles = StyleSheet.create({
   },
   alertDialogButton: { minWidth: 80 },
 
-  // Existing modal styles
+  // Modal styles
   modalSafeArea: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1107,12 +1083,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
   },
   modalTitle: {
     fontSize: 18,

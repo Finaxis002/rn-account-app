@@ -571,30 +571,30 @@ export default function AnalyticsScreen() {
 
   return (
     <AppLayout>
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      {/* <SafeAreaView style={styles.container}> */}
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
-        {/* Header and Selection are fixed at the top */}
-        {renderHeaderAndSelection()}
+      {/* Header and Selection are fixed at the top */}
+      {renderHeaderAndSelection()}
 
-        {!selectedClient && !isClientsLoading ? (
-          <ScrollView contentContainerStyle={styles.noClientScroll}>
-            <View style={styles.noClientContainer}>
-              <Users size={48} color="#adb5bd" />
-              <Text style={styles.noClientText}>No Client Selected</Text>
-              <Text style={styles.noClientSubtext}>
-                Please select a client to view their data.
-              </Text>
-            </View>
-          </ScrollView>
-        ) : (
-          <View style={styles.tabsContainer}>
-            {renderMainTabs()}
-
-            <View style={styles.tabContentFlex}>{renderTabContent()}</View>
+      {!selectedClient && !isClientsLoading ? (
+        <ScrollView contentContainerStyle={styles.noClientScroll}>
+          <View style={styles.noClientContainer}>
+            <Users size={48} color="#adb5bd" />
+            <Text style={styles.noClientText}>No Client Selected</Text>
+            <Text style={styles.noClientSubtext}>
+              Please select a client to view their data.
+            </Text>
           </View>
-        )}
-      </SafeAreaView>
+        </ScrollView>
+      ) : (
+        <View style={styles.tabsContainer}>
+          {renderMainTabs()}
+
+          <View style={styles.tabContentFlex}>{renderTabContent()}</View>
+        </View>
+      )}
+      {/* </SafeAreaView> */}
     </AppLayout>
   );
 }

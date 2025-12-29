@@ -341,7 +341,7 @@ export default function UsersPage() {
 
   return (
     <AppLayout>
-      <SafeAreaView style={styles.safeArea}>
+      {/* <SafeAreaView style={styles.safeArea}> */}
         <ScrollView 
           style={styles.container}
           refreshControl={
@@ -497,7 +497,7 @@ export default function UsersPage() {
             </AlertDialog>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      {/* </SafeAreaView> */}
     </AppLayout>
   );
 }
