@@ -39,6 +39,7 @@ import {
 } from 'lucide-react-native';
 import { CustomerForm } from '../customers/CustomerForm';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
+import { usePermissions } from '../../contexts/permission-context';
 import { capitalizeWords } from '../../lib/utils';
 import { BASE_URL } from '../../config';
 
@@ -60,11 +61,9 @@ export function CustomerSettings() {
   const customersPerPage = 10;
 
   // Permission checks
-  const { permissions: userCaps } = useUserPermissions();
+  const { permissions: userCaps, isAllowed } = useUserPermissions();
+  const { permissions: accountPerms } = usePermissions();
   const [role, setRole] = useState(null);
-  const isCustomerRole = role === 'customer';
-  const canShowCustomers = !!userCaps?.canShowCustomers || isCustomerRole;
-  const canCreateCustomers = !!userCaps?.canCreateCustomers || isCustomerRole;
 
   useEffect(() => {
     // Get role from AsyncStorage
@@ -78,6 +77,21 @@ export function CustomerSettings() {
     };
     getRole();
   }, []);
+
+  const isCustomer = role === 'customer';
+
+  // Logic matched to VendorSettings - combine account and user permissions
+  const accountAllowsShow = accountPerms?.canShowCustomers !== false;
+  const accountAllowsCreate = accountPerms?.canCreateCustomers !== false;
+  const userAllowsShow = isAllowed
+    ? isAllowed('canShowCustomers') || isCustomer
+    : userCaps?.canShowCustomers !== false;
+  const userAllowsCreate = isAllowed
+    ? isAllowed('canCreateCustomers')
+    : !!userCaps?.canCreateCustomers;
+
+  const canShowCustomers = accountAllowsShow && userAllowsShow;
+  const canCreateCustomers = accountAllowsCreate && userAllowsCreate;
 
   const fetchCompanies = useCallback(async () => {
     setIsLoadingCompanies(true);
