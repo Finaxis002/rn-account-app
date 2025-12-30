@@ -39,6 +39,8 @@ export default function ServiceForm({
   initialName,
   navigation,
   onClose,
+  headerTitle,
+  headerSubtitle,
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -247,7 +249,7 @@ export default function ServiceForm({
               );
               try {
                 onDelete(service);
-              } catch (e) { }
+              } catch (e) {}
               if (navigation && typeof navigation.goBack === 'function') {
                 navigation.goBack();
               }
@@ -273,25 +275,6 @@ export default function ServiceForm({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>
-              {service ? 'Edit Service' : 'Create New Service'}
-            </Text>
-            <Text style={styles.headerSubtitle}>
-              {service
-                ? 'Update service details'
-                : 'Add new service to your records'}
-            </Text>
-          </View>
-          {onClose && (
-            <TouchableOpacity onPress={onClose} style={styles.headerCloseButton}>
-              <Text style={styles.headerCloseButtonText}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
         {/* Service Name */}
         <View style={styles.field}>
           <Text style={styles.label}>Service Name</Text>
@@ -506,41 +489,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
-  },
-  header: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  headerCloseButton: {
-    width: 30,
-    height: 30,
-    backgroundColor: '#cfceceff',
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerCloseButtonText: {
-    fontSize: 20,
-    color: '#666',
   },
   field: {
     marginBottom: 20,

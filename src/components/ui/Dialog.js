@@ -1,9 +1,20 @@
 // components/ui/Dialog.js
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  ScrollView,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 
 export const Dialog = ({ open, onOpenChange, children }) => {
+  const handleBackdropPress = () => {
+    onOpenChange(false);
+  };
+
   return (
     <Modal
       visible={open}
@@ -11,55 +22,45 @@ export const Dialog = ({ open, onOpenChange, children }) => {
       animationType="fade"
       onRequestClose={() => onOpenChange(false)}
     >
-      <View style={styles.overlay}>
-        <View style={styles.content}>
-          
+      <TouchableOpacity
+        activeOpacity={1}
+        style={styles.overlay}
+        onPress={handleBackdropPress}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.content}
+          onPress={e => e.stopPropagation()}
+        >
           <ScrollView style={styles.scrollView}>
-
-            <TouchableOpacity 
-            style={styles.closeButton}
-            onPress={() => onOpenChange(false)}
-          >
-            <Icon name="x" size={20} color="#6b7280" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => onOpenChange(false)}
+            >
+              <Icon name="x" size={20} color="#6b7280" />
+            </TouchableOpacity>
             {children}
           </ScrollView>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 };
 
 export const DialogContent = ({ children, style, className }) => {
-  return (
-    <View style={[styles.dialogContent, style]}>
-      {children}
-    </View>
-  );
+  return <View style={[styles.dialogContent, style]}>{children}</View>;
 };
 
 export const DialogHeader = ({ children, style }) => {
-  return (
-    <View style={[styles.dialogHeader, style]}>
-      {children}
-    </View>
-  );
+  return <View style={[styles.dialogHeader, style]}>{children}</View>;
 };
 
 export const DialogTitle = ({ children, style }) => {
-  return (
-    <Text style={[styles.dialogTitle, style]}>
-      {children}
-    </Text>
-  );
+  return <Text style={[styles.dialogTitle, style]}>{children}</Text>;
 };
 
 export const DialogDescription = ({ children, style }) => {
-  return (
-    <Text style={[styles.dialogDescription, style]}>
-      {children}
-    </Text>
-  );
+  return <Text style={[styles.dialogDescription, style]}>{children}</Text>;
 };
 
 const styles = StyleSheet.create({
