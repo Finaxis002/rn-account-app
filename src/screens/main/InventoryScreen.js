@@ -58,8 +58,11 @@ const extractNumber = value => {
 };
 
 export default function InventoryScreen() {
-  const { permissions: userCaps, isLoading: isLoadingPermissions } =
-    useUserPermissions();
+  const {
+    permissions: userCaps,
+    isLoading: isLoadingPermissions,
+    refetch: refetchUserPermissions,
+  } = useUserPermissions();
   const { permissions, refetch, isLoading: isLoadingPerms } = usePermissions();
 
   const [activeTab, setActiveTab] = useState('products');
@@ -86,12 +89,31 @@ export default function InventoryScreen() {
   const [serviceToDelete, setServiceToDelete] = useState(null);
 
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const [openNameDialog, setOpenNameDialog] = useState(null);
 
   const { toast } = useToast();
 
-  const getCompanyId = c => (typeof c === 'object' ? c?._id : c) || null;
+  // ==========================================
+  // PERMISSION CHECKS - SIRF CREATE KE LIYE
+  // ==========================================
+  const canCreateProducts =
+    userCaps?.canCreateProducts ?? userCaps?.canCreateInventory ?? false;
+  const webCanCreate = permissions?.canCreateProducts ?? false;
+  const hasCreatePermission = canCreateProducts || webCanCreate;
 
+  // Check role from localStorage (AsyncStorage)
+  const [userRole, setUserRole] = useState(null);
+
+  useEffect(() => {
+    const loadUserRole = async () => {
+      const role = await AsyncStorage.getItem('role');
+      setUserRole(role);
+    };
+    loadUserRole();
+  }, []);
+
+  // ==========================================
+  // FETCH FUNCTIONS
+  // ==========================================
   const fetchCompanies = useCallback(async () => {
     setIsLoadingCompanies(true);
     try {
@@ -178,12 +200,22 @@ export default function InventoryScreen() {
       fetchCompanies(),
       fetchProducts(),
       fetchServices(),
-      refetch ? refetch() : Promise.resolve(), // Add permission refresh here
+      refetch ? refetch() : Promise.resolve(),
+      refetchUserPermissions ? refetchUserPermissions() : Promise.resolve(),
     ]).finally(() => {
       setRefreshing(false);
     });
-  }, [fetchCompanies, fetchProducts, fetchServices, refetch]);
+  }, [
+    fetchCompanies,
+    fetchProducts,
+    fetchServices,
+    refetch,
+    refetchUserPermissions,
+  ]);
 
+  // ==========================================
+  // CRUD OPERATIONS
+  // ==========================================
   const openCreateProduct = () => {
     setProductToEdit(null);
     setIsProductFormOpen(true);
@@ -286,7 +318,13 @@ export default function InventoryScreen() {
     }
   };
 
+  // ==========================================
+  // SELECTION HANDLING - EDIT/DELETE PERMISSION CHECK HATAYA
+  // ==========================================
   const handleSelectProduct = (productId, checked, index, shiftKey = false) => {
+    // EDIT/DELETE PERMISSION CHECK HATAYA
+    // if (userRole === 'user') return; // Yeh line hatani hai
+
     if (shiftKey && lastSelectedIndex !== null && index !== undefined) {
       const startIndex = Math.min(lastSelectedIndex, index);
       const endIndex = Math.max(lastSelectedIndex, index);
@@ -309,6 +347,9 @@ export default function InventoryScreen() {
   };
 
   const handleSelectAllProducts = checked => {
+    // EDIT/DELETE PERMISSION CHECK HATAYA
+    // if (userRole === 'user') return; // Yeh line hatani hai
+
     if (checked) {
       setSelectedProducts(products.map(p => p._id));
     } else {
@@ -317,7 +358,8 @@ export default function InventoryScreen() {
   };
 
   const handleBulkDeleteProducts = async () => {
-    if (selectedProducts.length === 0) return;
+    // EDIT/DELETE PERMISSION CHECK HATAYA
+    if (selectedProducts.length === 0) return; // if (selectedProducts.length === 0 || userRole === 'user') return;
 
     try {
       const token = await AsyncStorage.getItem('token');
@@ -351,6 +393,9 @@ export default function InventoryScreen() {
     }
   };
 
+  // ==========================================
+  // PAGINATION
+  // ==========================================
   const productTotalPages = Math.ceil(products.length / ITEMS_PER_PAGE);
   const serviceTotalPages = Math.ceil(services.length / ITEMS_PER_PAGE);
 
@@ -382,8 +427,11 @@ export default function InventoryScreen() {
     setServiceCurrentPage(prev => Math.max(prev - 1, 1));
   };
 
+  // ==========================================
+  // ACTION BUTTONS (SIRF CREATE KE LIYE PERMISSION)
+  // ==========================================
   const renderActionButtons = () => {
-    if (!permissions?.canCreateProducts) {
+    if (!hasCreatePermission) {
       return null;
     }
 
@@ -479,8 +527,13 @@ export default function InventoryScreen() {
     }
   };
 
+  // ==========================================
+  // PRODUCT CARD (EDIT/DELETE KE PERMISSION CHECKS HATAYE)
+  // ==========================================
   const renderProductCard = (item, index) => {
     const absoluteIndex = (productCurrentPage - 1) * ITEMS_PER_PAGE + index;
+    const isLowStock = (item.stocks ?? 0) <= 10;
+
     return (
       <View style={styles.card} key={item._id}>
         <View style={styles.cardHeader}>
@@ -533,7 +586,7 @@ export default function InventoryScreen() {
             </Text>
             <Text style={styles.unit}>{item.unit ?? 'Piece'}</Text>
           </View>
-          {(item.stocks ?? 0) <= 10 && (item.stocks ?? 0) > 0 && (
+          {isLowStock && (item.stocks ?? 0) > 0 && (
             <Text style={styles.lowStockWarning}>Low stock</Text>
           )}
         </View>
@@ -549,15 +602,12 @@ export default function InventoryScreen() {
           <View style={styles.dateContainer}>
             <Text style={styles.createdDate}>
               {item.createdAt
-                ? new Date(item.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })
+                ? new Date(item.createdAt).toLocaleDateString()
                 : '—'}
             </Text>
           </View>
 
+          {/* EDIT/DELETE BUTTONS - SABKE LIYE (PERMISSION CHECK HATAYA) */}
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
               style={[styles.actionButton, styles.editButton]}
@@ -568,6 +618,7 @@ export default function InventoryScreen() {
                 Edit
               </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.actionButton, styles.deleteButton]}
               onPress={() => confirmDeleteProduct(item)}
@@ -583,6 +634,9 @@ export default function InventoryScreen() {
     );
   };
 
+  // ==========================================
+  // SERVICE CARD (EDIT/DELETE KE PERMISSION CHECKS HATAYE)
+  // ==========================================
   const renderServiceCard = item => {
     return (
       <View style={styles.card} key={item._id}>
@@ -615,15 +669,12 @@ export default function InventoryScreen() {
           <View style={styles.dateContainer}>
             <Text style={styles.createdDate}>
               {item.createdAt
-                ? new Date(item.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })
+                ? new Date(item.createdAt).toLocaleDateString()
                 : '—'}
             </Text>
           </View>
 
+          {/* EDIT/DELETE BUTTONS - SABKE LIYE (PERMISSION CHECK HATAYA) */}
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity
               style={[styles.actionButton, styles.editButton]}
@@ -634,6 +685,7 @@ export default function InventoryScreen() {
                 Edit
               </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.actionButton, styles.deleteButton]}
               onPress={() => confirmDeleteService(item)}
@@ -649,6 +701,9 @@ export default function InventoryScreen() {
     );
   };
 
+  // ==========================================
+  // HEADER COMPONENT
+  // ==========================================
   const renderHeader = () => (
     <View>
       <View style={styles.header}>
@@ -693,6 +748,7 @@ export default function InventoryScreen() {
         </View>
       </View>
 
+      {/* Bulk Actions - EDIT/DELETE PERMISSION CHECK HATAYA */}
       {activeTab === 'products' && selectedProducts.length > 0 && (
         <View style={styles.bulkActions}>
           <TouchableOpacity
@@ -707,6 +763,7 @@ export default function InventoryScreen() {
         </View>
       )}
 
+      {/* Empty States with permission checks */}
       {activeTab === 'products' &&
         !isLoadingProducts &&
         products.length === 0 && (
@@ -714,10 +771,11 @@ export default function InventoryScreen() {
             <Icon name="inventory" size={48} color="#666" />
             <Text style={styles.emptyStateTitle}>No Products Found</Text>
             <Text style={styles.emptyStateDescription}>
-              Create your first product to get started.
+              {hasCreatePermission
+                ? 'Create your first product to get started.'
+                : 'No products available in your inventory.'}
             </Text>
-            {(permissions?.canCreateProducts ||
-              userCaps?.canCreateInventory) && (
+            {hasCreatePermission && (
               <TouchableOpacity
                 style={styles.button}
                 onPress={openCreateProduct}
@@ -736,10 +794,11 @@ export default function InventoryScreen() {
             <Icon name="build" size={48} color="#666" />
             <Text style={styles.emptyStateTitle}>No Services Found</Text>
             <Text style={styles.emptyStateDescription}>
-              Create your first service to get started.
+              {hasCreatePermission
+                ? 'Create your first service to get started.'
+                : 'No services available in your inventory.'}
             </Text>
-            {(permissions?.canCreateProducts ||
-              userCaps?.canCreateInventory) && (
+            {hasCreatePermission && (
               <TouchableOpacity
                 style={styles.button}
                 onPress={openCreateService}
@@ -753,6 +812,9 @@ export default function InventoryScreen() {
     </View>
   );
 
+  // ==========================================
+  // RENDER ITEM FUNCTION
+  // ==========================================
   const renderItem = ({ item, index }) => {
     if (activeTab === 'products') {
       return renderProductCard(item, index);
@@ -761,6 +823,9 @@ export default function InventoryScreen() {
     }
   };
 
+  // ==========================================
+  // FOOTER COMPONENT
+  // ==========================================
   const renderFooter = () => {
     if (
       activeTab === 'products' &&
@@ -897,8 +962,10 @@ export default function InventoryScreen() {
     }
   };
 
-  // Loading State - Only for initial load
-  if (isLoadingCompanies) {
+  // ==========================================
+  // LOADING STATE
+  // ==========================================
+  if (isLoadingCompanies || isLoadingPermissions || isLoadingPerms) {
     return (
       <AppLayout>
         <SafeAreaView style={styles.safeArea}>
@@ -911,7 +978,9 @@ export default function InventoryScreen() {
     );
   }
 
-  // No Company State
+  // ==========================================
+  // NO COMPANY STATE
+  // ==========================================
   if (companies.length === 0) {
     return (
       <AppLayout>
@@ -949,10 +1018,11 @@ export default function InventoryScreen() {
     );
   }
 
-  // Main Content
+  // ==========================================
+  // MAIN CONTENT
+  // ==========================================
   return (
     <AppLayout>
-      {/* <SafeAreaView style={styles.safeArea}> */}
       <View style={styles.container}>
         <FlatList
           data={getData()}
@@ -970,6 +1040,7 @@ export default function InventoryScreen() {
           windowSize={5}
         />
 
+        {/* Product Form Dialog */}
         <Dialog
           open={isProductFormOpen}
           onOpenChange={isOpen => {
@@ -1005,6 +1076,7 @@ export default function InventoryScreen() {
           </DialogContent>
         </Dialog>
 
+        {/* Service Form Dialog */}
         <Dialog
           open={isServiceFormOpen}
           onOpenChange={isOpen => {
@@ -1013,6 +1085,20 @@ export default function InventoryScreen() {
           }}
         >
           <DialogContent>
+            {/* Header without close button (Dialog has built-in close) */}
+            <View style={styles.dialogHeaderRow}>
+              <View style={styles.dialogHeaderLeft}>
+                <Text style={styles.dialogHeaderTitle}>
+                  {serviceToEdit ? 'Edit Service' : 'Create New Service'}
+                </Text>
+                <Text style={styles.dialogHeaderSubtitle}>
+                  {serviceToEdit
+                    ? 'Update service details'
+                    : 'Add new service to your records'}
+                </Text>
+              </View>
+            </View>
+
             <ServiceForm
               service={serviceToEdit}
               onSuccess={onServiceSaved}
@@ -1020,10 +1106,19 @@ export default function InventoryScreen() {
                 setIsServiceFormOpen(false);
                 setServiceToEdit(null);
               }}
+              headerTitle={
+                serviceToEdit ? 'Edit Service' : 'Create New Service'
+              }
+              headerSubtitle={
+                serviceToEdit
+                  ? 'Update service details'
+                  : 'Add new service to your records'
+              }
             />
           </DialogContent>
         </Dialog>
 
+        {/* Delete Confirmation Modal - EDIT/DELETE PERMISSION CHECK HATAYA */}
         <Modal
           visible={isAlertOpen}
           transparent
@@ -1055,11 +1150,12 @@ export default function InventoryScreen() {
           </View>
         </Modal>
       </View>
-      {/* </SafeAreaView> */}
     </AppLayout>
   );
 }
-
+// ==========================================
+// STYLES (Unchanged)
+// ==========================================
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -1565,5 +1661,27 @@ const styles = StyleSheet.create({
   alertConfirmButtonText: {
     color: 'white',
     fontWeight: '500',
+  },
+  dialogHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  dialogHeaderLeft: {
+    flex: 1,
+  },
+  dialogHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  dialogHeaderSubtitle: {
+    fontSize: 14,
+    color: '#666',
   },
 });
