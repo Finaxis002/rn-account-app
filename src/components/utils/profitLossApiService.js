@@ -14,14 +14,14 @@ class ProfitLossApiService {
         throw new Error("Authentication token not found");
       }
 
-      const { fromDate, toDate, companyId , clientId } = params;
+      const { fromDate, toDate, companyId , clientId} = params;
       
       // Build query parameters - Note: using fromDate, toDate (not 'from' and 'to')
-       const queryParams = new URLSearchParams({
+      const queryParams = new URLSearchParams({
         fromDate,
         toDate,
-        clientId, // ADD THIS - REQUIRED FOR BACKEND
-        ...(companyId && companyId.trim() !== '' && { companyId }) // Only add if companyId exists
+        clientId,
+        ...(companyId && { companyId })
       });
 
       console.log(`Fetching P&L from: ${baseURL}/api/profitloss/statement?${queryParams}`);
@@ -57,7 +57,7 @@ class ProfitLossApiService {
         throw new Error(data.message || "Failed to load profit & loss data");
       }
 
-      return data.data || data;
+      return data;
     } catch (error) {
       console.error("Error fetching P&L data:", error);
       throw error;
@@ -227,4 +227,3 @@ class ProfitLossApiService {
 }
 
 export default ProfitLossApiService;
-
