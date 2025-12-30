@@ -62,13 +62,6 @@ export default function InventoryScreen() {
     useUserPermissions();
   const { permissions, refetch, isLoading: isLoadingPerms } = usePermissions();
 
-  console.log('Permissions in InventoryScreen:', {
-    permissions: permissions,
-    canCreateProducts: permissions?.canCreateProducts,
-    userCaps: userCaps,
-    canCreateInventory: userCaps?.canCreateInventory,
-  });
-
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
@@ -180,7 +173,6 @@ export default function InventoryScreen() {
   }, [fetchCompanies, fetchProducts, fetchServices]);
 
   const onRefresh = useCallback(() => {
-    console.log('🔄 Refreshing all data including permissions...');
     setRefreshing(true);
     Promise.all([
       fetchCompanies(),
@@ -189,7 +181,6 @@ export default function InventoryScreen() {
       refetch ? refetch() : Promise.resolve(), // Add permission refresh here
     ]).finally(() => {
       setRefreshing(false);
-      console.log('✅ Refresh complete');
     });
   }, [fetchCompanies, fetchProducts, fetchServices, refetch]);
 
@@ -392,14 +383,6 @@ export default function InventoryScreen() {
   };
 
   const renderActionButtons = () => {
-    console.log('Checking permissions for buttons:', {
-      canCreateProducts: permissions?.canCreateProducts,
-      canCreateInventory: userCaps?.canCreateInventory,
-      shouldShow: !!(
-        permissions?.canCreateProducts || userCaps?.canCreateInventory
-      ),
-    });
-
     if (!permissions?.canCreateProducts) {
       return null;
     }
@@ -969,110 +952,110 @@ export default function InventoryScreen() {
   // Main Content
   return (
     <AppLayout>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <FlatList
-            data={getData()}
-            keyExtractor={item => item._id}
-            renderItem={renderItem}
-            ListHeaderComponent={renderHeader}
-            ListFooterComponent={renderFooter}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      {/* <SafeAreaView style={styles.safeArea}> */}
+      <View style={styles.container}>
+        <FlatList
+          data={getData()}
+          keyExtractor={item => item._id}
+          renderItem={renderItem}
+          ListHeaderComponent={renderHeader}
+          ListFooterComponent={renderFooter}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
+
+        <Dialog
+          open={isProductFormOpen}
+          onOpenChange={isOpen => {
+            if (!isOpen) {
+              setProductToEdit(null);
+              setIsProductFormOpen(false);
             }
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
-            initialNumToRender={10}
-            maxToRenderPerBatch={10}
-            windowSize={5}
-          />
+          }}
+        >
+          <DialogContent>
+            <View>
+              <DialogHeader>
+                <DialogTitle>
+                  {productToEdit ? 'Edit Product' : 'Create New Product'}
+                </DialogTitle>
+                <DialogDescription>
+                  {productToEdit
+                    ? 'Update the product details.'
+                    : 'Fill in the form to add a new product.'}
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollView>
+                <ProductForm
+                  product={productToEdit}
+                  onSuccess={onProductSaved}
+                  onClose={() => {
+                    setIsProductFormOpen(false);
+                    setProductToEdit(null);
+                  }}
+                />
+              </ScrollView>
+            </View>
+          </DialogContent>
+        </Dialog>
 
-          <Dialog
-            open={isProductFormOpen}
-            onOpenChange={isOpen => {
-              if (!isOpen) {
-                setProductToEdit(null);
-                setIsProductFormOpen(false);
-              }
-            }}
-          >
-            <DialogContent>
-              <View>
-                <DialogHeader>
-                  <DialogTitle>
-                    {productToEdit ? 'Edit Product' : 'Create New Product'}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {productToEdit
-                      ? 'Update the product details.'
-                      : 'Fill in the form to add a new product.'}
-                  </DialogDescription>
-                </DialogHeader>
-                <ScrollView>
-                  <ProductForm
-                    product={productToEdit}
-                    onSuccess={onProductSaved}
-                    onClose={() => {
-                      setIsProductFormOpen(false);
-                      setProductToEdit(null);
-                    }}
-                  />
-                </ScrollView>
-              </View>
-            </DialogContent>
-          </Dialog>
+        <Dialog
+          open={isServiceFormOpen}
+          onOpenChange={isOpen => {
+            if (!isOpen) setServiceToEdit(null);
+            setIsServiceFormOpen(isOpen);
+          }}
+        >
+          <DialogContent>
+            <ServiceForm
+              service={serviceToEdit}
+              onSuccess={onServiceSaved}
+              onClose={() => {
+                setIsServiceFormOpen(false);
+                setServiceToEdit(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
 
-          <Dialog
-            open={isServiceFormOpen}
-            onOpenChange={isOpen => {
-              if (!isOpen) setServiceToEdit(null);
-              setIsServiceFormOpen(isOpen);
-            }}
-          >
-            <DialogContent>
-              <ServiceForm
-                service={serviceToEdit}
-                onSuccess={onServiceSaved}
-                onClose={() => {
-                  setIsServiceFormOpen(false);
-                  setServiceToEdit(null);
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-
-          <Modal
-            visible={isAlertOpen}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setIsAlertOpen(false)}
-          >
-            <View style={styles.alertOverlay}>
-              <View style={styles.alertContent}>
-                <Text style={styles.alertTitle}>Are you absolutely sure?</Text>
-                <Text style={styles.alertDescription}>
-                  This action cannot be undone. This will permanently delete the{' '}
-                  {productToDelete ? 'product' : 'service'}.
-                </Text>
-                <View style={styles.alertButtons}>
-                  <TouchableOpacity
-                    style={[styles.alertButton, styles.alertCancelButton]}
-                    onPress={() => setIsAlertOpen(false)}
-                  >
-                    <Text style={styles.alertCancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.alertButton, styles.alertConfirmButton]}
-                    onPress={handleDelete}
-                  >
-                    <Text style={styles.alertConfirmButtonText}>Continue</Text>
-                  </TouchableOpacity>
-                </View>
+        <Modal
+          visible={isAlertOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsAlertOpen(false)}
+        >
+          <View style={styles.alertOverlay}>
+            <View style={styles.alertContent}>
+              <Text style={styles.alertTitle}>Are you absolutely sure?</Text>
+              <Text style={styles.alertDescription}>
+                This action cannot be undone. This will permanently delete the{' '}
+                {productToDelete ? 'product' : 'service'}.
+              </Text>
+              <View style={styles.alertButtons}>
+                <TouchableOpacity
+                  style={[styles.alertButton, styles.alertCancelButton]}
+                  onPress={() => setIsAlertOpen(false)}
+                >
+                  <Text style={styles.alertCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.alertButton, styles.alertConfirmButton]}
+                  onPress={handleDelete}
+                >
+                  <Text style={styles.alertConfirmButtonText}>Continue</Text>
+                </TouchableOpacity>
               </View>
             </View>
-          </Modal>
-        </View>
-      </SafeAreaView>
+          </View>
+        </Modal>
+      </View>
+      {/* </SafeAreaView> */}
     </AppLayout>
   );
 }
