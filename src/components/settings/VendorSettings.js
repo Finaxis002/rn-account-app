@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   Alert,
   Modal,
   StyleSheet,
-  Dimensions,
   ActivityIndicator,
   RefreshControl,
   Platform,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DocumentPicker from '@react-native-documents/picker';
 import RNFS from 'react-native-fs';
@@ -21,189 +20,171 @@ import * as XLSX from 'xlsx';
 import Toast from 'react-native-toast-message';
 import {
   MoreHorizontal,
-  Edit,
-  Trash2,
   PlusCircle,
   Building,
   Check,
   X,
-  FileText,
-  Hash,
   Phone,
   Mail,
   MapPin,
-  Percent,
   Upload,
   ChevronLeft,
   ChevronRight,
   Download,
 } from 'lucide-react-native';
+
 import { VendorForm } from '../vendors/VendorForm';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
+import { usePermissions } from '../../contexts/permission-context';
 import { capitalizeWords } from '../../lib/utils';
 import { BASE_URL } from '../../config';
 
 export function VendorSettings() {
   const [vendors, setVendors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
-  const [vendorToDelete, setVendorToDelete] = useState(null);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const vendorsPerPage = 10;
 
   // Permission checks
-  const { permissions: userCaps } = useUserPermissions();
-  const [role, setRole] = useState(null);
-  const isCustomer = role === 'customer';
-  const canShowVendors = !!userCaps?.canShowVendors || isCustomer;
-  const canCreateVendors = !!userCaps?.canCreateVendors || isCustomer;
+  const { permissions: userCaps, isAllowed } = useUserPermissions();
+  const { permissions: accountPerms } = usePermissions();
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
-    const getRole = async () => {
-      try {
-        const storedRole = await AsyncStorage.getItem('role');
-        setRole(storedRole);
-      } catch (error) {
-        console.error('Error getting role:', error);
-      }
+    const init = async () => {
+      const role = await AsyncStorage.getItem('role');
+      setUserRole(role);
+      await fetchCompanies();
+      await fetchVendors();
     };
-    getRole();
+    init();
   }, []);
+
+  const isCustomer = userRole === 'customer';
+
+  // Logic matched exactly to your permission requirements
+  const accountAllowsShow = accountPerms?.canShowVendors !== false;
+  const accountAllowsCreate = accountPerms?.canCreateVendors !== false;
+  const userAllowsShow = isAllowed
+    ? isAllowed('canShowVendors') || isCustomer
+    : userCaps?.canShowVendors !== false;
+  const userAllowsCreate = isAllowed
+    ? isAllowed('canCreateVendors')
+    : !!userCaps?.canCreateVendors;
+
+  const canShowVendors = accountAllowsShow && userAllowsShow;
+  const canCreateVendors = accountAllowsCreate && userAllowsCreate;
 
   const fetchCompanies = useCallback(async () => {
     setIsLoadingCompanies(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Authentication token not found.');
-
       const res = await fetch(`${BASE_URL}/api/companies/my`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to fetch companies.');
       const data = await res.json();
       setCompanies(Array.isArray(data) ? data : data.companies || []);
     } catch (err) {
       console.error(err);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load companies',
-      });
     } finally {
       setIsLoadingCompanies(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchCompanies();
-  }, [fetchCompanies]);
-
   const fetchVendors = useCallback(async () => {
     setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Authentication token not found.');
-
       const res = await fetch(`${BASE_URL}/api/vendors`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!res.ok) throw new Error('Failed to fetch vendors.');
       const data = await res.json();
       setVendors(Array.isArray(data) ? data : data.vendors || []);
       setCurrentPage(1);
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Failed to load vendors',
-        text2: error instanceof Error ? error.message : 'Something went wrong.',
-      });
+      Toast.show({ type: 'error', text1: 'Failed to load vendors' });
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchVendors();
-  }, [fetchVendors]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchVendors();
-    setRefreshing(false);
-  }, [fetchVendors]);
-
-  const handleOpenForm = (vendor = null) => {
-    setSelectedVendor(vendor);
-    setIsFormOpen(true);
-    setOpenDropdownId(null);
+  const handleDeleteVendor = async vendor => {
+    Alert.alert(
+      'Delete Vendor',
+      `Are you sure you want to delete ${vendor.vendorName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              const res = await fetch(`${BASE_URL}/api/vendors/${vendor._id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (res.ok) {
+                Toast.show({ type: 'success', text1: 'Vendor Deleted' });
+                fetchVendors();
+              }
+            } catch (error) {
+              Toast.show({ type: 'error', text1: 'Delete failed' });
+            }
+          },
+        },
+      ],
+    );
   };
 
-  const handleOpenDeleteDialog = vendor => {
-    setVendorToDelete(vendor);
-    setIsAlertOpen(true);
-    setOpenDropdownId(null);
-  };
+  // CSV parser with proper quote handling
+  const parseCSV = text => {
+    const rows = [];
+    const lines = text.split('\n').filter(line => line.trim() !== '');
 
-  const handleFormSuccess = () => {
-    setIsFormOpen(false);
-    fetchVendors();
-    const action = selectedVendor ? 'updated' : 'created';
-    Toast.show({
-      type: 'success',
-      text1: `Vendor ${action} successfully`,
-      text2: `The vendor details have been ${action}.`,
-    });
-  };
+    for (const line of lines) {
+      const row = [];
+      let current = '';
+      let inQuotes = false;
 
-  const handleDeleteVendor = async () => {
-    if (!vendorToDelete) return;
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Authentication token not found.');
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
 
-      const res = await fetch(`${BASE_URL}/api/vendors/${vendorToDelete._id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error('Failed to delete vendor.');
-
-      Toast.show({
-        type: 'success',
-        text1: 'Vendor Deleted',
-        text2: 'The vendor has been successfully removed.',
-      });
-
-      fetchVendors();
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Deletion Failed',
-        text2: error instanceof Error ? error.message : 'Something went wrong.',
-      });
-    } finally {
-      setIsAlertOpen(false);
-      setVendorToDelete(null);
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            current += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          row.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      row.push(current.trim());
+      rows.push(row);
     }
+    return rows;
   };
 
-  const toggleDropdown = (vendorId) => {
-    setOpenDropdownId(openDropdownId === vendorId ? null : vendorId);
-  };
-
-  const handleImportClick = () => {
-    setIsImportDialogOpen(true);
+  const sanitizeCSVCell = value => {
+    if (value === null || value === undefined) return '';
+    return value.toString().trim().replace(/[<>]/g, '');
   };
 
   const pickFileForImport = async () => {
@@ -256,10 +237,10 @@ export function VendorSettings() {
     try {
       const res = await pickFn({
         type: [
+          DocumentPicker?.types?.csv || 'text/csv',
           DocumentPicker?.types?.xlsx ||
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           DocumentPicker?.types?.xls || 'application/vnd.ms-excel',
-          DocumentPicker?.types?.csv || 'text/csv',
         ],
         allowMultiSelection: false,
       });
@@ -310,8 +291,11 @@ export function VendorSettings() {
 
     try {
       const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Authentication token not found.');
+      if (!token) {
+        throw new Error('Authentication token not found.');
+      }
 
+      // Create FormData for upload
       const formData = new FormData();
       formData.append('file', {
         uri: file.uri,
@@ -352,57 +336,48 @@ export function VendorSettings() {
         text2: description,
       });
 
+      // Fallback alert in case Toast is not visible
       try {
         if (data.importedCount > 0) {
           Alert.alert('Import Completed', description);
         }
-      } catch (e) {}
+      } catch (e) {
+        // Silently handle fallback alert error
+      }
 
-      setIsImportDialogOpen(false);
+      setIsImportModalOpen(false);
       fetchVendors();
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
 
-      if (
-        /csv/i.test(errMsg) &&
-        /(please upload|upload a|only support|invalid file)/i.test(errMsg)
-      ) {
-        const userMessage = 'Invalid file format. Please upload a CSV.';
-        Toast.show({
-          type: 'error',
-          text1: 'Invalid file format',
-          text2: userMessage,
-        });
-        try {
-          Alert.alert('Invalid file format', userMessage);
-        } catch (e) {}
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Import Failed',
-          text2: errMsg || 'Failed to import vendors',
-        });
-      }
+      Toast.show({
+        type: 'error',
+        text1: 'Import Failed',
+        text2: errMsg || 'Failed to import vendors',
+      });
     } finally {
       setIsImporting(false);
     }
   };
 
   const downloadTemplate = () => {
+    // Define headers matching the API import format
     const headers = [
-      'Vendor Name',
-      'Contact Number',
-      'Email',
-      'Address',
-      'City',
-      'State',
-      'GSTIN',
-      'GST Registration Type',
-      'PAN',
-      'TDS Applicable',
-      'TDS Section',
+      'vendorName',
+      'contactNumber',
+      'email',
+      'address',
+      'city',
+      'state',
+      'gstin',
+      'gstRegistrationType',
+      'pan',
+      'isTDSApplicable',
+      'tdsRate',
+      'tdsSection',
     ];
 
+    // Define sample data rows
     const sampleRows = [
       [
         'ABC Suppliers',
@@ -414,7 +389,8 @@ export function VendorSettings() {
         '22AAAAA0000A1Z5',
         'Regular',
         'AAAAA0000A',
-        'Yes',
+        'true',
+        '2',
         '194C',
       ],
       [
@@ -427,27 +403,17 @@ export function VendorSettings() {
         '07ABCDE1234F1Z5',
         'Composition',
         'ABCDE1234F',
-        'No',
-        '',
-      ],
-      [
-        'Local Vendor',
-        '9876543212',
-        'local@vendor.com',
-        '789 Local Road',
-        'Chennai',
-        'Tamil Nadu',
-        '',
-        'Unregistered',
-        '',
-        'No',
+        'false',
+        '0',
         '',
       ],
     ];
 
+    // Build CSV content with proper formatting
     const buildCSVRow = row => {
       return row
         .map(field => {
+          // Escape fields that contain commas, quotes, or newlines
           if (
             field.includes(',') ||
             field.includes('"') ||
@@ -463,20 +429,25 @@ export function VendorSettings() {
     let csvContent = buildCSVRow(headers) + '\r\n';
     csvContent += sampleRows.map(buildCSVRow).join('\r\n');
 
+    // Create Excel workbook using xlsx library
     const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Vendor Template');
 
+    // Generate Excel file
     const excelBuffer = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
 
+    // Save to device
     const filePath = `${RNFS.DownloadDirectoryPath}/vendor_import_template.xlsx`;
+
+    setIsDownloading(true);
 
     RNFS.writeFile(filePath, excelBuffer, 'base64')
       .then(() => {
         Toast.show({
           type: 'success',
-          text1: 'Template Downloaded',
-          text2: 'Excel template has been downloaded to your device.',
+          text1: '✓ Template Downloaded',
+          text2: 'Excel template has been saved to Downloads',
         });
         try {
           Alert.alert(
@@ -495,1028 +466,563 @@ export function VendorSettings() {
               ? error.message
               : 'Failed to download template.',
         });
+      })
+      .finally(() => {
+        setIsDownloading(false);
       });
   };
 
-  const indexOfLastVendor = currentPage * vendorsPerPage;
-  const indexOfFirstVendor = indexOfLastVendor - vendorsPerPage;
-  const currentVendors = vendors.slice(indexOfFirstVendor, indexOfLastVendor);
-  const totalPages = Math.ceil(vendors.length / vendorsPerPage);
-
-  if (isLoadingCompanies) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading companies...</Text>
+  const renderVendor = ({ item }) => (
+    <View style={[styles.card, !canShowVendors && styles.blurEffect]}>
+      <View style={styles.cardHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.vendorName}>
+            {capitalizeWords(item.vendorName)}
+          </Text>
+          <View style={styles.badgeRow}>
+            <View style={styles.regBadge}>
+              <Text style={styles.regBadgeText}>
+                {item.gstRegistrationType || 'Unregistered'}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.tdsBadge,
+                item.isTDSApplicable ? styles.bgTdsOn : styles.bgTdsOff,
+              ]}
+            >
+              {item.isTDSApplicable ? (
+                <Check size={10} color="#166534" />
+              ) : (
+                <X size={10} color="#991b1b" />
+              )}
+              <Text
+                style={[
+                  styles.tdsBadgeText,
+                  item.isTDSApplicable ? styles.textTdsOn : styles.textTdsOff,
+                ]}
+              >
+                TDS{' '}
+                {item.isTDSApplicable
+                  ? item.tdsSection || 'Applicable'
+                  : 'Not Applicable'}
+              </Text>
+            </View>
+          </View>
         </View>
-      </SafeAreaView>
+        <TouchableOpacity
+          style={styles.moreBtn}
+          onPress={() => {
+            let options = [{ text: 'Cancel', style: 'cancel' }];
+            options.unshift({
+              text: 'Delete',
+              style: 'destructive',
+              onPress: () => handleDeleteVendor(item),
+            });
+            options.unshift({
+              text: 'Edit',
+              onPress: () => {
+                setSelectedVendor(item);
+                setIsFormOpen(true);
+              },
+            });
+            Alert.alert('Options', item.vendorName, options);
+          }}
+        >
+          <MoreHorizontal size={20} color="#64748b" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.detailsSection}>
+        {item.contactNumber ? (
+          <View style={styles.detailItem}>
+            <View style={styles.iconCircle}>
+              <Phone size={14} color="#3b82f6" />
+            </View>
+            <Text style={styles.detailText}>{item.contactNumber}</Text>
+          </View>
+        ) : null}
+
+        {item.address ? (
+          <View style={styles.detailItem}>
+            <View style={[styles.iconCircle, { backgroundColor: '#f0fdf4' }]}>
+              <MapPin size={14} color="#10b981" />
+            </View>
+            <View>
+              <Text style={styles.detailText}>{item.address}</Text>
+              <Text style={styles.subDetailText}>
+                {item.city}, {item.state}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  if (isLoadingCompanies)
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
+    );
+
+  if (companies.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <View style={styles.setupCard}>
+          <Building size={64} color="#3b82f6" />
+          <Text style={styles.setupTitle}>Company Setup Required</Text>
+          <Text style={styles.setupSub}>
+            Contact us to enable your company account and access all features.
+          </Text>
+          <TouchableOpacity
+            style={styles.primaryBtn}
+            onPress={() => Linking.openURL('tel:+918989773689')}
+          >
+            <Phone size={18} color="white" style={{ marginRight: 8 }} />
+            <Text style={styles.btnText}>+91-8989773689</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {companies.length === 0 ? (
-          <View style={styles.noCompanyContainer}>
-            <View style={styles.card}>
-              <View style={styles.cardContent}>
-                <View style={styles.companyIconContainer}>
-                  <Building size={48} color="#3b82f6" />
-                </View>
-                <Text style={styles.companyTitle}>Company Setup Required</Text>
-                <Text style={styles.companyDescription}>
-                  Contact us to enable your company account and access all
-                  features.
-                </Text>
-                <View style={styles.contactButtons}>
-                  <TouchableOpacity
-                    style={styles.phoneButton}
-                    onPress={() => Linking.openURL('tel:+91-8989773689')}
-                  >
-                    <Phone size={20} color="#fff" />
-                    <Text style={styles.buttonText}>+91-8989773689</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.emailButton}
-                    onPress={() =>
-                      Linking.openURL('mailto:support@company.com')
-                    }
-                  >
-                    <Mail size={20} color="#3b82f6" />
-                    <Text style={styles.emailButtonText}>Email Us</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.contentContainer}>
-            <View style={styles.header}>
-              <View style={styles.headerText}>
-                <Text style={styles.title}>Manage Vendors</Text>
-                <Text style={styles.subtitle}>
-                  A list of all your vendors and suppliers.
-                </Text>
-              </View>
-            </View>
+      <View style={styles.header}>
+        <Text style={styles.navTitle}>Manage Vendors</Text>
+        <Text style={styles.navSub}>
+          A list of all your vendors and suppliers.
+        </Text>
 
-            {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#3b82f6" />
-                <Text style={styles.loadingText}>Loading vendors...</Text>
-              </View>
-            ) : !canShowVendors && !canCreateVendors ? (
-              <View style={styles.restrictedContainer}>
-                <Building size={48} color="#9ca3af" />
-                <Text style={styles.restrictedTitle}>Access Restricted</Text>
-                <Text style={styles.restrictedText}>
-                  You don't have permission to view or manage vendors.
-                </Text>
-              </View>
-            ) : vendors.length > 0 && canShowVendors ? (
-              <>
-                <View style={styles.vendorList}>
-                  {currentVendors.map(vendor => (
-                    <View key={vendor._id} style={styles.vendorCard}>
-                      <View style={styles.vendorHeader}>
-                        <View style={styles.vendorInfo}>
-                          <Text style={styles.vendorName}>
-                            {capitalizeWords(vendor.vendorName)}
-                          </Text>
-                          <View style={styles.vendorTags}>
-                            <View style={styles.gstTag}>
-                              <Text style={styles.gstTagText}>
-                                {vendor.gstRegistrationType}
-                              </Text>
-                            </View>
-                            <View
-                              style={[
-                                styles.tdsTag,
-                                vendor.isTDSApplicable
-                                  ? styles.tdsApplicable
-                                  : styles.tdsNotApplicable,
-                              ]}
-                            >
-                              {vendor.isTDSApplicable ? (
-                                <Check size={12} color="#fff" />
-                              ) : (
-                                <X size={12} color="#fff" />
-                              )}
-                              <Text style={styles.tdsTagText}>
-                                TDS{' '}
-                                {vendor.isTDSApplicable
-                                  ? 'Applicable'
-                                  : 'Not Applicable'}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-
-                        <View style={styles.dropdownContainer}>
-                          <TouchableOpacity
-                            style={styles.menuButton}
-                            onPress={() => toggleDropdown(vendor._id)}
-                          >
-                            <MoreHorizontal size={20} color="#6b7280" />
-                          </TouchableOpacity>
-
-                          {openDropdownId === vendor._id && (
-                            <View style={styles.dropdown}>
-                              <TouchableOpacity
-                                style={styles.dropdownItem}
-                                onPress={() => handleOpenForm(vendor)}
-                              >
-                                <Edit size={16} color="#3b82f6" />
-                                <Text style={styles.dropdownItemText}>Edit</Text>
-                              </TouchableOpacity>
-                              <View style={styles.dropdownDivider} />
-                              <TouchableOpacity
-                                style={[styles.dropdownItem, styles.dropdownItemDanger]}
-                                onPress={() => handleOpenDeleteDialog(vendor)}
-                              >
-                                <Trash2 size={16} color="#ef4444" />
-                                <Text style={[styles.dropdownItemText, styles.dropdownItemTextDanger]}>
-                                  Delete
-                                </Text>
-                              </TouchableOpacity>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-
-                      {(vendor.contactNumber || vendor.email) && (
-                        <View style={styles.contactSection}>
-                          {vendor.contactNumber && (
-                            <View style={styles.contactItem}>
-                              <Phone size={16} color="#3b82f6" />
-                              <Text style={styles.contactText}>
-                                {vendor.contactNumber}
-                              </Text>
-                            </View>
-                          )}
-                          {vendor.email && (
-                            <View style={styles.contactItem}>
-                              <Mail size={16} color="#8b5cf6" />
-                              <Text style={styles.contactText}>
-                                {vendor.email}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      )}
-
-                      {(vendor.address || vendor.city || vendor.state) && (
-                        <View style={styles.addressSection}>
-                          <MapPin size={16} color="#10b981" />
-                          <View style={styles.addressTextContainer}>
-                            {vendor.address && (
-                              <Text style={styles.addressText}>
-                                {vendor.address}
-                              </Text>
-                            )}
-                            {(vendor.city || vendor.state) && (
-                              <Text style={styles.locationText}>
-                                {[vendor.city, vendor.state]
-                                  .filter(Boolean)
-                                  .join(', ')}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                      )}
-
-                      {(vendor.gstin || vendor.pan) && (
-                        <View style={styles.taxSection}>
-                          <Text style={styles.sectionTitle}>
-                            Tax Information
-                          </Text>
-                          {vendor.gstin && (
-                            <View style={styles.taxItem}>
-                              <FileText size={16} color="#6b7280" />
-                              <Text style={styles.taxLabel}>GSTIN:</Text>
-                              <Text style={styles.taxValue}>
-                                {vendor.gstin}
-                              </Text>
-                            </View>
-                          )}
-                          {vendor.pan && (
-                            <View style={styles.taxItem}>
-                              <Hash size={16} color="#6b7280" />
-                              <Text style={styles.taxLabel}>PAN:</Text>
-                              <Text style={styles.taxValue}>{vendor.pan}</Text>
-                            </View>
-                          )}
-                        </View>
-                      )}
-
-                      {vendor.isTDSApplicable && vendor.tdsSection && (
-                        <View style={styles.tdsSection}>
-                          <Percent size={16} color="#10b981" />
-                          <Text style={styles.tdsSectionText}>
-                            TDS Section: {vendor.tdsSection}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </View>
-
-                {totalPages > 1 && (
-                  <View style={styles.pagination}>
-                    <TouchableOpacity
-                      style={[
-                        styles.pageButton,
-                        currentPage === 1 && styles.pageButtonDisabled,
-                      ]}
-                      onPress={() =>
-                        setCurrentPage(prev => Math.max(1, prev - 1))
-                      }
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft
-                        size={20}
-                        color={currentPage === 1 ? '#9ca3af' : '#3b82f6'}
-                      />
-                      <Text
-                        style={[
-                          styles.pageButtonText,
-                          currentPage === 1 && styles.pageButtonTextDisabled,
-                        ]}
-                      >
-                        Previous
-                      </Text>
-                    </TouchableOpacity>
-
-                    <Text style={styles.pageInfo}>
-                      Page {currentPage} of {totalPages}
-                    </Text>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.pageButton,
-                        currentPage === totalPages && styles.pageButtonDisabled,
-                      ]}
-                      onPress={() =>
-                        setCurrentPage(prev => Math.min(totalPages, prev + 1))
-                      }
-                      disabled={currentPage === totalPages}
-                    >
-                      <Text
-                        style={[
-                          styles.pageButtonText,
-                          currentPage === totalPages &&
-                            styles.pageButtonTextDisabled,
-                        ]}
-                      >
-                        Next
-                      </Text>
-                      <ChevronRight
-                        size={20}
-                        color={
-                          currentPage === totalPages ? '#9ca3af' : '#3b82f6'
-                        }
-                      />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </>
-            ) : vendors.length > 0 && !canShowVendors && canCreateVendors ? (
-              <View style={styles.blurredContainer}>
-                <Building size={48} color="#9ca3af" />
-                <Text style={styles.restrictedTitle}>Vendor Management</Text>
-                <Text style={styles.restrictedText}>
-                  You can create vendors, but viewing existing vendor details
-                  requires additional permissions.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Building size={48} color="#9ca3af" />
-                <Text style={styles.emptyTitle}>No Vendors Found</Text>
-                <Text style={styles.emptyText}>
-                  Get started by adding your first vendor.
-                </Text>
-                {canCreateVendors && (
-                  <View style={styles.emptyButtons}>
-                    <TouchableOpacity
-                      style={styles.primaryButton}
-                      onPress={() => handleOpenForm()}
-                    >
-                      <PlusCircle size={20} color="#fff" />
-                      <Text style={styles.buttonText}>Add Vendor</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.outlineButton}
-                      onPress={handleImportClick}
-                    >
-                      <Upload size={20} color="#3b82f6" />
-                      <Text style={styles.outlineButtonText}>
-                        Import Vendors
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            )}
+        {canCreateVendors && (
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={styles.mainActionBtn}
+              onPress={() => {
+                setSelectedVendor(null);
+                setIsFormOpen(true);
+              }}
+            >
+              <PlusCircle size={18} color="white" style={{ marginRight: 8 }} />
+              <Text style={styles.mainActionText}>Add Vendor</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryActionBtn}
+              onPress={() => setIsImportModalOpen(true)}
+              disabled={isImporting}
+            >
+              {isImporting ? (
+                <ActivityIndicator size="small" color="#1e293b" />
+              ) : (
+                <Upload size={18} color="#1e293b" style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.secondaryActionText}>Import Vendors</Text>
+            </TouchableOpacity>
           </View>
         )}
-      </ScrollView>
+      </View>
+
+      <FlatList
+        data={vendors.slice(
+          (currentPage - 1) * vendorsPerPage,
+          currentPage * vendorsPerPage,
+        )}
+        renderItem={renderVendor}
+        keyExtractor={item => item._id}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={fetchVendors} />
+        }
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+        scrollEnabled={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        ListEmptyComponent={
+          <View style={styles.emptyView}>
+            <Building size={48} color="#cbd5e1" />
+            <Text style={{ color: '#64748b', marginTop: 10 }}>
+              No vendors found
+            </Text>
+          </View>
+        }
+      />
+
+      <View style={styles.footerPagination}>
+        <TouchableOpacity
+          disabled={currentPage === 1}
+          onPress={() => setCurrentPage(p => p - 1)}
+          style={[styles.pageNavBtn, currentPage === 1 && { opacity: 0.4 }]}
+        >
+          <ChevronLeft size={20} color="#1e293b" />
+          <Text style={styles.pageNavText}>Previous</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          disabled={currentPage >= Math.ceil(vendors.length / vendorsPerPage)}
+          onPress={() => setCurrentPage(p => p + 1)}
+          style={[
+            styles.pageNavBtn,
+            styles.nextBtn,
+            currentPage >= Math.ceil(vendors.length / vendorsPerPage) && {
+              opacity: 0.4,
+            },
+          ]}
+        >
+          <Text style={[styles.pageNavText, { color: 'white' }]}>Next</Text>
+          <ChevronRight size={20} color="white" />
+        </TouchableOpacity>
+      </View>
+
+      {!canShowVendors && canCreateVendors && vendors.length > 0 && (
+        <View style={styles.overlay}>
+          <Building size={48} color="#64748b" />
+          <Text style={styles.modalTitle}>Vendor Management</Text>
+          <Text style={styles.navSub}>
+            Viewing details requires additional permissions.
+          </Text>
+        </View>
+      )}
+
+      <Modal visible={isFormOpen} animationType="slide">
+        <View style={{ flex: 1 }}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {selectedVendor ? 'Edit Vendor' : 'Create Vendor'}
+            </Text>
+            <TouchableOpacity onPress={() => setIsFormOpen(false)}>
+              <X size={24} color="black" />
+            </TouchableOpacity>
+          </View>
+          <VendorForm
+            vendor={selectedVendor}
+            onSuccess={() => {
+              setIsFormOpen(false);
+              fetchVendors();
+            }}
+          />
+        </View>
+      </Modal>
 
       <Modal
-        visible={isFormOpen}
-        animationType="slide"
+        visible={isImportModalOpen}
+        animationType="fade"
         transparent={true}
-        onRequestClose={() => setIsFormOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            {/* <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {selectedVendor ? 'Edit Vendor' : 'Create New Vendor'}
+          <View style={styles.importModalContainer}>
+            <View style={styles.importModalHeader}>
+              <Text style={styles.importModalTitle}>Import Vendors</Text>
+              <TouchableOpacity onPress={() => setIsImportModalOpen(false)}>
+                <X size={24} color="black" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.importModalContent} scrollEnabled={true}>
+              <Text style={styles.importDescription}>
+                Upload a CSV file containing vendor data. CSV files will be
+                automatically sanitized for security.
               </Text>
-              <Text style={styles.modalDescription}>
-                {selectedVendor
-                  ? 'Update the details for this vendor.'
-                  : 'Fill in the form to add a new vendor.'}
+
+              <View style={styles.uploadBox}>
+                <Upload size={40} color="#94a3b8" />
+                <Text style={styles.uploadText}>Tap to select CSV file</Text>
+                <TouchableOpacity
+                  style={styles.selectFileBtn}
+                  onPress={pickFileForImport}
+                  disabled={isImporting}
+                >
+                  {isImporting ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Text style={styles.selectFileBtnText}>Select File</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={styles.downloadTemplateBtn}
+                onPress={downloadTemplate}
+                disabled={isImporting || isDownloading}
+              >
+                {isDownloading ? (
+                  <ActivityIndicator size="small" color="#3b82f6" />
+                ) : (
+                  <>
+                    <Download
+                      size={18}
+                      color="#3b82f6"
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text style={styles.downloadTemplateBtnText}>
+                      Download Template
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <Text style={styles.templateHint}>
+                Download the template file to ensure proper formatting.
               </Text>
-            </View> */}
-            <ScrollView style={styles.modalContent}>
-              <VendorForm
-                vendor={selectedVendor || undefined}
-                onSuccess={handleFormSuccess}
-                onCancel={() => setIsFormOpen(false)} 
-              />
             </ScrollView>
           </View>
         </View>
       </Modal>
 
-      <Modal
-        visible={isImportDialogOpen}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setIsImportDialogOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.importModalContainer}>
-            <Text style={styles.importModalTitle}>Import Vendors</Text>
-            <Text style={styles.importModalDescription}>
-              Upload an Excel or CSV file containing vendor data.
-            </Text>
-
-            <TouchableOpacity
-              style={styles.importBox}
-              onPress={pickFileForImport}
-              disabled={isImporting}
-            >
-              <Upload size={32} color="#9ca3af" />
-              <Text style={styles.importBoxText}>Tap to select file</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.templateButton}
-              onPress={downloadTemplate}
-            >
-              <Download size={20} color="#3b82f6" />
-              <Text style={styles.templateButtonText}>Download Template</Text>
-            </TouchableOpacity>
-
-            <View style={styles.importModalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setIsImportDialogOpen(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-
-            {isImporting && (
-              <View style={styles.importingOverlay}>
-                <ActivityIndicator size="large" color="#3b82f6" />
-                <Text style={styles.importingText}>Importing vendors...</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
-
-      <Modal visible={isAlertOpen} animationType="fade" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.alertModalContainer}>
-            <Text style={styles.alertModalTitle}>Delete Vendor</Text>
-            <Text style={styles.alertModalDescription}>
-              Are you sure you want to delete this vendor? This action cannot be
-              undone.
-            </Text>
-            <View style={styles.alertModalButtons}>
-              <TouchableOpacity
-                style={styles.alertCancelButton}
-                onPress={() => setIsAlertOpen(false)}
-              >
-                <Text style={styles.alertCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.alertDeleteButton}
-                onPress={handleDeleteVendor}
-              >
-                <Text style={styles.alertDeleteButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <Toast />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
+  container: { flex: 1, backgroundColor: '#f8fafc' },
+  centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6b7280',
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-  noCompanyContainer: {
-    flex: 1,
-    padding: 16,
+  navTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0f172a',
+    textAlign: 'center',
+  },
+  navSub: { fontSize: 13, color: '#64748b', textAlign: 'center', marginTop: 4 },
+  actionRow: { marginTop: 16, gap: 10 },
+  mainActionBtn: {
+    backgroundColor: '#3b82f6',
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
   },
+  mainActionText: { color: 'white', fontWeight: 'bold', fontSize: 15 },
+  secondaryActionBtn: {
+    backgroundColor: 'white',
+    borderHorizontal: 1,
+    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 10,
+  },
+  secondaryActionText: { color: '#1e293b', fontWeight: '600', fontSize: 15 },
   card: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  cardContent: {
-    alignItems: 'center',
-  },
-  companyIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#eff6ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  companyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  companyDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  contactButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  phoneButton: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#3b82f6',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  emailButton: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  emailButtonText: {
-    color: '#3b82f6',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  contentContainer: {
-    flex: 1,
-    padding: 10,
-  },
-  header: {
-    textAlign: 'center',
-  },
-  headerText: {
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    lineHeight: 20,
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    backgroundColor: '#3b82f6',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    flex: 1,
-    minWidth: 120,
-  },
-  outlineButton: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    flex: 1,
-    minWidth: 140,
-  },
-  outlineButtonText: {
-    color: '#3b82f6',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  restrictedContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginTop: 20,
-  },
-  restrictedTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  restrictedText: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  vendorList: {
-    gap: 16,
-  },
-  vendorCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
   },
-  vendorHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
   },
-  vendorInfo: {
-    flex: 1,
-  },
-  vendorName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  vendorTags: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  gstTag: {
+  vendorName: { fontSize: 18, fontWeight: '700', color: '#1e293b' },
+  badgeRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  regBadge: {
     backgroundColor: '#eff6ff',
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 4,
-  },
-  gstTagText: {
-    fontSize: 12,
-    color: '#3b82f6',
-    fontWeight: '500',
-  },
-  tdsTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  tdsApplicable: {
-    backgroundColor: '#10b981',
-  },
-  tdsNotApplicable: {
-    backgroundColor: '#ef4444',
-  },
-  tdsTagText: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: '500',
-  },
-  dropdownContainer: {
-    position: 'relative',
-  },
-  menuButton: {
-    padding: 4,
-  },
-  dropdown: {
-    position: 'absolute',
-    top: 32,
-    right: 0,
-    backgroundColor: '#fff',
     borderRadius: 8,
-    minWidth: 140,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    zIndex: 1000,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
-  dropdownItem: {
+  regBadgeText: { color: '#2563eb', fontSize: 11, fontWeight: '700' },
+  tdsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    gap: 4,
   },
-  dropdownItemText: {
-    fontSize: 14,
-    color: '#1f2937',
-    fontWeight: '500',
-  },
-  dropdownItemDanger: {
-    backgroundColor: '#fef2f2',
-  },
-  dropdownItemTextDanger: {
-    color: '#ef4444',
-  },
-  dropdownDivider: {
-    height: 1,
-    backgroundColor: '#e5e7eb',
-  },
-  contactSection: {
-    gap: 8,
-    marginBottom: 12,
-  },
-  contactItem: {
-    flexDirection: 'row',
+  bgTdsOn: { backgroundColor: '#f0fdf4' },
+  bgTdsOff: { backgroundColor: '#fef2f2' },
+  textTdsOn: { color: '#166534' },
+  textTdsOff: { color: '#991b1b' },
+  tdsBadgeText: { fontSize: 11, fontWeight: '700' },
+  detailsSection: { marginTop: 16, gap: 12 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#eff6ff',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
   },
-  contactText: {
-    fontSize: 14,
-    color: '#4b5563',
-  },
-  addressSection: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  addressTextContainer: {
-    flex: 1,
-  },
-  addressText: {
-    fontSize: 14,
-    color: '#4b5563',
-    marginBottom: 4,
-  },
-  locationText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  taxSection: {
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  taxItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  taxLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    minWidth: 40,
-  },
-  taxValue: {
-    fontSize: 12,
-    color: '#4b5563',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  tdsSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#f0fdf4',
-    padding: 8,
-    borderRadius: 6,
-  },
-  tdsSectionText: {
-    fontSize: 12,
-    color: '#065f46',
-    fontWeight: '500',
-  },
-  pagination: {
+  detailText: { fontSize: 14, color: '#334155', fontWeight: '500' },
+  subDetailText: { fontSize: 12, color: '#64748b' },
+  footerPagination: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
   },
-  pageButton: {
+  pageNavBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#fff',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: '#e2e8f0',
+    gap: 4,
   },
-  pageButtonDisabled: {
-    opacity: 0.5,
-  },
-  pageButtonText: {
-    fontSize: 14,
-    color: '#3b82f6',
-    fontWeight: '500',
-  },
-  pageButtonTextDisabled: {
-    color: '#9ca3af',
-  },
-  pageInfo: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  blurredContainer: {
-    alignItems: 'center',
+  nextBtn: { backgroundColor: '#3b82f6', borderColor: '#3b82f6' },
+  pageNavText: { fontWeight: '700', fontSize: 14, color: '#1e293b' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
-    padding: 40,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginTop: 20,
-  },
-  emptyContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-    backgroundColor: '#fff',
-    borderRadius: 12,
   },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  emptyButtons: {
+  modalHeader: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
+  modalTitle: { fontSize: 18, fontWeight: 'bold' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-  },
-  modalContainer: {
-    width: '100%',
-    maxWidth: 600,
-    maxHeight: '90%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  modalDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  modalContent: {
-    maxHeight: Dimensions.get('window').height * 0.7,
+    padding: 20,
   },
   importModalContainer: {
-    width: '90%',
-    maxWidth: 400,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    maxHeight: '85%',
+    width: '100%',
+    overflow: 'hidden',
+  },
+  importModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
   importModalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 8,
-    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
   },
-  importModalDescription: {
-    fontSize: 14,
-    color: '#6b7280',
+  setupCard: {
+    backgroundColor: 'white',
+    padding: 30,
+    borderRadius: 20,
+    alignItems: 'center',
+    width: '100%',
+  },
+  setupTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginTop: 20,
+    color: '#1e293b',
+  },
+  setupSub: {
     textAlign: 'center',
-    marginBottom: 24,
+    color: '#64748b',
+    marginTop: 10,
     lineHeight: 20,
   },
-  importBox: {
-    width: '100%',
-    padding: 32,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    borderStyle: 'dashed',
-    borderRadius: 8,
+  primaryBtn: {
+    backgroundColor: '#3b82f6',
+    flexDirection: 'row',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 20,
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  btnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+  importModalContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  importDescription: {
+    fontSize: 14,
+    color: '#64748b',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  uploadBox: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#cbd5e1',
+    borderRadius: 12,
+    padding: 30,
+    alignItems: 'center',
+    marginBottom: 20,
+    backgroundColor: '#f8fafc',
+  },
+  uploadText: {
+    fontSize: 14,
+    color: '#64748b',
+    marginTop: 10,
     marginBottom: 16,
   },
-  importBoxText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#4b5563',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  templateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  selectFileBtn: {
+    backgroundColor: '#3b82f6',
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  selectFileBtnText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  downloadTemplateBtn: {
     borderWidth: 1,
     borderColor: '#3b82f6',
-    borderRadius: 8,
-    marginBottom: 24,
-  },
-  templateButtonText: {
-    fontSize: 14,
-    color: '#3b82f6',
-    fontWeight: '500',
-  },
-  importModalButtons: {
-    width: '100%',
-  },
-  cancelButton: {
-    width: '100%',
     paddingVertical: 12,
-    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 16,
     borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    color: '#4b5563',
-    fontWeight: '500',
-  },
-  importingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
+    marginBottom: 10,
   },
-  importingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#4b5563',
-  },
-  alertModalContainer: {
-    width: '90%',
-    maxWidth: 400,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-  },
-  alertModalTitle: {
-    fontSize: 20,
+  downloadTemplateBtnText: {
+    color: '#3b82f6',
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  alertModalDescription: {
     fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 24,
-    lineHeight: 20,
   },
-  alertModalButtons: {
-    flexDirection: 'row',
-    gap: 12,
+  templateHint: {
+    fontSize: 12,
+    color: '#94a3b8',
+    textAlign: 'center',
   },
-  alertCancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
+  emptyView: {
     alignItems: 'center',
-  },
-  alertCancelButtonText: {
-    fontSize: 14,
-    color: '#4b5563',
-    fontWeight: '500',
-  },
-  alertDeleteButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#ef4444',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  alertDeleteButtonText: {
-    fontSize: 14,
-    color: '#fff',
-    fontWeight: '500',
+    paddingVertical: 50,
   },
 });

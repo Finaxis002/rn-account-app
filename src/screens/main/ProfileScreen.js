@@ -43,7 +43,7 @@ import { getCurrentUser } from '../../lib/auth';
 
 import { VendorSettings } from '../../components/settings/VendorSettings';
 import { CustomerSettings } from '../../components/settings/CustomerSettings';
-import { ProductSettings } from '../../components/settings/ProductSettings';
+import ProductSettings from '../../components/settings/ProductSettings';
 import { ProfileTab } from '../../components/settings/ProfileTab';
 import { NotificationsTab } from '../../components/settings/NotificationsTab';
 import ServiceSettings from '../../components/settings/ServiceSettings';
@@ -430,7 +430,7 @@ export default function ProfilePage({ navigation }) {
     isLoading: permissionsLoading,
     refetch: refetchPermissions,
   } = usePermissions();
-  
+
   const {
     permissions: userCaps,
     isLoading: userCapsLoading,
@@ -471,7 +471,7 @@ export default function ProfilePage({ navigation }) {
 
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
-      handleBackPress
+      handleBackPress,
     );
 
     return () => {
@@ -514,12 +514,12 @@ export default function ProfilePage({ navigation }) {
     try {
       // Refresh all data sequentially
       await loadCurrentUser();
-      
+
       // Refresh permissions based on current user role
       if (isClient && refetchPermissions) {
         await refetchPermissions();
       }
-      
+
       if (isUser && refetchUserPermissions) {
         await refetchUserPermissions();
       }
@@ -529,11 +529,11 @@ export default function ProfilePage({ navigation }) {
       setRefreshing(false);
     }
   }, [
-    isClient, 
-    isUser, 
-    refetchPermissions, 
+    isClient,
+    isUser,
+    refetchPermissions,
     refetchUserPermissions,
-    loadCurrentUser
+    loadCurrentUser,
   ]);
 
   const allow = useCallback(
@@ -680,17 +680,17 @@ export default function ProfilePage({ navigation }) {
           <View style={styles.headerContainer}>
             <View style={styles.headerTextContainer}>
               <View style={styles.headerTitleRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.backButton}
                   onPress={handleBackPress}
                   activeOpacity={0.7}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <ArrowLeft size={24} color="#3b82f6"/>
+                  <ArrowLeft size={24} color="#3b82f6" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Settings</Text>
               </View>
-              
+
               <Text style={styles.headerSubtitle}>
                 Manage your account, preferences, and business entities.
               </Text>
