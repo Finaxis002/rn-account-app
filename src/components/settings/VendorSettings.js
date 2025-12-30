@@ -686,20 +686,20 @@ export function VendorSettings() {
 
       <Modal visible={isFormOpen} animationType="slide">
         <View style={{ flex: 1 }}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {selectedVendor ? 'Edit Vendor' : 'Create Vendor'}
-            </Text>
-            <TouchableOpacity onPress={() => setIsFormOpen(false)}>
-              <X size={24} color="black" />
-            </TouchableOpacity>
-          </View>
           <VendorForm
             vendor={selectedVendor}
             onSuccess={() => {
               setIsFormOpen(false);
               fetchVendors();
             }}
+            hideHeader={false}
+            headerTitle={selectedVendor ? 'Edit Vendor' : 'Create Vendor'}
+            headerSubtitle={
+              selectedVendor
+                ? 'Update vendor details'
+                : 'Add new vendor to your records'
+            }
+            onClose={() => setIsFormOpen(false)}
           />
         </View>
       </Modal>
