@@ -23,6 +23,7 @@ import HsnSacDropdown from '../ui/HsnSacDropdown.js';
 import { Combobox } from '../../components/ui/Combobox';
 import QuillEditor from '../../components/ui/QuillEditor';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 
 // Context
 import { useCompany } from '../../contexts/company-context.js';
@@ -317,6 +318,7 @@ export default function ProformaForm({
   const canSales = isSuper || !!userCaps?.canCreateSaleEntries;
   const canCreateCustomer = isSuper || !!userCaps?.canCreateCustomers;
   const canCreateInventory = isSuper || !!userCaps?.canCreateInventory;
+  const canCreateProducts = isSuper || !!userCaps?.canCreateProducts;
 
   // Populate form with transactionToEdit data
   useEffect(() => {
@@ -1070,14 +1072,34 @@ export default function ProformaForm({
                         }
                       }
                     }}
-                    placeholder="Select product..."
-                    creatable={canCreateInventory}
-                    onCreate={name => {
+                    placeholder={
+                      transactionToEdit && type === 'purchases'
+                        ? 'Select a product...'
+                        : 'Select or create a product...'
+                    }
+                    searchPlaceholder="Search products..."
+                    noResultsText="No product found."
+                    creatable={canCreateProducts}
+                    onCreate={async name => {
+                      if (!canCreateProducts) {
+                        Toast.show({
+                          type: 'error',
+                          text1: 'Permission denied',
+                          text2:
+                            "You don't have permission to create products.",
+                        });
+                        return '';
+                      }
                       setCreatingProductForIndex(index);
                       setNewEntityName(name);
                       setIsProductDialogOpen(true);
-                      return Promise.resolve(name);
+                      return '';
                     }}
+                    style={
+                      form.formState.errors?.items?.[index]?.product
+                        ? styles.errorBorder
+                        : {}
+                    }
                   />
                 </View>
               </View>
@@ -1375,6 +1397,14 @@ export default function ProformaForm({
                     placeholder="Select service..."
                     creatable={canCreateInventory}
                     onCreate={name => {
+                      if (!canCreateInventory) {
+                        setSnackbar({
+                          visible: true,
+                          message: 'Permission denied to create services.',
+                          type: 'error',
+                        });
+                        return '';
+                      }
                       setCreatingServiceForIndex(index);
                       setNewServiceName(name);
                       setIsServiceDialogOpen(true);
@@ -1651,6 +1681,14 @@ export default function ProformaForm({
                 placeholder="Select customer..."
                 creatable={canCreateCustomer}
                 onCreate={name => {
+                  if (!canCreateCustomer) {
+                    setSnackbar({
+                      visible: true,
+                      message: 'Permission denied to create customers.',
+                      type: 'error',
+                    });
+                    return '';
+                  }
                   setNewCustomerName(name);
                   setIsCreateCustomerOpen(true);
                   return Promise.resolve(name);
@@ -1931,9 +1969,10 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     backgroundColor: '#fff',
+    paddingTop: 100,
   },
   loadingText: {
     marginTop: 16,
