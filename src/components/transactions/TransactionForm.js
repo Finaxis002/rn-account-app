@@ -38,6 +38,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { useCompany } from '../../contexts/company-context.js';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
+import { usePermissions } from '../../contexts/permission-context';
 
 import { VendorForm } from '../vendors/VendorForm.js';
 import { CustomerForm } from '../customers/CustomerForm.js';
@@ -346,14 +347,7 @@ export function TransactionForm({
     message: '',
     type: 'default',
   });
-  console.log('🔵 TransactionForm RENDERED - Component mounted/updated');
-  console.log('Props received:', {
-    transactionToEdit: !!transactionToEdit,
-    onFormSubmit: !!onFormSubmit,
-    defaultType,
-    serviceNameById: !!serviceNameById,
-    prefillFrom: !!prefillFrom,
-  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPartyDialogOpen, setIsPartyDialogOpen] = useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
@@ -428,6 +422,7 @@ export function TransactionForm({
 
   const { selectedCompanyId } = useCompany();
   const { permissions: userCaps } = useUserPermissions();
+  const { permissions: accountPermissions } = usePermissions();
 
   const paymentMethods = [
     'Cash',
@@ -460,7 +455,7 @@ export function TransactionForm({
     }));
     setSacOptions(sac);
   }, []);
-  
+
   useEffect(() => {
     const loadStates = async () => {
       try {
@@ -501,16 +496,56 @@ export function TransactionForm({
     loadRole();
   }, []);
 
-  const isSuper = role === 'master' || role === 'customer';
+  // Treat only 'master' as elevated super role — customers should not be
+  // granted blanket elevated permissions.
+  const isSuper = role === 'master';
 
   const canSales = isSuper || !!userCaps?.canCreateSaleEntries;
   const canPurchases = isSuper || !!userCaps?.canCreatePurchaseEntries;
   const canReceipt = isSuper || !!userCaps?.canCreateReceiptEntries;
   const canPayment = isSuper || !!userCaps?.canCreatePaymentEntries;
   const canJournal = isSuper || !!userCaps?.canCreateJournalEntries;
-  const canCreateCustomer = isSuper || !!userCaps?.canCreateCustomers;
-  const canCreateVendor = isSuper || !!userCaps?.canCreateVendors;
-  const canCreateInventory = isSuper || !!userCaps?.canCreateInventory;
+
+  // Prefer account-level permissions when available, fall back to user permissions
+  const canCreateCustomer =
+    isSuper ||
+    (accountPermissions?.canCreateCustomers ??
+      userCaps?.canCreateCustomers ??
+      false);
+  const canCreateVendor =
+    isSuper ||
+    (accountPermissions?.canCreateVendors ??
+      userCaps?.canCreateVendors ??
+      false);
+  // Product permission prefers explicit `canCreateProducts` at account level
+  // (matching ProductSettings), falling back to inventory permissions.
+  const canCreateProducts =
+    isSuper ||
+    (accountPermissions?.canCreateProducts ??
+      accountPermissions?.canCreateInventory ??
+      userCaps?.accountPermissions?.canCreateProducts ??
+      userCaps?.canCreateProducts ??
+      userCaps?.canCreateInventory ??
+      false);
+
+  const canCreateInventory =
+    isSuper ||
+    (accountPermissions?.canCreateInventory ??
+      accountPermissions?.canCreateProducts ??
+      userCaps?.canCreateInventory ??
+      userCaps?.canCreateProducts ??
+      false);
+
+  useEffect(() => {}, [
+    role,
+    isSuper,
+    accountPermissions,
+    userCaps,
+    canCreateInventory,
+    canCreateProducts,
+    canCreateCustomer,
+    canCreateVendor,
+  ]);
 
   const allowedTypes = useMemo(() => {
     const arr = [];
@@ -1731,14 +1766,9 @@ export function TransactionForm({
           const base64 = pdfInstance.output('base64');
           if (base64 && typeof base64 === 'string' && base64.length > 0) {
             return base64;
-          } else {
-            console.log('🔴 output("base64") returned empty or invalid result');
           }
-        } catch (e) {
-          console.log('🔴 output("base64") failed:', e.message);
-        }
+        } catch (e) {}
       }
-
       // ✅ FOURTH: Traditional conversion methods (as fallback)
       if (typeof Blob !== 'undefined' && pdfInstance instanceof Blob) {
         const arrayBuffer = await pdfInstance.arrayBuffer();
@@ -1803,14 +1833,9 @@ export function TransactionForm({
             const result = base64FromUint8(u8);
 
             return result;
-          } else {
-            console.log('🔴 ArrayBuffer is empty or undefined');
           }
-        } catch (e) {
-          console.log('🔴 output("arraybuffer") failed:', e.message);
-        }
+        } catch (e) {}
 
-        // Last resort: try output() without parameters
         try {
           const out = pdfInstance.output();
 
@@ -1823,9 +1848,7 @@ export function TransactionForm({
               return out;
             }
           }
-        } catch (e) {
-          console.log('🔴 output() failed:', e.message);
-        }
+        } catch (e) {}
       }
 
       throw new Error('Unable to convert PDF instance to base64');
@@ -1905,12 +1928,9 @@ export function TransactionForm({
   };
 
   async function onSubmit(values, shouldCloseForm = true) {
-    console.log('gstEnabled:', gstEnabled);
-    console.log('Submitting values:', JSON.stringify(values, null, 2));
     const isValid = await form.trigger();
 
     if (!isValid) {
-      console.log('Form validation failed');
       scrollToFirstError();
       return;
     }
@@ -2159,7 +2179,6 @@ export function TransactionForm({
         delete payload.totalAmount;
       }
 
-      console.log('Final Payload:', JSON.stringify(payload, null, 2));
       const res = await fetch(`${BASE_URL}${endpoint}`, {
         method,
         headers: {
@@ -2172,7 +2191,6 @@ export function TransactionForm({
       const data = await res.json();
 
       if (!res.ok) {
-        console.log('API Error Data:', data);
         throw new Error(
           data.message || `Failed to submit ${values.type} entry.`,
         );
@@ -2609,7 +2627,6 @@ export function TransactionForm({
         throw new Error(eData.message || 'Failed to send invoice email.');
       }
 
-      console.log('Email sent successfully to', partyDoc.email);
       setEmailDialogTitle('✅ Invoice Sent');
       setEmailDialogMessage(`Sent to ${partyDoc.email}`);
       setIsEmailDialogOpen(true);
@@ -2638,9 +2655,7 @@ export function TransactionForm({
                 // Navigate to settings screen
                 // navigation.navigate('Settings', { screen: 'Integrations' });
                 // Or open settings URL if available
-                Linking.openURL('app-settings:').catch(() => {
-                  console.log('Could not open settings');
-                });
+                Linking.openURL('app-settings:').catch(() => {});
               },
             },
             { text: 'OK', style: 'cancel' },
@@ -2760,10 +2775,6 @@ export function TransactionForm({
           const downloadsFileExists = await RNFS.exists(downloadsFilePath);
           copiedToDownloads = downloadsFileExists;
         } catch (copyError) {
-          console.log(
-            '🔴 Could not copy to downloads, using app storage only:',
-            copyError,
-          );
           copiedToDownloads = false;
         }
       }
@@ -2823,7 +2834,6 @@ export function TransactionForm({
         showAppsSuggestions: true,
       });
     } catch (error) {
-      console.log('File opening failed:', error);
       // On failure, just show the success message again
       setSnackbar({
         visible: true,
@@ -2919,9 +2929,7 @@ export function TransactionForm({
           downloadsFilePath = `${RNFS.DownloadDirectoryPath}/${fname}`;
           await RNFS.copyFile(appFilePath, downloadsFilePath);
           copiedToDownloads = await RNFS.exists(downloadsFilePath);
-        } catch (copyError) {
-          console.log('Could not copy to downloads:', copyError);
-        }
+        } catch (copyError) {}
       }
 
       setSnackbar({
@@ -3044,10 +3052,6 @@ export function TransactionForm({
           const uri =
             Platform.OS === 'android' ? `file://${cachePath}` : cachePath;
           setSource({ uri, cache: true });
-          console.log(
-            '🟢 Preview Generation Completed Successfully! ->',
-            cachePath,
-          );
         } catch (err) {
           console.error('❌ Error generating preview:', err);
           if (mounted) setError(err.message || 'Failed to generate preview');
@@ -3104,19 +3108,12 @@ export function TransactionForm({
         <Pdf
           source={source}
           style={styles.webview}
-          onLoadComplete={(numberOfPages, filePath) =>
-            console.log(
-              `✅ PDF loaded in Pdf view: ${numberOfPages} pages`,
-              filePath,
-            )
-          }
+          onLoadComplete={(numberOfPages, filePath) => {}}
           onError={err => {
             console.error('❌ Pdf render error:', err);
             setError(err?.message || 'PDF render failed');
           }}
-          onPageChanged={(page, numberOfPages) =>
-            console.log('Page changed:', page, 'of', numberOfPages)
-          }
+          onPageChanged={(page, numberOfPages) => {}}
         />
       </View>
     );
@@ -3416,6 +3413,10 @@ export function TransactionForm({
             companyOptions,
             bankOptions,
             paymentMethodOptions,
+            canCreateInventory,
+            canCreateProducts,
+            canCreateCustomer,
+            canCreateVendor,
           }}
           renderReceiptPaymentFields={ReceiptPaymentFields}
           receiptPaymentProps={{
@@ -3446,6 +3447,10 @@ export function TransactionForm({
             companyOptions,
             expenseOptions,
             paymentMethodReceiptOptions,
+            canCreateInventory,
+            canCreateProducts,
+            canCreateCustomer,
+            canCreateVendor,
           }}
         />
       </KeyboardAwareScrollView>

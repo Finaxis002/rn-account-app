@@ -437,6 +437,13 @@ export default function ProfilePage({ navigation }) {
     refetch: refetchUserPermissions,
   } = useUserPermissions();
 
+  useEffect(() => {
+    console.log('🛡️ ProfileScreen permissions:', {
+      accountPermissions: permissions,
+      userPermissions: userCaps,
+    });
+  }, [permissions, userCaps]);
+
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedTab, setSelectedTab] = useState('profile');
   const [refreshing, setRefreshing] = useState(false);
