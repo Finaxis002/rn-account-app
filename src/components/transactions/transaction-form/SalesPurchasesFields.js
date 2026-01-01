@@ -275,7 +275,21 @@ export const SalesPurchasesFields = props => {
     sacOptions,
     handleHsnChange,
     handleSacChange,
+    canCreateInventory,
+    canCreateProducts,
+    canCreateCustomer,
+    canCreateVendor,
   } = props;
+
+  useEffect(() => {}, [
+    canCreateInventory,
+    canCreateProducts,
+    canCreateCustomer,
+    canCreateVendor,
+    serviceCreatable,
+    partyCreatable,
+    transactionToEdit,
+  ]);
 
   const {
     formState: { errors, dirtyFields },
@@ -476,9 +490,6 @@ export const SalesPurchasesFields = props => {
           // Only auto-select if no bank is currently selected
           if (!currentBankValue) {
             const firstBankId = filteredBanks[0]._id;
-            console.log(
-              `🔍 Auto-selecting bank: ${firstBankId} (${filteredBanks.length} banks available)`,
-            );
 
             setSelectedBank(firstBankId);
             setValue('bank', firstBankId, {
@@ -1258,8 +1269,16 @@ export const SalesPurchasesFields = props => {
                   }
                   searchPlaceholder="Search products..."
                   noResultsText="No product found."
-                  creatable
+                  creatable={canCreateProducts}
                   onCreate={async name => {
+                    if (!canCreateProducts) {
+                      Toast.show({
+                        type: 'error',
+                        text1: 'Permission denied',
+                        text2: "You don't have permission to create products.",
+                      });
+                      return '';
+                    }
                     setCreatingProductForIndex(index);
                     handleTriggerCreateProduct(name);
                     return '';
