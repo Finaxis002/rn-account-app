@@ -584,7 +584,7 @@ export default function ProfilePage({ navigation }) {
 
     if (
       isClient ||
-      allow(permissions?.canCreateVendors, userCaps?.canCreateVendors)
+      allow(permissions?.canShowVendors, userCaps?.canShowVendors)
     ) {
       memberTabs.push({
         value: 'vendors',
@@ -596,7 +596,7 @@ export default function ProfilePage({ navigation }) {
 
     if (
       isClient ||
-      allow(permissions?.canCreateCustomers, userCaps?.canCreateCustomers)
+      allow(permissions?.canShowCustomers, userCaps?.canShowCustomers)
     ) {
       memberTabs.push({
         value: 'customers',
@@ -606,7 +606,10 @@ export default function ProfilePage({ navigation }) {
       });
     }
 
-    if (allow(userCaps?.canCreateInventory, userCaps?.canCreateInventory)) {
+    if (
+      isClient ||
+      allow(permissions?.canCreateInventory, userCaps?.canCreateInventory)
+    ) {
       memberTabs.push({
         value: 'products',
         label: 'Products',
@@ -615,7 +618,10 @@ export default function ProfilePage({ navigation }) {
       });
     }
 
-    if (allow(userCaps?.canCreateInventory, userCaps?.canCreateInventory)) {
+    if (
+      isClient ||
+      allow(permissions?.canCreateInventory, userCaps?.canCreateInventory)
+    ) {
       memberTabs.push({
         value: 'services',
         label: 'Services',
