@@ -12,6 +12,7 @@ import {
   RefreshControl,
   Platform,
   Linking,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,6 +28,8 @@ import {
   X,
   FileText,
   Hash,
+  Edit2,
+  Trash2,
   Phone,
   Mail,
   MapPin,
@@ -55,6 +58,7 @@ export function CustomerSettings() {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -210,6 +214,16 @@ export function CustomerSettings() {
       setIsAlertOpen(false);
       setCustomerToDelete(null);
     }
+  };
+
+  const handleEditCustomer = customer => {
+    setOpenDropdownId(null);
+    handleOpenForm(customer);
+  };
+
+  const handleDeleteCustomerFromDropdown = customer => {
+    setOpenDropdownId(null);
+    handleOpenDeleteDialog(customer);
   };
 
   // Excel Import Functions
@@ -585,336 +599,62 @@ export function CustomerSettings() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {companies.length === 0 ? (
-          <View style={styles.noCompanyContainer}>
-            <View style={styles.card}>
-              <View style={styles.cardContent}>
-                <View style={styles.companyIconContainer}>
-                  <Building size={48} color="#3b82f6" />
-                </View>
-                <Text style={styles.companyTitle}>Company Setup Required</Text>
-                <Text style={styles.companyDescription}>
-                  Contact us to enable your company account and access all
-                  features.
-                </Text>
-                <View style={styles.contactButtons}>
-                  <TouchableOpacity
-                    style={styles.phoneButton}
-                    onPress={() => Linking.openURL('tel:+91-8989773689')}
-                  >
-                    <Phone size={20} color="#fff" />
-                    <Text style={styles.buttonText}>+91-8989773689</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.emailButton}
-                    onPress={() =>
-                      Linking.openURL('mailto:support@company.com')
-                    }
-                  >
-                    <Mail size={20} color="#3b82f6" />
-                    <Text style={styles.emailButtonText}>Email Us</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.contentContainer}>
-            {/* Header */}
-            <View style={styles.header}>
-              <View style={styles.headerText}>
-                <Text style={styles.title}>Manage Customers</Text>
-                <Text style={styles.subtitle}>
-                  A list of all your customers.
-                </Text>
-              </View>
-
-              {canCreateCustomers && (
-                <View style={styles.headerButtons}>
-                  <TouchableOpacity
-                    style={styles.primaryButton}
-                    onPress={() => handleOpenForm()}
-                  >
-                    <PlusCircle size={20} color="#fff" />
-                    <Text style={styles.buttonText}>Add Customer</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.outlineButton}
-                    onPress={handleImportClick}
-                  >
-                    <Upload size={20} color="#3b82f6" />
-                    <Text style={styles.outlineButtonText}>
-                      Import Customers
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-
-            {/* Main Content */}
-            {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#3b82f6" />
-                <Text style={styles.loadingText}>Loading customers...</Text>
-              </View>
-            ) : !canShowCustomers && !canCreateCustomers ? (
-              <View style={styles.restrictedContainer}>
-                <User size={48} color="#9ca3af" />
-                <Text style={styles.restrictedTitle}>Access Restricted</Text>
-                <Text style={styles.restrictedText}>
-                  You don't have permission to view or manage customers.
-                </Text>
-              </View>
-            ) : customers.length > 0 && canShowCustomers ? (
-              <>
-                {/* Customer List */}
-                <View style={styles.customerList}>
-                  {currentCustomers.map(customer => (
-                    <View key={customer._id} style={styles.customerCard}>
-                      {/* Customer Header */}
-                      <View style={styles.customerHeader}>
-                        <View style={styles.customerInfo}>
-                          <Text style={styles.customerName}>
-                            {capitalizeWords(customer.name)}
-                          </Text>
-                          <View style={styles.customerTags}>
-                            <View style={styles.gstTag}>
-                              <Text style={styles.gstTagText}>
-                                {customer.gstRegistrationType || 'N/A'}
-                              </Text>
-                            </View>
-                            <View
-                              style={[
-                                styles.tdsTag,
-                                customer.isTDSApplicable
-                                  ? styles.tdsApplicable
-                                  : styles.tdsNotApplicable,
-                              ]}
-                            >
-                              {customer.isTDSApplicable ? (
-                                <Check size={12} color="#fff" />
-                              ) : (
-                                <X size={12} color="#fff" />
-                              )}
-                              <Text style={styles.tdsTagText}>
-                                TDS{' '}
-                                {customer.isTDSApplicable
-                                  ? 'Applicable'
-                                  : 'Not Applicable'}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-
-                        {/* Actions Menu */}
-                        <TouchableOpacity
-                          style={styles.menuButton}
-                          onPress={() => {
-                            Alert.alert('Actions', 'Choose an action', [
-                              {
-                                text: 'Edit',
-                                onPress: () => handleOpenForm(customer),
-                              },
-                              {
-                                text: 'Delete',
-                                onPress: () => handleOpenDeleteDialog(customer),
-                                style: 'destructive',
-                              },
-                              { text: 'Cancel', style: 'cancel' },
-                            ]);
-                          }}
-                        >
-                          <MoreHorizontal size={20} color="#6b7280" />
-                        </TouchableOpacity>
-                      </View>
-
-                      {/* Contact Info */}
-                      {(customer.contactNumber || customer.email) && (
-                        <View style={styles.contactSection}>
-                          {customer.contactNumber && (
-                            <View style={styles.contactItem}>
-                              <Phone size={16} color="#3b82f6" />
-                              <Text style={styles.contactText}>
-                                {customer.contactNumber}
-                              </Text>
-                            </View>
-                          )}
-                          {customer.email && (
-                            <View style={styles.contactItem}>
-                              <Mail size={16} color="#8b5cf6" />
-                              <Text style={styles.contactText}>
-                                {customer.email}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      )}
-
-                      {/* Address */}
-                      {(customer.address ||
-                        customer.city ||
-                        customer.state ||
-                        customer.pincode) && (
-                        <View style={styles.addressSection}>
-                          <MapPin size={16} color="#10b981" />
-                          <View style={styles.addressTextContainer}>
-                            {customer.address && (
-                              <Text style={styles.addressText}>
-                                {customer.address}
-                              </Text>
-                            )}
-                            {(customer.city ||
-                              customer.state ||
-                              customer.pincode) && (
-                              <Text style={styles.locationText}>
-                                {[
-                                  customer.city,
-                                  customer.state,
-                                  customer.pincode,
-                                ]
-                                  .filter(Boolean)
-                                  .join(', ')}
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                      )}
-
-                      {/* Tax Information */}
-                      {(customer.gstin || customer.pan) && (
-                        <View style={styles.taxSection}>
-                          <Text style={styles.sectionTitle}>
-                            Tax Information
-                          </Text>
-                          {customer.gstin && (
-                            <View style={styles.taxItem}>
-                              <FileText size={16} color="#6b7280" />
-                              <Text style={styles.taxLabel}>GSTIN:</Text>
-                              <Text style={styles.taxValue}>
-                                {customer.gstin}
-                              </Text>
-                            </View>
-                          )}
-                          {customer.pan && (
-                            <View style={styles.taxItem}>
-                              <Hash size={16} color="#6b7280" />
-                              <Text style={styles.taxLabel}>PAN:</Text>
-                              <Text style={styles.taxValue}>
-                                {customer.pan}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      )}
-
-                      {/* TDS Section */}
-                      {customer.isTDSApplicable && customer.tdsSection && (
-                        <View style={styles.tdsSection}>
-                          <Percent size={16} color="#10b981" />
-                          <View style={styles.tdsInfo}>
-                            <Text style={styles.tdsSectionText}>
-                              Section: {customer.tdsSection}
-                            </Text>
-                            {customer.tdsRate && (
-                              <Text style={styles.tdsRateText}>
-                                Rate: {customer.tdsRate}%
-                              </Text>
-                            )}
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </View>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <View style={styles.pagination}>
+    <TouchableWithoutFeedback onPress={() => setOpenDropdownId(null)}>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {companies.length === 0 ? (
+            <View style={styles.noCompanyContainer}>
+              <View style={styles.card}>
+                <View style={styles.cardContent}>
+                  <View style={styles.companyIconContainer}>
+                    <Building size={48} color="#3b82f6" />
+                  </View>
+                  <Text style={styles.companyTitle}>
+                    Company Setup Required
+                  </Text>
+                  <Text style={styles.companyDescription}>
+                    Contact us to enable your company account and access all
+                    features.
+                  </Text>
+                  <View style={styles.contactButtons}>
                     <TouchableOpacity
-                      style={[
-                        styles.pageButton,
-                        currentPage === 1 && styles.pageButtonDisabled,
-                      ]}
-                      onPress={() =>
-                        setCurrentPage(prev => Math.max(1, prev - 1))
-                      }
-                      disabled={currentPage === 1}
+                      style={styles.phoneButton}
+                      onPress={() => Linking.openURL('tel:+91-8989773689')}
                     >
-                      <ChevronLeft
-                        size={20}
-                        color={currentPage === 1 ? '#9ca3af' : '#3b82f6'}
-                      />
-                      <Text
-                        style={[
-                          styles.pageButtonText,
-                          currentPage === 1 && styles.pageButtonTextDisabled,
-                        ]}
-                      >
-                        Previous
-                      </Text>
+                      <Phone size={20} color="#fff" />
+                      <Text style={styles.buttonText}>+91-8989773689</Text>
                     </TouchableOpacity>
-
-                    <Text style={styles.pageInfo}>
-                      Page {currentPage} of {totalPages}
-                    </Text>
-
                     <TouchableOpacity
-                      style={[
-                        styles.pageButton,
-                        currentPage === totalPages && styles.pageButtonDisabled,
-                      ]}
+                      style={styles.emailButton}
                       onPress={() =>
-                        setCurrentPage(prev => Math.min(totalPages, prev + 1))
+                        Linking.openURL('mailto:support@company.com')
                       }
-                      disabled={currentPage === totalPages}
                     >
-                      <Text
-                        style={[
-                          styles.pageButtonText,
-                          currentPage === totalPages &&
-                            styles.pageButtonTextDisabled,
-                        ]}
-                      >
-                        Next
-                      </Text>
-                      <ChevronRight
-                        size={20}
-                        color={
-                          currentPage === totalPages ? '#9ca3af' : '#3b82f6'
-                        }
-                      />
+                      <Mail size={20} color="#3b82f6" />
+                      <Text style={styles.emailButtonText}>Email Us</Text>
                     </TouchableOpacity>
                   </View>
-                )}
-              </>
-            ) : customers.length > 0 &&
-              !canShowCustomers &&
-              canCreateCustomers ? (
-              <View style={styles.blurredContainer}>
-                <User size={48} color="#9ca3af" />
-                <Text style={styles.restrictedTitle}>Customer Management</Text>
-                <Text style={styles.restrictedText}>
-                  You can create customers, but viewing existing customer
-                  details requires additional permissions.
-                </Text>
+                </View>
               </View>
-            ) : (
-              <View style={styles.emptyContainer}>
-                <User size={48} color="#9ca3af" />
-                <Text style={styles.emptyTitle}>No Customers Found</Text>
-                <Text style={styles.emptyText}>
-                  Get started by adding your first customer.
-                </Text>
+            </View>
+          ) : (
+            <View style={styles.contentContainer}>
+              {/* Header */}
+              <View style={styles.header}>
+                <View style={styles.headerText}>
+                  <Text style={styles.title}>Manage Customers</Text>
+                  <Text style={styles.subtitle}>
+                    A list of all your customers.
+                  </Text>
+                </View>
+
                 {canCreateCustomers && (
-                  <View style={styles.emptyButtons}>
+                  <View style={styles.headerButtons}>
                     <TouchableOpacity
                       style={styles.primaryButton}
                       onPress={() => handleOpenForm()}
@@ -922,15 +662,7 @@ export function CustomerSettings() {
                       <PlusCircle size={20} color="#fff" />
                       <Text style={styles.buttonText}>Add Customer</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.outlineButton}
-                      onPress={downloadTemplate}
-                    >
-                      <Download size={20} color="#3b82f6" />
-                      <Text style={styles.outlineButtonText}>
-                        Download Template
-                      </Text>
-                    </TouchableOpacity>
+
                     <TouchableOpacity
                       style={styles.outlineButton}
                       onPress={handleImportClick}
@@ -943,21 +675,336 @@ export function CustomerSettings() {
                   </View>
                 )}
               </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
 
-      {/* Customer Form Modal */}
-      <Modal
-        visible={isFormOpen}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsFormOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            {/* <View style={styles.modalHeader}>
+              {/* Main Content */}
+              {isLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#3b82f6" />
+                  <Text style={styles.loadingText}>Loading customers...</Text>
+                </View>
+              ) : !canShowCustomers && !canCreateCustomers ? (
+                <View style={styles.restrictedContainer}>
+                  <User size={48} color="#9ca3af" />
+                  <Text style={styles.restrictedTitle}>Access Restricted</Text>
+                  <Text style={styles.restrictedText}>
+                    You don't have permission to view or manage customers.
+                  </Text>
+                </View>
+              ) : customers.length > 0 && canShowCustomers ? (
+                <>
+                  {/* Customer List */}
+                  <View style={styles.customerList}>
+                    {currentCustomers.map(customer => (
+                      <View key={customer._id} style={styles.customerCard}>
+                        {/* Customer Header */}
+                        <View style={styles.customerHeader}>
+                          <View style={styles.customerInfo}>
+                            <Text style={styles.customerName}>
+                              {capitalizeWords(customer.name)}
+                            </Text>
+                            <View style={styles.customerTags}>
+                              <View style={styles.gstTag}>
+                                <Text style={styles.gstTagText}>
+                                  {customer.gstRegistrationType || 'N/A'}
+                                </Text>
+                              </View>
+                              <View
+                                style={[
+                                  styles.tdsTag,
+                                  customer.isTDSApplicable
+                                    ? styles.tdsApplicable
+                                    : styles.tdsNotApplicable,
+                                ]}
+                              >
+                                {customer.isTDSApplicable ? (
+                                  <Check size={12} color="#fff" />
+                                ) : (
+                                  <X size={12} color="#fff" />
+                                )}
+                                <Text style={styles.tdsTagText}>
+                                  TDS{' '}
+                                  {customer.isTDSApplicable
+                                    ? 'Applicable'
+                                    : 'Not Applicable'}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+
+                          {/* Actions Menu */}
+                          {/* Actions Menu */}
+                          <View>
+                            <TouchableOpacity
+                              style={styles.menuButton}
+                              onPress={() => {
+                                setOpenDropdownId(
+                                  openDropdownId === customer._id
+                                    ? null
+                                    : customer._id,
+                                );
+                              }}
+                            >
+                              <MoreHorizontal size={20} color="#6b7280" />
+                            </TouchableOpacity>
+
+                            {openDropdownId === customer._id && (
+                              <View style={styles.dropdown}>
+                                <TouchableOpacity
+                                  style={styles.dropdownItem}
+                                  onPress={() => handleEditCustomer(customer)}
+                                >
+                                  <Edit2 size={16} color="#3b82f6" />
+                                  <Text style={styles.dropdownItemText}>
+                                    Edit
+                                  </Text>
+                                </TouchableOpacity>
+                                <View style={styles.dropdownDivider} />
+                                <TouchableOpacity
+                                  style={styles.dropdownItem}
+                                  onPress={() =>
+                                    handleDeleteCustomerFromDropdown(customer)
+                                  }
+                                >
+                                  <Trash2 size={16} color="#ef4444" />
+                                  <Text
+                                    style={[
+                                      styles.dropdownItemText,
+                                      styles.dropdownItemTextDanger,
+                                    ]}
+                                  >
+                                    Delete
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+
+                        {/* Contact Info */}
+                        {(customer.contactNumber || customer.email) && (
+                          <View style={styles.contactSection}>
+                            {customer.contactNumber && (
+                              <View style={styles.contactItem}>
+                                <Phone size={16} color="#3b82f6" />
+                                <Text style={styles.contactText}>
+                                  {customer.contactNumber}
+                                </Text>
+                              </View>
+                            )}
+                            {customer.email && (
+                              <View style={styles.contactItem}>
+                                <Mail size={16} color="#8b5cf6" />
+                                <Text style={styles.contactText}>
+                                  {customer.email}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        )}
+
+                        {/* Address */}
+                        {(customer.address ||
+                          customer.city ||
+                          customer.state ||
+                          customer.pincode) && (
+                          <View style={styles.addressSection}>
+                            <MapPin size={16} color="#10b981" />
+                            <View style={styles.addressTextContainer}>
+                              {customer.address && (
+                                <Text style={styles.addressText}>
+                                  {customer.address}
+                                </Text>
+                              )}
+                              {(customer.city ||
+                                customer.state ||
+                                customer.pincode) && (
+                                <Text style={styles.locationText}>
+                                  {[
+                                    customer.city,
+                                    customer.state,
+                                    customer.pincode,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(', ')}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Tax Information */}
+                        {(customer.gstin || customer.pan) && (
+                          <View style={styles.taxSection}>
+                            <Text style={styles.sectionTitle}>
+                              Tax Information
+                            </Text>
+                            {customer.gstin && (
+                              <View style={styles.taxItem}>
+                                <FileText size={16} color="#6b7280" />
+                                <Text style={styles.taxLabel}>GSTIN:</Text>
+                                <Text style={styles.taxValue}>
+                                  {customer.gstin}
+                                </Text>
+                              </View>
+                            )}
+                            {customer.pan && (
+                              <View style={styles.taxItem}>
+                                <Hash size={16} color="#6b7280" />
+                                <Text style={styles.taxLabel}>PAN:</Text>
+                                <Text style={styles.taxValue}>
+                                  {customer.pan}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        )}
+
+                        {/* TDS Section */}
+                        {customer.isTDSApplicable && customer.tdsSection && (
+                          <View style={styles.tdsSection}>
+                            <Percent size={16} color="#10b981" />
+                            <View style={styles.tdsInfo}>
+                              <Text style={styles.tdsSectionText}>
+                                Section: {customer.tdsSection}
+                              </Text>
+                              {customer.tdsRate && (
+                                <Text style={styles.tdsRateText}>
+                                  Rate: {customer.tdsRate}%
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <View style={styles.pagination}>
+                      <TouchableOpacity
+                        style={[
+                          styles.pageButton,
+                          currentPage === 1 && styles.pageButtonDisabled,
+                        ]}
+                        onPress={() =>
+                          setCurrentPage(prev => Math.max(1, prev - 1))
+                        }
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft
+                          size={20}
+                          color={currentPage === 1 ? '#9ca3af' : '#3b82f6'}
+                        />
+                        <Text
+                          style={[
+                            styles.pageButtonText,
+                            currentPage === 1 && styles.pageButtonTextDisabled,
+                          ]}
+                        >
+                          Previous
+                        </Text>
+                      </TouchableOpacity>
+
+                      <Text style={styles.pageInfo}>
+                        Page {currentPage} of {totalPages}
+                      </Text>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.pageButton,
+                          currentPage === totalPages &&
+                            styles.pageButtonDisabled,
+                        ]}
+                        onPress={() =>
+                          setCurrentPage(prev => Math.min(totalPages, prev + 1))
+                        }
+                        disabled={currentPage === totalPages}
+                      >
+                        <Text
+                          style={[
+                            styles.pageButtonText,
+                            currentPage === totalPages &&
+                              styles.pageButtonTextDisabled,
+                          ]}
+                        >
+                          Next
+                        </Text>
+                        <ChevronRight
+                          size={20}
+                          color={
+                            currentPage === totalPages ? '#9ca3af' : '#3b82f6'
+                          }
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
+              ) : customers.length > 0 &&
+                !canShowCustomers &&
+                canCreateCustomers ? (
+                <View style={styles.blurredContainer}>
+                  <User size={48} color="#9ca3af" />
+                  <Text style={styles.restrictedTitle}>
+                    Customer Management
+                  </Text>
+                  <Text style={styles.restrictedText}>
+                    You can create customers, but viewing existing customer
+                    details requires additional permissions.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <User size={48} color="#9ca3af" />
+                  <Text style={styles.emptyTitle}>No Customers Found</Text>
+                  <Text style={styles.emptyText}>
+                    Get started by adding your first customer.
+                  </Text>
+                  {canCreateCustomers && (
+                    <View style={styles.emptyButtons}>
+                      <TouchableOpacity
+                        style={styles.primaryButton}
+                        onPress={() => handleOpenForm()}
+                      >
+                        <PlusCircle size={20} color="#fff" />
+                        <Text style={styles.buttonText}>Add Customer</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.outlineButton}
+                        onPress={downloadTemplate}
+                      >
+                        <Download size={20} color="#3b82f6" />
+                        <Text style={styles.outlineButtonText}>
+                          Download Template
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.outlineButton}
+                        onPress={handleImportClick}
+                      >
+                        <Upload size={20} color="#3b82f6" />
+                        <Text style={styles.outlineButtonText}>
+                          Import Customers
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Customer Form Modal */}
+        <Modal
+          visible={isFormOpen}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setIsFormOpen(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              {/* <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {selectedCustomer ? 'Edit Customer' : 'Create New Customer'}
               </Text>
@@ -967,112 +1014,117 @@ export function CustomerSettings() {
                   : 'Fill in the form to add a new customer.'}
               </Text>
             </View> */}
-            <ScrollView style={styles.modalContent}>
-              <CustomerForm
-                customer={selectedCustomer || undefined}
-                onSuccess={handleFormSuccess}
-                onCancel={() => setIsFormOpen(false)}
-              />
-            </ScrollView>
+              <ScrollView style={styles.modalContent}>
+                <CustomerForm
+                  customer={selectedCustomer || undefined}
+                  onSuccess={handleFormSuccess}
+                  onCancel={() => setIsFormOpen(false)}
+                />
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Import Dialog Modal */}
-      <Modal
-        visible={isImportDialogOpen}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setIsImportDialogOpen(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.importModalContainer}>
-            <Text style={styles.importModalTitle}>Import Customers</Text>
-            <Text style={styles.importModalDescription}>
-              Upload an Excel or CSV file containing customer data. Make sure
-              the file follows the template format.
-            </Text>
-
-            <TouchableOpacity
-              style={styles.importBox}
-              onPress={pickFileForImport}
-              disabled={isImporting}
-            >
-              <Upload size={32} color="#9ca3af" />
-              <Text style={styles.importBoxText}>Tap to select file</Text>
-            </TouchableOpacity>
-
-            <View style={styles.importInfo}>
-              <Text style={styles.importInfoTitle}>File Requirements:</Text>
-              <Text style={styles.importInfoText}>• Required field: name</Text>
-              <Text style={styles.importInfoText}>
-                • Optional fields: contactNumber, email, address, city, state,
-                pincode, gstin, gstRegistrationType, pan, isTDSApplicable,
-                tdsRate, tdsSection
+        {/* Import Dialog Modal */}
+        <Modal
+          visible={isImportDialogOpen}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setIsImportDialogOpen(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.importModalContainer}>
+              <Text style={styles.importModalTitle}>Import Customers</Text>
+              <Text style={styles.importModalDescription}>
+                Upload an Excel or CSV file containing customer data. Make sure
+                the file follows the template format.
               </Text>
-              <Text style={styles.importInfoText}>
-                • GST Registration Type: Regular, Composition, Unregistered,
-                Consumer, Overseas, Special Economic Zone, Unknown
-              </Text>
-              <Text style={styles.importInfoText}>
-                • isTDSApplicable: true, false, 1, 0
-              </Text>
-            </View>
 
-            <TouchableOpacity
-              style={styles.templateButton}
-              onPress={downloadTemplate}
-            >
-              <Download size={20} color="#3b82f6" />
-              <Text style={styles.templateButtonText}>Download Template</Text>
-            </TouchableOpacity>
-
-            <View style={styles.importModalButtons}>
               <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setIsImportDialogOpen(false)}
+                style={styles.importBox}
+                onPress={pickFileForImport}
+                disabled={isImporting}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Upload size={32} color="#9ca3af" />
+                <Text style={styles.importBoxText}>Tap to select file</Text>
               </TouchableOpacity>
-            </View>
 
-            {isImporting && (
-              <View style={styles.importingOverlay}>
-                <ActivityIndicator size="large" color="#3b82f6" />
-                <Text style={styles.importingText}>Importing customers...</Text>
+              <View style={styles.importInfo}>
+                <Text style={styles.importInfoTitle}>File Requirements:</Text>
+                <Text style={styles.importInfoText}>
+                  • Required field: name
+                </Text>
+                <Text style={styles.importInfoText}>
+                  • Optional fields: contactNumber, email, address, city, state,
+                  pincode, gstin, gstRegistrationType, pan, isTDSApplicable,
+                  tdsRate, tdsSection
+                </Text>
+                <Text style={styles.importInfoText}>
+                  • GST Registration Type: Regular, Composition, Unregistered,
+                  Consumer, Overseas, Special Economic Zone, Unknown
+                </Text>
+                <Text style={styles.importInfoText}>
+                  • isTDSApplicable: true, false, 1, 0
+                </Text>
               </View>
-            )}
-          </View>
-        </View>
-      </Modal>
 
-      {/* Delete Confirmation Alert */}
-      <Modal visible={isAlertOpen} animationType="fade" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.alertModalContainer}>
-            <Text style={styles.alertModalTitle}>Delete Customer</Text>
-            <Text style={styles.alertModalDescription}>
-              Are you sure you want to delete this customer? This action cannot
-              be undone.
-            </Text>
-            <View style={styles.alertModalButtons}>
               <TouchableOpacity
-                style={styles.alertCancelButton}
-                onPress={() => setIsAlertOpen(false)}
+                style={styles.templateButton}
+                onPress={downloadTemplate}
               >
-                <Text style={styles.alertCancelButtonText}>Cancel</Text>
+                <Download size={20} color="#3b82f6" />
+                <Text style={styles.templateButtonText}>Download Template</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.alertDeleteButton}
-                onPress={handleDeleteCustomer}
-              >
-                <Text style={styles.alertDeleteButtonText}>Delete</Text>
-              </TouchableOpacity>
+
+              <View style={styles.importModalButtons}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setIsImportDialogOpen(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+
+              {isImporting && (
+                <View style={styles.importingOverlay}>
+                  <ActivityIndicator size="large" color="#3b82f6" />
+                  <Text style={styles.importingText}>
+                    Importing customers...
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+
+        {/* Delete Confirmation Alert */}
+        <Modal visible={isAlertOpen} animationType="fade" transparent={true}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.alertModalContainer}>
+              <Text style={styles.alertModalTitle}>Delete Customer</Text>
+              <Text style={styles.alertModalDescription}>
+                Are you sure you want to delete this customer? This action
+                cannot be undone.
+              </Text>
+              <View style={styles.alertModalButtons}>
+                <TouchableOpacity
+                  style={styles.alertCancelButton}
+                  onPress={() => setIsAlertOpen(false)}
+                >
+                  <Text style={styles.alertCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.alertDeleteButton}
+                  onPress={handleDeleteCustomer}
+                >
+                  <Text style={styles.alertDeleteButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -1262,7 +1314,10 @@ const styles = StyleSheet.create({
   customerCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 16 ,
+    paddingBottom: 20,
+    padding: 16 ,
+    paddingBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -1319,9 +1374,45 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '500',
   },
-  menuButton: {
-    padding: 4,
-  },
+ menuButton: {
+  padding: 8,
+  borderRadius: 8,
+},
+dropdown: {
+  position: 'absolute',
+  top: 24,
+  right: 0,
+  backgroundColor: 'white',
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: '#e2e8f0',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.1,
+  shadowRadius: 12,
+  elevation: 5,
+  minWidth: 100,
+  zIndex: 1000,
+},
+dropdownItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 10,
+  paddingHorizontal: 16,
+  gap: 10,
+},
+dropdownItemText: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#334155',
+},
+dropdownItemTextDanger: {
+  color: '#ef4444',
+},
+dropdownDivider: {
+  height: 1,
+  backgroundColor: '#f1f5f9',
+},
   contactSection: {
     gap: 8,
     marginBottom: 12,

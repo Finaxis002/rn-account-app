@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   RefreshControl,
   Platform,
   Linking,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DocumentPicker from '@react-native-documents/picker';
@@ -31,6 +32,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Edit2,
+  Trash2,
 } from 'lucide-react-native';
 
 import { VendorForm } from '../vendors/VendorForm';
@@ -50,6 +53,7 @@ export function VendorSettings() {
   const [isImporting, setIsImporting] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -120,6 +124,7 @@ export function VendorSettings() {
   }, []);
 
   const handleDeleteVendor = async vendor => {
+    setOpenDropdownId(null);
     Alert.alert(
       'Delete Vendor',
       `Are you sure you want to delete ${vendor.vendorName}?`,
@@ -146,6 +151,12 @@ export function VendorSettings() {
         },
       ],
     );
+  };
+
+  const handleEditVendor = vendor => {
+    setOpenDropdownId(null);
+    setSelectedVendor(vendor);
+    setIsFormOpen(true);
   };
 
   // CSV parser with proper quote handling
@@ -510,27 +521,38 @@ export function VendorSettings() {
             </View>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.moreBtn}
-          onPress={() => {
-            let options = [{ text: 'Cancel', style: 'cancel' }];
-            options.unshift({
-              text: 'Delete',
-              style: 'destructive',
-              onPress: () => handleDeleteVendor(item),
-            });
-            options.unshift({
-              text: 'Edit',
-              onPress: () => {
-                setSelectedVendor(item);
-                setIsFormOpen(true);
-              },
-            });
-            Alert.alert('Options', item.vendorName, options);
-          }}
-        >
-          <MoreHorizontal size={20} color="#64748b" />
-        </TouchableOpacity>
+        <View>
+          <TouchableOpacity
+            style={styles.moreBtn}
+            onPress={() => {
+              setOpenDropdownId(openDropdownId === item._id ? null : item._id);
+            }}
+          >
+            <MoreHorizontal size={20} color="#64748b" />
+          </TouchableOpacity>
+          
+          {openDropdownId === item._id && (
+            <View style={styles.dropdown}>
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => handleEditVendor(item)}
+              >
+                <Edit2 size={16} color="#3b82f6" />
+                <Text style={styles.dropdownItemText}>Edit</Text>
+              </TouchableOpacity>
+              <View style={styles.dropdownDivider} />
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => handleDeleteVendor(item)}
+              >
+                <Trash2 size={16} color="#ef4444" />
+                <Text style={[styles.dropdownItemText, styles.dropdownItemTextDanger]}>
+                  Delete
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
       <View style={styles.detailsSection}>
@@ -589,186 +611,188 @@ export function VendorSettings() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.navTitle}>Manage Vendors</Text>
-        <Text style={styles.navSub}>
-          A list of all your vendors and suppliers.
-        </Text>
-
-        {canCreateVendors && (
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={styles.mainActionBtn}
-              onPress={() => {
-                setSelectedVendor(null);
-                setIsFormOpen(true);
-              }}
-            >
-              <PlusCircle size={18} color="white" style={{ marginRight: 8 }} />
-              <Text style={styles.mainActionText}>Add Vendor</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.secondaryActionBtn}
-              onPress={() => setIsImportModalOpen(true)}
-              disabled={isImporting}
-            >
-              {isImporting ? (
-                <ActivityIndicator size="small" color="#1e293b" />
-              ) : (
-                <Upload size={18} color="#1e293b" style={{ marginRight: 8 }} />
-              )}
-              <Text style={styles.secondaryActionText}>Import Vendors</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
-      <FlatList
-        data={vendors.slice(
-          (currentPage - 1) * vendorsPerPage,
-          currentPage * vendorsPerPage,
-        )}
-        renderItem={renderVendor}
-        keyExtractor={item => item._id}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={fetchVendors} />
-        }
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
-        scrollEnabled={false}
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        updateCellsBatchingPeriod={50}
-        ListEmptyComponent={
-          <View style={styles.emptyView}>
-            <Building size={48} color="#cbd5e1" />
-            <Text style={{ color: '#64748b', marginTop: 10 }}>
-              No vendors found
-            </Text>
-          </View>
-        }
-      />
-
-      <View style={styles.footerPagination}>
-        <TouchableOpacity
-          disabled={currentPage === 1}
-          onPress={() => setCurrentPage(p => p - 1)}
-          style={[styles.pageNavBtn, currentPage === 1 && { opacity: 0.4 }]}
-        >
-          <ChevronLeft size={20} color="#1e293b" />
-          <Text style={styles.pageNavText}>Previous</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          disabled={currentPage >= Math.ceil(vendors.length / vendorsPerPage)}
-          onPress={() => setCurrentPage(p => p + 1)}
-          style={[
-            styles.pageNavBtn,
-            styles.nextBtn,
-            currentPage >= Math.ceil(vendors.length / vendorsPerPage) && {
-              opacity: 0.4,
-            },
-          ]}
-        >
-          <Text style={[styles.pageNavText, { color: 'white' }]}>Next</Text>
-          <ChevronRight size={20} color="white" />
-        </TouchableOpacity>
-      </View>
-
-      {!canShowVendors && canCreateVendors && vendors.length > 0 && (
-        <View style={styles.overlay}>
-          <Building size={48} color="#64748b" />
-          <Text style={styles.modalTitle}>Vendor Management</Text>
+    <TouchableWithoutFeedback onPress={() => setOpenDropdownId(null)}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.navTitle}>Manage Vendors</Text>
           <Text style={styles.navSub}>
-            Viewing details requires additional permissions.
+            A list of all your vendors and suppliers.
           </Text>
-        </View>
-      )}
 
-      <Modal visible={isFormOpen} animationType="slide">
-        <View style={{ flex: 1 }}>
-          <VendorForm
-            vendor={selectedVendor}
-            onSuccess={() => {
-              setIsFormOpen(false);
-              fetchVendors();
-            }}
-            hideHeader={false}
-            headerTitle={selectedVendor ? 'Edit Vendor' : 'Create Vendor'}
-            headerSubtitle={
-              selectedVendor
-                ? 'Update vendor details'
-                : 'Add new vendor to your records'
-            }
-            onClose={() => setIsFormOpen(false)}
-          />
-        </View>
-      </Modal>
-
-      <Modal
-        visible={isImportModalOpen}
-        animationType="fade"
-        transparent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.importModalContainer}>
-            <View style={styles.importModalHeader}>
-              <Text style={styles.importModalTitle}>Import Vendors</Text>
-              <TouchableOpacity onPress={() => setIsImportModalOpen(false)}>
-                <X size={24} color="black" />
+          {canCreateVendors && (
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.mainActionBtn}
+                onPress={() => {
+                  setSelectedVendor(null);
+                  setIsFormOpen(true);
+                }}
+              >
+                <PlusCircle size={18} color="white" style={{ marginRight: 8 }} />
+                <Text style={styles.mainActionText}>Add Vendor</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryActionBtn}
+                onPress={() => setIsImportModalOpen(true)}
+                disabled={isImporting}
+              >
+                {isImporting ? (
+                  <ActivityIndicator size="small" color="#1e293b" />
+                ) : (
+                  <Upload size={18} color="#1e293b" style={{ marginRight: 8 }} />
+                )}
+                <Text style={styles.secondaryActionText}>Import Vendors</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.importModalContent} scrollEnabled={true}>
-              <Text style={styles.importDescription}>
-                Upload a CSV file containing vendor data. CSV files will be
-                automatically sanitized for security.
-              </Text>
+          )}
+        </View>
 
-              <View style={styles.uploadBox}>
-                <Upload size={40} color="#94a3b8" />
-                <Text style={styles.uploadText}>Tap to select CSV file</Text>
-                <TouchableOpacity
-                  style={styles.selectFileBtn}
-                  onPress={pickFileForImport}
-                  disabled={isImporting}
-                >
-                  {isImporting ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Text style={styles.selectFileBtnText}>Select File</Text>
-                  )}
+        <FlatList
+          data={vendors.slice(
+            (currentPage - 1) * vendorsPerPage,
+            currentPage * vendorsPerPage,
+          )}
+          renderItem={renderVendor}
+          keyExtractor={item => item._id}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={fetchVendors} />
+          }
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+          scrollEnabled={false}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          ListEmptyComponent={
+            <View style={styles.emptyView}>
+              <Building size={48} color="#cbd5e1" />
+              <Text style={{ color: '#64748b', marginTop: 10 }}>
+                No vendors found
+              </Text>
+            </View>
+          }
+        />
+
+        <View style={styles.footerPagination}>
+          <TouchableOpacity
+            disabled={currentPage === 1}
+            onPress={() => setCurrentPage(p => p - 1)}
+            style={[styles.pageNavBtn, currentPage === 1 && { opacity: 0.4 }]}
+          >
+            <ChevronLeft size={20} color="#1e293b" />
+            <Text style={styles.pageNavText}>Previous</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            disabled={currentPage >= Math.ceil(vendors.length / vendorsPerPage)}
+            onPress={() => setCurrentPage(p => p + 1)}
+            style={[
+              styles.pageNavBtn,
+              styles.nextBtn,
+              currentPage >= Math.ceil(vendors.length / vendorsPerPage) && {
+                opacity: 0.4,
+              },
+            ]}
+          >
+            <Text style={[styles.pageNavText, { color: 'white' }]}>Next</Text>
+            <ChevronRight size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+
+        {!canShowVendors && canCreateVendors && vendors.length > 0 && (
+          <View style={styles.overlay}>
+            <Building size={48} color="#64748b" />
+            <Text style={styles.modalTitle}>Vendor Management</Text>
+            <Text style={styles.navSub}>
+              Viewing details requires additional permissions.
+            </Text>
+          </View>
+        )}
+
+        <Modal visible={isFormOpen} animationType="slide">
+          <View style={{ flex: 1 }}>
+            <VendorForm
+              vendor={selectedVendor}
+              onSuccess={() => {
+                setIsFormOpen(false);
+                fetchVendors();
+              }}
+              hideHeader={false}
+              headerTitle={selectedVendor ? 'Edit Vendor' : 'Create Vendor'}
+              headerSubtitle={
+                selectedVendor
+                  ? 'Update vendor details'
+                  : 'Add new vendor to your records'
+              }
+              onClose={() => setIsFormOpen(false)}
+            />
+          </View>
+        </Modal>
+
+        <Modal
+          visible={isImportModalOpen}
+          animationType="fade"
+          transparent={true}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.importModalContainer}>
+              <View style={styles.importModalHeader}>
+                <Text style={styles.importModalTitle}>Import Vendors</Text>
+                <TouchableOpacity onPress={() => setIsImportModalOpen(false)}>
+                  <X size={24} color="black" />
                 </TouchableOpacity>
               </View>
+              <ScrollView style={styles.importModalContent} scrollEnabled={true}>
+                <Text style={styles.importDescription}>
+                  Upload a CSV file containing vendor data. CSV files will be
+                  automatically sanitized for security.
+                </Text>
 
-              <TouchableOpacity
-                style={styles.downloadTemplateBtn}
-                onPress={downloadTemplate}
-                disabled={isImporting || isDownloading}
-              >
-                {isDownloading ? (
-                  <ActivityIndicator size="small" color="#3b82f6" />
-                ) : (
-                  <>
-                    <Download
-                      size={18}
-                      color="#3b82f6"
-                      style={{ marginRight: 8 }}
-                    />
-                    <Text style={styles.downloadTemplateBtnText}>
-                      Download Template
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              <Text style={styles.templateHint}>
-                Download the template file to ensure proper formatting.
-              </Text>
-            </ScrollView>
+                <View style={styles.uploadBox}>
+                  <Upload size={40} color="#94a3b8" />
+                  <Text style={styles.uploadText}>Tap to select CSV file</Text>
+                  <TouchableOpacity
+                    style={styles.selectFileBtn}
+                    onPress={pickFileForImport}
+                    disabled={isImporting}
+                  >
+                    {isImporting ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Text style={styles.selectFileBtnText}>Select File</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.downloadTemplateBtn}
+                  onPress={downloadTemplate}
+                  disabled={isImporting || isDownloading}
+                >
+                  {isDownloading ? (
+                    <ActivityIndicator size="small" color="#3b82f6" />
+                  ) : (
+                    <>
+                      <Download
+                        size={18}
+                        color="#3b82f6"
+                        style={{ marginRight: 8 }}
+                      />
+                      <Text style={styles.downloadTemplateBtnText}>
+                        Download Template
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.templateHint}>
+                  Download the template file to ensure proper formatting.
+                </Text>
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <Toast />
-    </View>
+        <Toast />
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -819,8 +843,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'white',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    padding: 16 ,
+    paddingBottom: 20,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#f1f5f9',
     shadowColor: '#000',
@@ -856,6 +881,45 @@ const styles = StyleSheet.create({
   textTdsOn: { color: '#166534' },
   textTdsOff: { color: '#991b1b' },
   tdsBadgeText: { fontSize: 11, fontWeight: '700' },
+  moreBtn: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 22,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    minWidth: 100,
+    zIndex: 1000,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  dropdownItemTextDanger: {
+    color: '#ef4444',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+  },
   detailsSection: { marginTop: 16, gap: 12 },
   detailItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconCircle: {
