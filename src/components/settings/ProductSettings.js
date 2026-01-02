@@ -37,14 +37,22 @@ import {
 } from 'lucide-react-native';
 import axios from 'axios';
 
+
+
 // Custom Components
 import ProductForm from '../products/ProductForm';
 import ExcelImportExport from '../ui/ExcelImportExport';
 import { BASE_URL } from '../../config';
 import CheckBox from '@react-native-community/checkbox';
-import { Dialog } from '../../components/ui/Dialog';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { usePermissions } from '../../contexts/permission-context';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../../components/ui/Dialog';
 
 export default function ProductSettings() {
   const [products, setProducts] = useState([]);
@@ -721,38 +729,30 @@ export default function ProductSettings() {
         </View>
 
         {/* Product Form Modal */}
-        <Modal
-          visible={isFormOpen}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => {
-            setSelectedProduct(null);
-            setIsFormOpen(false);
-          }}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ScrollView style={styles.formContainer}>
-                <ProductForm
-                  product={selectedProduct || undefined}
-                  onSuccess={handleFormSuccess}
-                  onClose={() => {
-                    setSelectedProduct(null);
-                    setIsFormOpen(false);
-                  }}
-                  title={
-                    selectedProduct ? 'Edit Product' : 'Create New Product'
-                  }
-                  subtitle={
-                    selectedProduct
-                      ? 'Update the details for this item.'
-                      : 'Fill in the form to add a new product or service.'
-                  }
-                />
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
+          <Dialog
+            open={isFormOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) setSelectedProduct(null);
+              setIsFormOpen(isOpen);
+            }}
+          >
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedProduct ? "Edit Product" : "Create New Product"}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedProduct
+                    ? "Update the details for this item."
+                    : "Fill in the form to add a new product or service."}
+                </DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                product={selectedProduct || undefined}
+                onSuccess={handleFormSuccess}
+              />
+            </DialogContent>
+          </Dialog>
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>

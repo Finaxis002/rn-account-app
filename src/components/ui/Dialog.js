@@ -20,13 +20,16 @@ export const Dialog = ({ open, onOpenChange, children }) => {
     >
       <View style={styles.overlay}>
         <View style={styles.content}>
-          <TouchableOpacity
+          
+          <ScrollView style={styles.scrollView}>
+            <TouchableOpacity
             style={styles.closeButton}
             onPress={() => onOpenChange(false)}
           >
             <Icon name="x" size={20} color="#6b7280" />
           </TouchableOpacity>
-          <ScrollView style={styles.scrollView}>{children}</ScrollView>
+          {children}
+          </ScrollView>
         </View>
       </View>
     </Modal>
