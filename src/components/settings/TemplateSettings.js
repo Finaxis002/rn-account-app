@@ -380,9 +380,6 @@ let isGeneratingPdfLocked = false;
 // Helper function to generate PDF and save to file
 const generateAndSavePdf = async templateKey => {
   if (isGeneratingPdfLocked) {
-    console.log(
-      `Queueing PDF generation for ${templateKey} as lock is active.`,
-    );
     await new Promise(resolve => setTimeout(resolve, 1000));
     return generateAndSavePdf(templateKey);
   }
@@ -1367,10 +1364,7 @@ const TemplateSettings = () => {
 
         <View style={styles.templatesGrid}>
           {filteredTemplates.map(item => (
-            <View
-              key={item.value}
-              style={{ width: `${100 / numColumns}%` }}
-            >
+            <View key={item.value} style={{ width: `${100 / numColumns}%` }}>
               <TemplateThumbnail
                 template={item}
                 isSelected={selectedTemplate === item.value}
