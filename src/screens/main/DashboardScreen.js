@@ -32,6 +32,8 @@ import { useNavigation } from '@react-navigation/native';
 // Assuming context and custom components are adapted for React Native
 import { useCompany } from '../../contexts/company-context';
 import { useSupport } from '../../contexts/support-context';
+import { usePermissions } from '../../contexts/permission-context';
+import { useUserPermissions } from '../../contexts/user-permissions-context';
 
 // Custom components - these must be re-written for React Native
 import { KpiCards } from '../../components/dashboard/KPICard';
@@ -173,6 +175,9 @@ export default function DashboardPage() {
   const { toggleSupport } = useSupport();
   const { selectedCompanyId } = useCompany();
   const { width } = useWindowDimensions();
+  const { permissions, refetch: refetchPermissions } = usePermissions();
+  const { permissions: userCaps, refetch: refetchUserPermissions } =
+    useUserPermissions();
   const [dashboardData, setDashboardData] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -193,83 +198,86 @@ export default function DashboardPage() {
   }, []);
 
   // Optimized data fetching with request batching
-  const fetchDashboardData = useCallback(async (forceRefresh = false) => {
-    setIsLoading(true);
+  const fetchDashboardData = useCallback(
+    async (forceRefresh = false) => {
+      setIsLoading(true);
 
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Authentication token not found.');
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (!token) throw new Error('Authentication token not found.');
 
-      // Check cache first for immediate response (unless force refresh)
-      if (!forceRefresh) {
-        const cached = await AsyncStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          setDashboardData(parsed);
+        // Check cache first for immediate response (unless force refresh)
+        if (!forceRefresh) {
+          const cached = await AsyncStorage.getItem(CACHE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            setDashboardData(parsed);
+          }
         }
+
+        const queryParam = selectedCompanyId
+          ? `?companyId=${selectedCompanyId}`
+          : '';
+
+        // Batch critical API calls first
+        const [salesRes, purchasesRes, companiesRes] = await Promise.all([
+          fetch(`${baseURL}/api/sales${queryParam}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${baseURL}/api/purchase${queryParam}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`${baseURL}/api/companies/my`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        const [rawSales, rawPurchases, companiesData] = await Promise.all([
+          salesRes.json(),
+          purchasesRes.json(),
+          companiesRes.json(),
+        ]);
+
+        // Process critical data first
+        const salesArr = toArray(rawSales);
+        const purchasesArr = toArray(rawPurchases);
+
+        const totalSales = salesArr.reduce(
+          (acc, row) => acc + getAmount('sales', row),
+          0,
+        );
+        const totalPurchases = purchasesArr.reduce(
+          (acc, row) => acc + getAmount('purchases', row),
+          0,
+        );
+        const companiesCount = companiesData?.length || 0;
+
+        const initialData = {
+          totalSales,
+          totalPurchases,
+          users: 0, // Will be updated in secondary load
+          companies: companiesCount,
+          recentTransactions: [],
+          serviceNameById: new Map(),
+        };
+
+        setDashboardData(initialData);
+        setCompanies(Array.isArray(companiesData) ? companiesData : []);
+        setIsLoading(false);
+
+        // Secondary non-critical data loading
+        fetchSecondaryData(token, queryParam, initialData);
+      } catch (error) {
+        showToast(
+          'Failed to load dashboard data',
+          error instanceof Error ? error.message : 'Something went wrong.',
+          true,
+        );
+        setIsLoading(false);
       }
-
-      const queryParam = selectedCompanyId
-        ? `?companyId=${selectedCompanyId}`
-        : '';
-
-      // Batch critical API calls first
-      const [salesRes, purchasesRes, companiesRes] = await Promise.all([
-        fetch(`${baseURL}/api/sales${queryParam}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${baseURL}/api/purchase${queryParam}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${baseURL}/api/companies/my`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      const [rawSales, rawPurchases, companiesData] = await Promise.all([
-        salesRes.json(),
-        purchasesRes.json(),
-        companiesRes.json(),
-      ]);
-
-      // Process critical data first
-      const salesArr = toArray(rawSales);
-      const purchasesArr = toArray(rawPurchases);
-
-      const totalSales = salesArr.reduce(
-        (acc, row) => acc + getAmount('sales', row),
-        0,
-      );
-      const totalPurchases = purchasesArr.reduce(
-        (acc, row) => acc + getAmount('purchases', row),
-        0,
-      );
-      const companiesCount = companiesData?.length || 0;
-
-      const initialData = {
-        totalSales,
-        totalPurchases,
-        users: 0, // Will be updated in secondary load
-        companies: companiesCount,
-        recentTransactions: [],
-        serviceNameById: new Map(),
-      };
-
-      setDashboardData(initialData);
-      setCompanies(Array.isArray(companiesData) ? companiesData : []);
-      setIsLoading(false);
-
-      // Secondary non-critical data loading
-      fetchSecondaryData(token, queryParam, initialData);
-    } catch (error) {
-      showToast(
-        'Failed to load dashboard data',
-        error instanceof Error ? error.message : 'Something went wrong.',
-        true,
-      );
-      setIsLoading(false);
-    }
-  }, [selectedCompanyId, showToast]);
+    },
+    [selectedCompanyId, showToast],
+  );
 
   // Refresh functionality
   const handleRefresh = useCallback(async () => {
@@ -277,11 +285,13 @@ export default function DashboardPage() {
     try {
       // Clear cache to force fresh data
       await AsyncStorage.removeItem(CACHE_KEY);
-      
-      // Fetch fresh data
-      await fetchDashboardData(true);
-      
-     
+
+      // Fetch fresh data and refresh permissions
+      await Promise.all([
+        fetchDashboardData(true),
+        refetchPermissions ? refetchPermissions() : Promise.resolve(),
+        refetchUserPermissions ? refetchUserPermissions() : Promise.resolve(),
+      ]);
     } catch (error) {
       showToast(
         'Refresh Failed',
@@ -291,7 +301,12 @@ export default function DashboardPage() {
     } finally {
       setRefreshing(false);
     }
-  }, [fetchDashboardData, showToast]);
+  }, [
+    fetchDashboardData,
+    showToast,
+    refetchPermissions,
+    refetchUserPermissions,
+  ]);
 
   const fetchSecondaryData = async (token, queryParam, initialData) => {
     try {
@@ -529,7 +544,11 @@ export default function DashboardPage() {
             {/* Product Stock and Recent Transactions */}
             <View style={styles.dataContainer}>
               <Suspense fallback={<ProductStockSkeleton />}>
-                <ProductStock navigation={navigation} />
+                <ProductStock
+                  navigation={navigation}
+                  refetchPermissions={refetchPermissions}
+                  refetchUserPermissions={refetchUserPermissions}
+                />
               </Suspense>
 
               <Suspense fallback={<RecentTransactionsSkeleton />}>
