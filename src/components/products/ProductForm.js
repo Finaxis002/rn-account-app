@@ -687,8 +687,8 @@ export default function ProductForm({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  formContent: { padding: 20, paddingTop: 0 },
+  container: { flex: 1, },
+  // formContent: { padding: 20, paddingTop: 0 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -65,7 +65,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     maxWidth: 640,
     width: '100%',
-    maxHeight: '80%',
+    maxHeight: '100%',
+    // minHeight: '90%',
     position: 'relative',
   },
   scrollView: {

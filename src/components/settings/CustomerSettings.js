@@ -45,6 +45,13 @@ import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { usePermissions } from '../../contexts/permission-context';
 import { capitalizeWords } from '../../lib/utils';
 import { BASE_URL } from '../../config';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../../components/ui/Dialog';
 
 export function CustomerSettings() {
   const [customers, setCustomers] = useState([]);
@@ -996,34 +1003,24 @@ export function CustomerSettings() {
         </ScrollView>
 
         {/* Customer Form Modal */}
-        <Modal
-          visible={isFormOpen}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setIsFormOpen(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              {/* <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {selectedCustomer ? 'Edit Customer' : 'Create New Customer'}
-              </Text>
-              <Text style={styles.modalDescription}>
-                {selectedCustomer
-                  ? 'Update the details for this customer.'
-                  : 'Fill in the form to add a new customer.'}
-              </Text>
-            </View> */}
-              <ScrollView style={styles.modalContent}>
-                <CustomerForm
-                  customer={selectedCustomer || undefined}
-                  onSuccess={handleFormSuccess}
-                  onCancel={() => setIsFormOpen(false)}
-                />
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="md:max-w-2xl max-w-sm grid-rows-[auto,1fr,auto] max-h-[90vh] p-0">
+              <DialogHeader className="p-6">
+                <DialogTitle>
+                  {selectedCustomer ? "Edit Customer" : "Create New Customer"}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedCustomer
+                    ? "Update the details for this customer."
+                    : "Fill in the form to add a new customer."}
+                </DialogDescription>
+              </DialogHeader>
+              <CustomerForm
+                customer={selectedCustomer || undefined}
+                onSuccess={handleFormSuccess}
+              />
+            </DialogContent>
+          </Dialog>
 
         {/* Import Dialog Modal */}
         <Modal

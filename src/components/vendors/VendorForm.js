@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   formContainer: {
-    padding: 20,
+    // padding: 20,
   },
   section: {
     marginBottom: 25,
