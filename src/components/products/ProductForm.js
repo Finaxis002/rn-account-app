@@ -322,7 +322,7 @@ export default function ProductForm({
   );
 
   return (
-    <KeyboardAvoidingView
+    <View
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -682,7 +682,7 @@ export default function ProductForm({
         </Modal>
       </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
