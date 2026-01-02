@@ -69,6 +69,9 @@ export default function ProductForm({
   product: propProduct,
   initialName,
   onClose,
+  hideHeader = false,
+  title,
+  subtitle,
 }) {
   const product = propProduct || route?.params?.product || null;
   const onSuccess = onSuccessProp || route?.params?.onSuccess || (() => {});
@@ -323,11 +326,25 @@ export default function ProductForm({
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-     
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      {!hideHeader && (
+        <View style={styles.headerRow}>
+          <View style={styles.headerContent}>
+            {title && <Text style={styles.headerTitle}>{title}</Text>}
+            {subtitle && <Text style={styles.headerSubtitle}>{subtitle}</Text>}
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              if (onClose) onClose();
+              else if (navigation) navigation.goBack();
+            }}
+            style={styles.closeIconButton}
+          >
+            <Text style={styles.closeIconText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={styles.formContent}>
         <View style={styles.field}>
           <Text style={styles.label}>Company</Text>
           <Controller
@@ -515,7 +532,12 @@ export default function ProductForm({
         </View>
 
         <View
-          style={{ flexDirection: 'row', gap: 10, justifyContent: 'flex-end' }}
+          style={{
+            flexDirection: 'row',
+            gap: 10,
+            justifyContent: 'flex-end',
+            marginBottom: 40,
+          }}
         >
           <TouchableOpacity
             style={[styles.button, isSubmitting && styles.buttonDisabled]}
@@ -656,20 +678,35 @@ export default function ProductForm({
             </View>
           </View>
         </Modal>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
-  scrollContent: { padding: 20, paddingTop: 0 },
+  formContent: { padding: 20, paddingTop: 0 },
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     margin: 4,
     marginTop: 10,
     marginBottom: 30,
+    gap: 12,
+  },
+  headerContent: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
   },
   closeIconButton: {
     borderWidth: 1,
@@ -728,7 +765,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
 
-   modalOverlayUnit: {
+  modalOverlayUnit: {
     flex: 1,
     // backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',

@@ -21,7 +21,6 @@ import { BASE_URL as baseURL } from '../../config';
 import CustomDropdown from '../../components/ui/CustomDropdown';
 import { grey300 } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 
-
 const gstRegistrationTypes = [
   'Regular',
   'Composition',
@@ -293,7 +292,11 @@ export function CustomerForm({
               </Text>
             </View>
             {onCancel && (
-              <TouchableOpacity onPress={onCancel} style={styles.headerCloseButton}>
+              <TouchableOpacity
+                onPress={onCancel}
+                style={styles.headerCloseButton}
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} // Tap area badhane ke liye
+              >
                 <Text style={styles.headerCloseButtonText}>✕</Text>
               </TouchableOpacity>
             )}
@@ -672,7 +675,6 @@ export function CustomerForm({
           </TouchableOpacity>
 
           {/* Extra space for better scrolling */}
-          
         </View>
       </ScrollView>
     </View>
@@ -689,27 +691,26 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#fff',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#f3f4f6',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   headerLeft: {
     flex: 1,
   },
   headerCloseButton: {
-    width: 30,
-    height: 30,
-    backgroundColor: '#cfceceff',
-    borderRadius: 15,
-    alignItems: 'center',
+    padding: 4, // Extra box background hata diya
     justifyContent: 'center',
+    alignItems: 'center',
   },
   headerCloseButtonText: {
-    fontSize: 20,
-    color: '#666',
+    fontSize: 22, // Thoda bada aur clean size
+    color: '#374151', // Dark grey standard color
+    fontWeight: '300',
   },
   headerTitle: {
     fontSize: 24,
@@ -856,7 +857,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  
+
   // Modal Styles
   modalContainer: {
     flex: 1,

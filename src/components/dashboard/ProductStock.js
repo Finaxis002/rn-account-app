@@ -4,7 +4,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  Modal,
   RefreshControl,
   Dimensions,
   FlatList,
@@ -29,6 +28,13 @@ import ProductTableRow from './ProductTableRow';
 import ProductMobileCard from './ProductMobileCard';
 import { BASE_URL } from '../../config';
 import { useToast } from '../hooks/useToast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../ui/Dialog';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -114,38 +120,6 @@ const getStockColor = stock => {
   if (stockValue > 10) return '#10b981';
   if (stockValue > 0) return '#f59e0b';
   return '#ef4444';
-};
-
-const CustomDialog = ({ visible, onDismiss, title, children, style }) => {
-  if (!visible) return null;
-
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onDismiss}
-    >
-      <TouchableOpacity
-        style={isTablet ? styles.modalOverlay : styles.modalOverlayMobile}
-        activeOpacity={1}
-        onPress={onDismiss}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          style={[styles.dialog, !isTablet && styles.dialogMobile, style]}
-        >
-          <View style={styles.dialogHeader}>
-            <Text style={styles.dialogTitle}>{title}</Text>
-            <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
-              <Icon name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.dialogContent}>{children}</ScrollView>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Modal>
-  );
 };
 
 const CustomButton = ({
@@ -463,22 +437,23 @@ const ProductStock = ({ navigation }) => {
           </View>
 
           {/* IMPROVED: Header buttons for mobile (non-tablet) */}
-          {(permissions?.canCreateProducts || userCaps?.canCreateInventory) && !isTablet && (
-            <View style={styles.mobileHeaderButtonsContainer}>
-              <MobileHeaderButton
-                // icon="package-variant-plus"
-                label="Add Product"
-                color="#486adaff"
-                onPress={() => setIsAddProductOpen(true)}
-              />
-              <MobileHeaderButton
-                // icon="server-plus"
-                label="Add Service"
-                color="#2b9775ff"
-                onPress={() => setIsAddServiceOpen(true)}
-              />
-            </View>
-          )}
+          {(permissions?.canCreateProducts || userCaps?.canCreateInventory) &&
+            !isTablet && (
+              <View style={styles.mobileHeaderButtonsContainer}>
+                <MobileHeaderButton
+                  // icon="package-variant-plus"
+                  label="Add Product"
+                  color="#486adaff"
+                  onPress={() => setIsAddProductOpen(true)}
+                />
+                <MobileHeaderButton
+                  // icon="server-plus"
+                  label="Add Service"
+                  color="#2b9775ff"
+                  onPress={() => setIsAddServiceOpen(true)}
+                />
+              </View>
+            )}
 
           <SearchBar
             placeholder="Search products or services..."
@@ -580,74 +555,90 @@ const ProductStock = ({ navigation }) => {
       </View>
 
       {/* Name Dialog */}
-      <CustomDialog
-        visible={!!openNameDialog}
-        onDismiss={() => setOpenNameDialog(null)}
-        title="Product Name"
+      <Dialog
+        open={!!openNameDialog}
+        onOpenChange={() => setOpenNameDialog(null)}
       >
-        <View style={styles.nameDialogContent}>
-          <Text style={styles.nameDialogText}>
-            {capitalizeWords(openNameDialog)}
-          </Text>
-          <TouchableOpacity
-            style={styles.dialogCloseButton}
-            onPress={() => setOpenNameDialog(null)}
-          >
-            <Text style={styles.dialogCloseButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </CustomDialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Product Name</DialogTitle>
+          </DialogHeader>
+          <View style={styles.nameDialogContent}>
+            <Text style={styles.nameDialogText}>
+              {capitalizeWords(openNameDialog)}
+            </Text>
+          </View>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Stock Dialog */}
-      <CustomDialog
-        visible={isEditDialogOpen}
-        onDismiss={() => setIsEditDialogOpen(false)}
-        title={
-          selectedProduct
-            ? `Update stock for ${capitalizeWords(selectedProduct.name)}`
-            : 'Update stock'
-        }
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={() => setIsEditDialogOpen(false)}
       >
-        <View style={styles.editDialogContent}>
-          {selectedProduct && (
-            <StockEditForm
-              product={selectedProduct}
-              onSuccess={handleUpdateSuccess}
-              onCancel={() => setIsEditDialogOpen(false)}
-            />
-          )}
-        </View>
-      </CustomDialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {selectedProduct
+                ? `Update stock for ${capitalizeWords(selectedProduct.name)}`
+                : 'Update stock'}
+            </DialogTitle>
+          </DialogHeader>
+          <View style={styles.editDialogContent}>
+            {selectedProduct && (
+              <StockEditForm
+                product={selectedProduct}
+                onSuccess={handleUpdateSuccess}
+                onCancel={() => setIsEditDialogOpen(false)}
+              />
+            )}
+          </View>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Product Dialog */}
-      <CustomDialog
-        visible={isAddProductOpen}
-        onDismiss={() => setIsAddProductOpen(false)}
-        title="Create New Product"
-        style={styles.productDialog}
+      <Dialog
+        open={isAddProductOpen}
+        onOpenChange={() => setIsAddProductOpen(false)}
       >
-        <View style={styles.formDialogContent}>
-          <Text style={styles.dialogDescription}>
-            Fill in the form to add a new product to your inventory.
-          </Text>
-          <ProductForm onSuccess={handleAddProductSuccess} />
-        </View>
-      </CustomDialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Product</DialogTitle>
+            <DialogDescription>
+              Fill in the form to add a new product to your inventory.
+            </DialogDescription>
+          </DialogHeader>
+          <View style={styles.formDialogContent}>
+            <ProductForm
+              hideHeader={true}
+              onSuccess={handleAddProductSuccess}
+              onClose={() => setIsAddProductOpen(false)}
+            />
+          </View>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Service Dialog */}
-      <CustomDialog
-        visible={isAddServiceOpen}
-        onDismiss={() => setIsAddServiceOpen(false)}
-        title="Create New Service"
-        style={styles.productDialog}
+      <Dialog
+        open={isAddServiceOpen}
+        onOpenChange={() => setIsAddServiceOpen(false)}
       >
-        <View style={styles.formDialogContent}>
-          <Text style={styles.dialogDescription}>
-            Fill in the form to add a new service to your offerings.
-          </Text>
-          <ServiceForm onSuccess={handleAddServiceSuccess} />
-        </View>
-      </CustomDialog>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Service</DialogTitle>
+            <DialogDescription>
+              Fill in the form to add a new service to your offerings.
+            </DialogDescription>
+          </DialogHeader>
+          <View style={styles.formDialogContent}>
+            <ServiceForm
+              hideHeader={true}
+              onSuccess={handleAddServiceSuccess}
+              onClose={() => setIsAddServiceOpen(false)}
+            />
+          </View>
+        </DialogContent>
+      </Dialog>
     </View>
   );
 };
@@ -974,67 +965,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   // Dialog styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  dialog: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    width: '100%',
-    maxHeight: '80%',
-    minHeight: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 15,
-  },
-  dialogMobile: {
-    width: '100%',
-    maxWidth: '100%',
-    borderRadius: 12,
-    marginHorizontal: 0,
-    maxHeight: '100%',
-    alignSelf: 'stretch',
-  },
-  modalOverlayMobile: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingTop: 20,
-    paddingHorizontal: 0,
+  dialogContent: {
+    padding: 24,
   },
   dialogHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#f8fafc',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    marginBottom: 16,
   },
   dialogTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#1f2937',
-    letterSpacing: 0.3,
   },
-  closeButton: {
-    padding: 4,
-  },
-  dialogContent: {
-    padding: 0,
-  },
-  productDialog: {
-    maxHeight: '100%',
+  dialogDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 4,
   },
   // Stock Edit Form
   stockEditContainer: {
@@ -1095,49 +1040,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.3,
   },
-  // Dialog content styles
   nameDialogContent: {
-    padding: 24,
+    padding: 0,
   },
   nameDialogText: {
     fontSize: 16,
     color: '#374151',
-    marginBottom: 24,
+    marginBottom: 0,
     lineHeight: 24,
     fontWeight: '500',
   },
   editDialogContent: {
-    padding: 24,
+    padding: 0,
   },
   formDialogContent: {
-    padding: 24,
+    flex: 1,
+    padding: 0,
   },
-  dialogDescription: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 20,
-    lineHeight: 24,
-    paddingHorizontal: 10,
-    fontWeight: '400',
-  },
-  dialogCloseButton: {
-    backgroundColor: '#6366f1',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    shadowColor: '#6366f1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  dialogCloseButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.3,
+  formDialogStyle: {
+    maxHeight: '88%',
   },
 });
 
