@@ -1452,7 +1452,7 @@ export function TransactionForm({
         : undefined,
       totalAmount: transactionToEdit.totalAmount || transactionToEdit.amount,
       items: itemsToSet,
-      description: transactionToEdit.description || '',
+      description: transactionToEdit.description || transactionToEdit.narration || '',
       narration: transactionToEdit.narration || '',
       party: partyId,
       referenceNumber: transactionToEdit.referenceNumber,
@@ -2161,23 +2161,16 @@ export function TransactionForm({
         delete payload.party;
       }
 
-      if (values.type === 'journal') {
-        payload.debitAccount = values.fromAccount;
-        payload.creditAccount = values.toAccount;
-        payload.amount = Number(values.totalAmount ?? 0);
+    if (values.type === 'journal') {
+      payload.debitAccount = values.fromAccount;
+      payload.creditAccount = values.toAccount;
+      payload.amount = Number(values.totalAmount ?? 0);
+      payload.narration = values.description || '';
 
-        delete payload.fromAccount;
-        delete payload.toAccount;
-        delete payload.party;
-        delete payload.products;
-        delete payload.services;
-        delete payload.referenceNumber;
-        delete payload.subTotal;
-        delete payload.taxAmount;
-        delete payload.invoiceTotal;
-        delete payload.gstPercentage;
-        delete payload.totalAmount;
-      }
+      delete payload.items;
+      delete payload.totalAmount;
+      delete payload.taxAmount;
+    }
 
       const res = await fetch(`${BASE_URL}${endpoint}`, {
         method,
