@@ -306,10 +306,11 @@ const ProductStock = ({
   const { selectedCompanyId } = useCompany();
   const { permissions: userCaps } = useUserPermissions();
 
-  // Permission checks - based on InventoryScreen pattern
+  // Permission checks - accept both 'products' and 'inventory' flags
   const canCreateProducts =
     userCaps?.canCreateProducts ?? userCaps?.canCreateInventory ?? false;
-  const webCanCreate = permissions?.canCreateProducts ?? false;
+  const webCanCreate =
+    permissions?.canCreateProducts ?? permissions?.canCreateInventory ?? false;
   const showCreateButtons = canCreateProducts || webCanCreate;
 
   const fetchProducts = async () => {
@@ -424,8 +425,8 @@ const ProductStock = ({
   );
 
   if (
-    !permissions?.canCreateProducts &&
-    !userCaps?.canCreateInventory &&
+    !(permissions?.canCreateProducts ?? permissions?.canCreateInventory) &&
+    !(userCaps?.canCreateProducts ?? userCaps?.canCreateInventory) &&
     (permissions?.maxInventories ?? 0) === 0
   ) {
     return null;
