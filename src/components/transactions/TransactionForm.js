@@ -3491,24 +3491,41 @@ export function TransactionForm({
         onDismiss={() => setIsPartyDialogOpen(false)}
         style={styles.dialog}
       >
-        <Dialog.Title>
-          Create New{' '}
-          {['sales', 'receipt'].includes(type) ? 'Customer' : 'Vendor'}
-        </Dialog.Title>
+        <View style={styles.modalHeader}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.modalTitle}>
+              Create New{' '}
+              {['sales', 'receipt'].includes(type) ? 'Customer' : 'Vendor'}
+            </Text>
+            <Text style={styles.modalSubTitle}>
+              {['sales', 'receipt'].includes(type)
+                ? 'Add a customer to this transaction'
+                : 'Add a vendor to this transaction'}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => setIsPartyDialogOpen(false)}>
+            <Text style={styles.modalCloseIcon}>✕</Text>
+          </TouchableOpacity>
+        </View>
+
         <Dialog.Content>
-          {type === 'sales' || type === 'receipt' ? (
-            <CustomerForm
-              initialName={newEntityName}
-              onSuccess={handlePartyCreated}
-              hideHeader={true}
-            />
-          ) : (
-            <VendorForm
-              initialName={newEntityName}
-              onSuccess={handlePartyCreated}
-              hideHeader={true}
-            />
-          )}
+          <View style={{ flex: 1 }}>
+            {type === 'sales' || type === 'receipt' ? (
+              <CustomerForm
+                initialName={newEntityName}
+                onSuccess={handlePartyCreated}
+                onCancel={() => setIsPartyDialogOpen(false)}
+                hideHeader={true}
+              />
+            ) : (
+              <VendorForm
+                initialName={newEntityName}
+                onSuccess={handlePartyCreated}
+                onClose={() => setIsPartyDialogOpen(false)}
+                hideHeader={true}
+              />
+            )}
+          </View>
         </Dialog.Content>
       </Dialog>
 
@@ -3517,13 +3534,28 @@ export function TransactionForm({
         onDismiss={() => setIsProductDialogOpen(false)}
         style={styles.dialog}
       >
-        <Dialog.Title>Create New Product</Dialog.Title>
+        <View style={styles.modalHeader}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.modalTitle}>Create New Product</Text>
+            <Text style={styles.modalSubTitle}>
+              Add a product to use in this transaction
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => setIsProductDialogOpen(false)}>
+            <Text style={styles.modalCloseIcon}>✕</Text>
+          </TouchableOpacity>
+        </View>
+
         <Dialog.Content>
-          <ProductForm
-            productType={'product'}
-            onSuccess={handleProductCreated}
-            initialName={newEntityName}
-          />
+          <View style={{ flex: 1 }}>
+            <ProductForm
+              productType={'product'}
+              onSuccess={handleProductCreated}
+              initialName={newEntityName}
+              onClose={() => setIsProductDialogOpen(false)}
+              hideHeader={true}
+            />
+          </View>
         </Dialog.Content>
       </Dialog>
 
@@ -3532,13 +3564,27 @@ export function TransactionForm({
         onDismiss={() => setIsServiceDialogOpen(false)}
         style={styles.dialog}
       >
-        <Dialog.Title>Create New Service</Dialog.Title>
+        <View style={styles.modalHeader}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.modalTitle}>Create New Service</Text>
+            <Text style={styles.modalSubTitle}>
+              Add a service to use in this transaction
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => setIsServiceDialogOpen(false)}>
+            <Text style={styles.modalCloseIcon}>✕</Text>
+          </TouchableOpacity>
+        </View>
+
         <Dialog.Content>
-          <ServiceForm
-            onSuccess={handleServiceCreated}
-            service={undefined}
-            initialName={newEntityName}
-          />
+          <View style={{ flex: 1 }}>
+            <ServiceForm
+              onSuccess={handleServiceCreated}
+              service={undefined}
+              initialName={newEntityName}
+              onClose={() => setIsServiceDialogOpen(false)}
+            />
+          </View>
         </Dialog.Content>
       </Dialog>
 
@@ -4007,11 +4053,36 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 0, // top & bottom bilkul kam
+    alignItems: 'flex-start',
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    flexWrap: 'nowrap',
+  },
+  modalHeaderTitle: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 0,
+    paddingBottom: 0,
+    lineHeight: 22,
+  },
+  modalSubTitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 0,
+    paddingTop: 0,
+    lineHeight: 18,
+  },
+  modalCloseIcon: {
+    fontSize: 20,
+    color: '#6B7280',
+    padding: 8,
   },
   modalActions: {
     flexDirection: 'row',

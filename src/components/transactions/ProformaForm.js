@@ -1886,13 +1886,27 @@ export default function ProformaForm({
         onRequestClose={() => setIsCreateCustomerOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Customer</Text>
-            <CustomerForm
-              initialName={newCustomerName}
-              onSuccess={handleCustomerCreated}
-              onCancel={() => setIsCreateCustomerOpen(false)}
-            />
+          <View style={[styles.modalContent, styles.modalContentWithHeader]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderTitle}>
+                <Text style={styles.modalTitle}>Create New Customer</Text>
+                <Text style={styles.modalSubTitle}>
+                  Add a customer to use in this proforma
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsCreateCustomerOpen(false)}>
+                <Text style={styles.modalCloseIcon}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalInner}>
+              <CustomerForm
+                initialName={newCustomerName}
+                onSuccess={handleCustomerCreated}
+                onCancel={() => setIsCreateCustomerOpen(false)}
+                hideHeader={true}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -1904,14 +1918,28 @@ export default function ProformaForm({
         onRequestClose={() => setIsProductDialogOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Product</Text>
-            <ProductForm
-              productType={'product'}
-              onSuccess={handleProductCreated}
-              initialName={newEntityName}
-              onCancel={() => setIsProductDialogOpen(false)}
-            />
+          <View style={[styles.modalContent, styles.modalContentWithHeader]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderTitle}>
+                <Text style={styles.modalTitle}>Create New Product</Text>
+                <Text style={styles.modalSubTitle}>
+                  Add a product to use in this proforma
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsProductDialogOpen(false)}>
+                <Text style={styles.modalCloseIcon}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalInner}>
+              <ProductForm
+                productType={'product'}
+                onSuccess={handleProductCreated}
+                initialName={newEntityName}
+                onClose={() => setIsProductDialogOpen(false)}
+                hideHeader={true}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -1923,13 +1951,26 @@ export default function ProformaForm({
         onRequestClose={() => setIsServiceDialogOpen(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Service</Text>
-            <ServiceForm
-              onSuccess={handleServiceCreated}
-              initialName={newServiceName}
-              onCancel={() => setIsServiceDialogOpen(false)}
-            />
+          <View style={[styles.modalContent, styles.modalContentWithHeader]}>
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderTitle}>
+                <Text style={styles.modalTitle}>Create New Service</Text>
+                <Text style={styles.modalSubTitle}>
+                  Add a service to use in this proforma
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setIsServiceDialogOpen(false)}>
+                <Text style={styles.modalCloseIcon}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalInner}>
+              <ServiceForm
+                onSuccess={handleServiceCreated}
+                initialName={newServiceName}
+                onClose={() => setIsServiceDialogOpen(false)}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -2202,8 +2243,41 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 16,
-    textAlign: 'center',
+    marginBottom: 4,
+  },
+  modalSubTitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    flexWrap: 'nowrap',
+  },
+  modalHeaderTitle: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  modalContentWithHeader: {
+    padding: 0,
+    height: '88%',
+    width: '94%',
+  },
+  modalInner: {
+    flex: 1,
+    padding: 16,
+  },
+  modalCloseIcon: {
+    fontSize: 20,
+    color: '#666',
+    padding: 8,
+    alignSelf: 'flex-start',
   },
   snackbar: {
     position: 'absolute',

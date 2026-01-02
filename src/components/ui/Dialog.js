@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Modal,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 
@@ -27,21 +29,30 @@ export const Dialog = ({ open, onOpenChange, children }) => {
         style={styles.overlay}
         onPress={handleBackdropPress}
       >
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.content}
-          onPress={e => e.stopPropagation()}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardContainer}
         >
-          <ScrollView style={styles.scrollView}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.content}
+            onPress={e => e.stopPropagation()}
+          >
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => onOpenChange(false)}
             >
               <Icon name="x" size={20} color="#6b7280" />
             </TouchableOpacity>
-            {children}
-          </ScrollView>
-        </TouchableOpacity>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {children}
+            </ScrollView>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </TouchableOpacity>
     </Modal>
   );
@@ -71,6 +82,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
+  keyboardContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   content: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -78,9 +94,14 @@ const styles = StyleSheet.create({
     width: '100%',
     maxHeight: '80%',
     position: 'relative',
+    flex: 1,
   },
   scrollView: {
-    maxHeight: '100%',
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 80,
   },
   closeButton: {
     position: 'absolute',

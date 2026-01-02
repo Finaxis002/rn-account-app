@@ -695,25 +695,20 @@ export default function ProductSettings() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {selectedProduct ? 'Edit Product' : 'Create New Product'}
-              </Text>
-              <Text style={styles.modalDescription}>
-                {selectedProduct
-                  ? 'Update the details for this item.'
-                  : 'Fill in the form to add a new product or service.'}
-              </Text>
-            </View>
-
             <ScrollView style={styles.formContainer}>
               <ProductForm
                 product={selectedProduct || undefined}
                 onSuccess={handleFormSuccess}
-                onCancel={() => {
+                onClose={() => {
                   setSelectedProduct(null);
                   setIsFormOpen(false);
                 }}
+                title={selectedProduct ? 'Edit Product' : 'Create New Product'}
+                subtitle={
+                  selectedProduct
+                    ? 'Update the details for this item.'
+                    : 'Fill in the form to add a new product or service.'
+                }
               />
             </ScrollView>
           </View>
