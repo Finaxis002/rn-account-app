@@ -279,7 +279,7 @@ export function CustomerForm({
         bounces={true}
       >
         {/* Header Section */}
-        {!hideHeader && (
+        {/* {!hideHeader && (
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={styles.headerTitle}>
@@ -295,13 +295,13 @@ export function CustomerForm({
               <TouchableOpacity
                 onPress={onCancel}
                 style={styles.headerCloseButton}
-                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} // Tap area badhane ke liye
+                hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }} 
               >
                 <Text style={styles.headerCloseButtonText}>✕</Text>
               </TouchableOpacity>
             )}
           </View>
-        )}
+        )} */}
 
         {/* Form Section */}
         <View style={styles.formContainer}>
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 30,
+    // paddingBottom: 30,
   },
   header: {
     backgroundColor: '#fff',
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   formContainer: {
-    padding: 20,
+    // padding: 20,
   },
   section: {
     marginBottom: 25,

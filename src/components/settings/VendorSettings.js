@@ -41,6 +41,13 @@ import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { usePermissions } from '../../contexts/permission-context';
 import { capitalizeWords } from '../../lib/utils';
 import { BASE_URL } from '../../config';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../../components/ui/Dialog';
 
 export function VendorSettings() {
   const [vendors, setVendors] = useState([]);
@@ -157,6 +164,16 @@ export function VendorSettings() {
     setOpenDropdownId(null);
     setSelectedVendor(vendor);
     setIsFormOpen(true);
+  };
+
+   const handleFormSuccess = () => {
+    setIsFormOpen(false);
+    fetchVendors();
+    const action = selectedVendor ? "updated" : "created";
+    toast({
+      title: `Vendor ${action} successfully`,
+      description: `The vendor details have been ${action}.`,
+    });
   };
 
   // CSV parser with proper quote handling
@@ -707,25 +724,24 @@ export function VendorSettings() {
           </View>
         )}
 
-        <Modal visible={isFormOpen} animationType="slide">
-          <View style={{ flex: 1 }}>
-            <VendorForm
-              vendor={selectedVendor}
-              onSuccess={() => {
-                setIsFormOpen(false);
-                fetchVendors();
-              }}
-              hideHeader={false}
-              headerTitle={selectedVendor ? 'Edit Vendor' : 'Create Vendor'}
-              headerSubtitle={
-                selectedVendor
-                  ? 'Update vendor details'
-                  : 'Add new vendor to your records'
-              }
-              onClose={() => setIsFormOpen(false)}
-            />
-          </View>
-        </Modal>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="md:max-w-2xl max-w-sm grid-rows-[auto,1fr,auto] max-h-[90vh] p-0">
+              <DialogHeader className="p-6">
+                <DialogTitle>
+                  {selectedVendor ? "Edit Vendor" : "Create New Vendor"}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedVendor
+                    ? "Update the details for this vendor."
+                    : "Fill in the form to add a new vendor."}
+                </DialogDescription>
+              </DialogHeader>
+              <VendorForm
+                vendor={selectedVendor || undefined}
+                onSuccess={handleFormSuccess}
+              />
+            </DialogContent>
+          </Dialog>
 
         <Modal
           visible={isImportModalOpen}
