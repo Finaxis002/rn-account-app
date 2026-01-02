@@ -326,7 +326,9 @@ export default function ProductForm({
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {!hideHeader && (
+
+      <ScrollView>
+      {/* {!hideHeader && (
         <View style={styles.headerRow}>
           <View style={styles.headerContent}>
             {title && <Text style={styles.headerTitle}>{title}</Text>}
@@ -342,7 +344,7 @@ export default function ProductForm({
             <Text style={styles.closeIconText}>✕</Text>
           </TouchableOpacity>
         </View>
-      )}
+      )} */}
 
       <View style={styles.formContent}>
         <View style={styles.field}>
@@ -679,6 +681,7 @@ export default function ProductForm({
           </View>
         </Modal>
       </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
