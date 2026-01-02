@@ -285,7 +285,11 @@ const MobileHeaderButton = ({ icon, label, color, onPress }) => {
   );
 };
 
-const ProductStock = ({ navigation }) => {
+const ProductStock = ({
+  navigation,
+  refetchPermissions,
+  refetchUserPermissions,
+}) => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -301,6 +305,12 @@ const ProductStock = ({ navigation }) => {
   const { permissions } = usePermissions();
   const { selectedCompanyId } = useCompany();
   const { permissions: userCaps } = useUserPermissions();
+
+  // Permission checks - based on InventoryScreen pattern
+  const canCreateProducts =
+    userCaps?.canCreateProducts ?? userCaps?.canCreateInventory ?? false;
+  const webCanCreate = permissions?.canCreateProducts ?? false;
+  const showCreateButtons = canCreateProducts || webCanCreate;
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -337,7 +347,13 @@ const ProductStock = ({ navigation }) => {
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchProducts();
+    Promise.all([
+      fetchProducts(),
+      refetchPermissions ? refetchPermissions() : Promise.resolve(),
+      refetchUserPermissions ? refetchUserPermissions() : Promise.resolve(),
+    ]).finally(() => {
+      setRefreshing(false);
+    });
   };
 
   const handleEditClick = product => {
@@ -427,33 +443,31 @@ const ProductStock = ({ navigation }) => {
               </Text>
             </View>
 
-            {(permissions?.canCreateProducts || userCaps?.canCreateInventory) &&
-              isTablet && (
-                <TabletActionButtons
-                  onAddProduct={() => setIsAddProductOpen(true)}
-                  onAddService={() => setIsAddServiceOpen(true)}
-                />
-              )}
+            {showCreateButtons && isTablet && (
+              <TabletActionButtons
+                onAddProduct={() => setIsAddProductOpen(true)}
+                onAddService={() => setIsAddServiceOpen(true)}
+              />
+            )}
           </View>
 
           {/* IMPROVED: Header buttons for mobile (non-tablet) */}
-          {(permissions?.canCreateProducts || userCaps?.canCreateInventory) &&
-            !isTablet && (
-              <View style={styles.mobileHeaderButtonsContainer}>
-                <MobileHeaderButton
-                  // icon="package-variant-plus"
-                  label="Add Product"
-                  color="#486adaff"
-                  onPress={() => setIsAddProductOpen(true)}
-                />
-                <MobileHeaderButton
-                  // icon="server-plus"
-                  label="Add Service"
-                  color="#2b9775ff"
-                  onPress={() => setIsAddServiceOpen(true)}
-                />
-              </View>
-            )}
+          {showCreateButtons && !isTablet && (
+            <View style={styles.mobileHeaderButtonsContainer}>
+              <MobileHeaderButton
+                // icon="package-variant-plus"
+                label="Add Product"
+                color="#486adaff"
+                onPress={() => setIsAddProductOpen(true)}
+              />
+              <MobileHeaderButton
+                // icon="server-plus"
+                label="Add Service"
+                color="#2b9775ff"
+                onPress={() => setIsAddServiceOpen(true)}
+              />
+            </View>
+          )}
 
           <SearchBar
             placeholder="Search products or services..."
@@ -530,8 +544,7 @@ const ProductStock = ({ navigation }) => {
                     ? `No items match "${searchTerm}". Try a different search term.`
                     : 'Get started by adding your first product or service.'}
                 </Text>
-                {(permissions?.canCreateProducts ||
-                  userCaps?.canCreateInventory) && (
+                {showCreateButtons && (
                   <EmptyStateActionButton
                     onAddProduct={() => setIsAddProductOpen(true)}
                   />
