@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Alert,
 } from 'react-native';
 import { Card, Button, Dialog, Portal } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -61,28 +62,29 @@ const ExcelImportExport = ({
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        toast({
-          title: 'Template Downloaded',
-          description: 'Template downloaded successfully!',
-        });
+        // Show success Alert
+        Alert.alert('Success', 'Template downloaded successfully!', [
+          { text: 'OK', style: 'default' },
+        ]);
       } else {
         // Android/iOS - save to Downloads folder
         const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
         await RNFS.writeFile(filePath, wbout, 'base64');
 
-        Toast.show({
-          type: 'success',
-          text1: 'Template Downloaded',
-          text2: `Template saved to Downloads folder`,
-        });
+        // Show success Alert for mobile
+        Alert.alert('Success', `Template saved to Downloads folder`, [
+          { text: 'OK', style: 'default' },
+        ]);
       }
     } catch (error) {
       console.error('Download error:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Download Failed',
-        text2: error.message || 'Failed to download template',
-      });
+
+      // Show failure Alert
+      Alert.alert(
+        'Download Failed',
+        error.message || 'Failed to download template',
+        [{ text: 'OK', style: 'cancel' }],
+      );
     }
   };
 
@@ -252,6 +254,13 @@ const ExcelImportExport = ({
           if (onImportSuccess) {
             onImportSuccess();
           }
+
+          // Show success alert
+          Alert.alert(
+            'Import Successful',
+            `All ${importPreview.length} ${activeTab} imported successfully.`,
+            [{ text: 'OK', style: 'default' }],
+          );
         }, 1500);
       } else {
         const successCount = importPreview.length - failedItems.length;
@@ -261,10 +270,22 @@ const ExcelImportExport = ({
           setErrorMessage(
             'All items failed to import. Please check your data.',
           );
+
+          Alert.alert(
+            'Import Failed',
+            'All items failed to import. Please check your data.',
+            [{ text: 'OK', style: 'cancel' }],
+          );
         } else {
           setImportStatus('partial');
           setErrorMessage(
             `${successCount} items imported, ${failedItems.length} failed.`,
+          );
+
+          Alert.alert(
+            'Partial Success',
+            `${successCount} items imported, ${failedItems.length} failed.`,
+            [{ text: 'OK', style: 'default' }],
           );
         }
       }
@@ -272,6 +293,10 @@ const ExcelImportExport = ({
       console.error('Import error:', error);
       setImportStatus('failed');
       setErrorMessage(error.message || 'Failed to import data');
+
+      Alert.alert('Import Failed', error.message || 'Failed to import data', [
+        { text: 'OK', style: 'cancel' },
+      ]);
     } finally {
       setIsImporting(false);
     }
