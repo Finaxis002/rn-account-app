@@ -439,48 +439,85 @@ export default function InventoryScreen() {
       return (
         <View style={styles.actionButtons}>
           <ExcelImportExport
-            templateData={[
-              {
-                Company: '',
-                'Item Name': '',
-                Stock: '',
-                Unit: '',
-                'Cost Price': '',
-                'Selling Price': '',
-                HSN: '',
-              },
-            ]}
-            templateFileName="product_template.xlsx"
-            importEndpoint={`${BASE_URL}/api/products`}
-            onImportSuccess={fetchProducts}
-            expectedColumns={[
-              'Company',
-              'Item Name',
-              'Stock',
-              'Unit',
-              'Cost Price',
-              'Selling Price',
-              'HSN',
-            ]}
-            transformImportData={data => {
-              return data.map(item => {
-                const companyName = item['Company']?.trim();
-                const foundCompany = companies.find(
-                  c =>
-                    c.businessName.toLowerCase() === companyName?.toLowerCase(),
-                );
-
-                return {
-                  company: foundCompany?._id || companies[0]?._id || '',
-                  name: item['Item Name'],
-                  stocks: item['Stock'] || 0,
-                  unit: item['Unit'] || 'Piece',
-                  costPrice: extractNumber(item['Cost Price']),
-                  sellingPrice: extractNumber(item['Selling Price']),
-                  hsn: item['HSN'] || '',
-                };
-              });
+            templateData={
+              activeTab === 'products'
+                ? [
+                    {
+                      Company:
+                        companies.length > 0
+                          ? companies[0].businessName
+                          : 'Your Company',
+                      'Item Name': '',
+                      Stock: '',
+                      Unit: '',
+                      'Cost Price': '',
+                      'Selling Price': '',
+                      HSN: '',
+                    },
+                  ]
+                : [{ 'Service Name': '', Amount: '', SAC: '' }]
+            }
+            templateFileName={`${activeTab}_template.xlsx`}
+            onImportSuccess={() => {
+              if (activeTab === 'products') fetchProducts();
+              else fetchServices();
             }}
+            expectedColumns={
+              activeTab === 'products'
+                ? [
+                    'Company',
+                    'Item Name',
+                    'Stock',
+                    'Unit',
+                    'Cost Price',
+                    'Selling Price',
+                    'HSN',
+                  ]
+                : ['Service Name', 'Amount', 'SAC']
+            }
+            transformImportData={data => {
+              if (activeTab === 'products') {
+                return data.map(item => {
+                  const companyName = item['Company']?.trim();
+
+                  // Find matching company
+                  const foundCompany = companies.find(
+                    c =>
+                      c.businessName.toLowerCase() ===
+                      companyName?.toLowerCase(),
+                  );
+
+                  // Log for debugging
+                  console.log('Mapping company:', {
+                    excelCompany: companyName,
+                    availableCompanies: companies.map(c => ({
+                      id: c._id,
+                      name: c.businessName,
+                    })),
+                    foundCompanyId: foundCompany?._id,
+                  });
+
+                  return {
+                    company: foundCompany?._id || companies[0]?._id || '',
+                    
+                    name: item['Item Name'],
+                    stocks: Number(item['Stock']) || 0,
+                    unit: item['Unit'] || 'Piece',
+                    costPrice: Number(item['Cost Price']) || 0,
+                    sellingPrice: Number(item['Selling Price']) || 0,
+                    hsn: item['HSN'] || '',
+                  };
+                });
+              } else {
+                return data.map(item => ({
+                  serviceName: item['Service Name'],
+                  amount: Number(item['Amount']) || 0,
+                  sac: item['SAC'] || '',
+                }));
+              }
+            }}
+            activeTab={activeTab}
+            companies={companies} // Add this prop
           />
           <TouchableOpacity
             style={[styles.button, styles.outlineButton]}
