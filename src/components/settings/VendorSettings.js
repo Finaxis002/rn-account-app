@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DocumentPicker from '@react-native-documents/picker';
+import { pick } from '@react-native-documents/picker';
 import RNFS from 'react-native-fs';
 import * as XLSX from 'xlsx';
 import Toast from 'react-native-toast-message';
@@ -34,6 +34,8 @@ import {
   Download,
   Edit2,
   Trash2,
+  AlertCircle,
+  Info,
 } from 'lucide-react-native';
 
 import { VendorForm } from '../vendors/VendorForm';
@@ -41,13 +43,6 @@ import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { usePermissions } from '../../contexts/permission-context';
 import { capitalizeWords } from '../../lib/utils';
 import { BASE_URL } from '../../config';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '../../components/ui/Dialog';
 
 export function VendorSettings() {
   const [vendors, setVendors] = useState([]);
@@ -61,6 +56,10 @@ export function VendorSettings() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [importStatus, setImportStatus] = useState(null);
+  const [failedItems, setFailedItems] = useState([]);
+  const [skippedItems, setSkippedItems] = useState([]);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,7 +82,6 @@ export function VendorSettings() {
 
   const isCustomer = userRole === 'customer';
 
-  // Logic matched exactly to your permission requirements
   const accountAllowsShow = accountPerms?.canShowVendors !== false;
   const accountAllowsCreate = accountPerms?.canCreateVendors !== false;
   const userAllowsShow = isAllowed
@@ -166,116 +164,210 @@ export function VendorSettings() {
     setIsFormOpen(true);
   };
 
-   const handleFormSuccess = () => {
+  const handleFormSuccess = () => {
     setIsFormOpen(false);
     fetchVendors();
-    const action = selectedVendor ? "updated" : "created";
-    toast({
-      title: `Vendor ${action} successfully`,
-      description: `The vendor details have been ${action}.`,
+    Toast.show({
+      type: 'success',
+      text1: selectedVendor ? 'Vendor updated successfully' : 'Vendor created successfully',
+    });
+    setSelectedVendor(null);
+  };
+
+  // Check if vendor exists by name (case insensitive)
+  const checkVendorExistsByName = (vendorName) => {
+    if (!vendorName || !vendors.length) return false;
+    
+    const normalizedVendorName = vendorName.trim().toLowerCase();
+    return vendors.some(vendor => 
+      vendor.vendorName?.trim().toLowerCase() === normalizedVendorName
+    );
+  };
+
+  // Check if vendor exists by GSTIN
+  const checkVendorExistsByGSTIN = (gstin) => {
+    if (!gstin || !vendors.length) return false;
+    
+    const normalizedGSTIN = gstin.trim().toUpperCase();
+    return vendors.some(vendor => 
+      vendor.gstin?.trim().toUpperCase() === normalizedGSTIN
+    );
+  };
+
+  // Parse Excel/CSV file
+  const parseFile = async (fileUri, fileName) => {
+    try {
+      // Read file content
+      const fileContent = await RNFS.readFile(fileUri, 'base64');
+      
+      if (!fileContent) {
+        throw new Error('Failed to read file content');
+      }
+
+      // Determine file type
+      const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+      
+      let jsonData = [];
+      
+      if (isExcel) {
+        // Parse Excel file
+        const workbook = XLSX.read(fileContent, { type: 'base64' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        jsonData = XLSX.utils.sheet_to_json(worksheet);
+      } else {
+        // Parse CSV file
+        const textContent = atob(fileContent);
+        const lines = textContent.split('\n').filter(line => line.trim() !== '');
+        
+        if (lines.length === 0) {
+          throw new Error('CSV file is empty');
+        }
+        
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+          });
+          jsonData.push(row);
+        }
+      }
+
+      console.log('Parsed data:', jsonData);
+      return jsonData;
+    } catch (error) {
+      console.error('Parse error:', error);
+      throw new Error(`Failed to parse file: ${error.message}`);
+    }
+  };
+
+  // Transform CSV/Excel data to match vendor schema
+  const transformVendorData = (data) => {
+    return data.map((row, index) => {
+      // Normalize and clean data
+      const vendorName = (row.vendorName || row['Vendor Name'] || row['vendor name'] || '').trim();
+      const contactNumber = (row.contactNumber || row['Contact Number'] || row['contact number'] || row.phone || '').trim();
+      const gstin = (row.gstin || row.GSTIN || row.gst || '').toUpperCase().trim();
+      
+      return {
+        vendorName,
+        contactNumber,
+        email: (row.email || row.Email || '').trim().toLowerCase(),
+        address: (row.address || row.Address || '').trim(),
+        city: (row.city || row.City || '').trim(),
+        state: (row.state || row.State || '').trim(),
+        gstin,
+        gstRegistrationType: (row.gstRegistrationType || row['GST Registration Type'] || 'Regular').trim(),
+        pan: (row.pan || row.PAN || '').toUpperCase().trim(),
+        isTDSApplicable: row.isTDSApplicable === 'true' || 
+                         row.isTDSApplicable === true || 
+                         row['TDS Applicable'] === 'true' ||
+                         (row.isTDSApplicable || '').toString().toLowerCase() === 'yes' ||
+                         (row.isTDSApplicable || '').toString().toLowerCase() === 'y',
+        tdsRate: parseFloat(row.tdsRate || row['TDS Rate'] || 0),
+        tdsSection: (row.tdsSection || row['TDS Section'] || '').trim(),
+        // Add reference for tracking
+        _originalIndex: index + 2, // Excel row number (header is row 1)
+      };
     });
   };
 
-  // CSV parser with proper quote handling
-  const parseCSV = text => {
-    const rows = [];
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-
-    for (const line of lines) {
-      const row = [];
-      let current = '';
-      let inQuotes = false;
-
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        const nextChar = line[i + 1];
-
-        if (char === '"') {
-          if (inQuotes && nextChar === '"') {
-            current += '"';
-            i++;
-          } else {
-            inQuotes = !inQuotes;
-          }
-        } else if (char === ',' && !inQuotes) {
-          row.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
+  // Filter out existing vendors
+  const filterExistingVendors = (vendorsData) => {
+    const newVendors = [];
+    const existingVendors = [];
+    
+    for (const vendor of vendorsData) {
+      // Check by vendor name (case insensitive)
+      const existsByName = checkVendorExistsByName(vendor.vendorName);
+      
+      // Check by GSTIN if available
+      const existsByGSTIN = vendor.gstin ? checkVendorExistsByGSTIN(vendor.gstin) : false;
+      
+      if (existsByName || existsByGSTIN) {
+        existingVendors.push({
+          vendor: vendor.vendorName || `Row ${vendor._originalIndex}`,
+          reason: existsByName ? 'Vendor name already exists' : 'GSTIN already exists',
+          type: 'skipped'
+        });
+      } else {
+        newVendors.push(vendor);
       }
-      row.push(current.trim());
-      rows.push(row);
     }
-    return rows;
+    
+    return { newVendors, existingVendors };
   };
 
-  const sanitizeCSVCell = value => {
-    if (value === null || value === undefined) return '';
-    return value.toString().trim().replace(/[<>]/g, '');
+  // Import vendors one by one
+  const importVendorsSequentially = async (vendorsData) => {
+    const token = await AsyncStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const failed = [];
+    const endpoint = `${BASE_URL}/api/vendors`;
+
+    for (let i = 0; i < vendorsData.length; i++) {
+      const vendor = vendorsData[i];
+      setImportProgress({ current: i + 1, total: vendorsData.length });
+
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(vendor),
+        });
+
+        const responseData = await response.json();
+        
+        if (!response.ok) {
+          failed.push({
+            vendor: vendor.vendorName || `Row ${vendor._originalIndex}`,
+            error: responseData.message || `Status: ${response.status}`,
+            type: 'failed'
+          });
+          console.error(`Failed to import vendor ${i + 1}:`, responseData);
+        } else {
+          console.log(`Successfully imported vendor ${i + 1}:`, vendor.vendorName);
+        }
+      } catch (error) {
+        failed.push({
+          vendor: vendor.vendorName || `Row ${vendor._originalIndex}`,
+          error: error.message,
+          type: 'failed'
+        });
+        console.error(`Error importing vendor ${i + 1}:`, error);
+      }
+
+      // Small delay to avoid overwhelming the server
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    return failed;
   };
 
   const pickFileForImport = async () => {
-    let pickFn = null;
-
-    if (DocumentPicker) {
-      if (typeof DocumentPicker.pick === 'function')
-        pickFn = DocumentPicker.pick;
-      else if (typeof DocumentPicker.pickDocument === 'function')
-        pickFn = DocumentPicker.pickDocument;
-      else if (typeof DocumentPicker.default === 'function')
-        pickFn = DocumentPicker.default;
-    }
-
-    if (!pickFn) {
-      try {
-        const pickerModule = require('@react-native-documents/picker');
-        pickFn =
-          pickerModule.pick ||
-          pickerModule.pickDocument ||
-          pickerModule.pickSingle ||
-          pickerModule.pickMultiple ||
-          pickerModule.default?.pick ||
-          pickerModule.default?.pickDocument ||
-          pickerModule.default;
-      } catch (e) {
-        try {
-          const pickerModule2 = require('react-native-document-picker');
-          pickFn =
-            pickerModule2.pick ||
-            pickerModule2.pickDocument ||
-            pickerModule2.pickSingle ||
-            pickerModule2.pickMultiple ||
-            pickerModule2.default;
-        } catch (e2) {
-          pickFn = null;
-        }
-      }
-    }
-
-    if (!pickFn || typeof pickFn !== 'function') {
-      console.error('Document picker pick function not found', DocumentPicker);
-      Alert.alert(
-        'Import Unavailable',
-        'Document picker native module is not available or not linked. Install @react-native-documents/picker (or react-native-document-picker) and rebuild the app.',
-      );
-      return;
-    }
-
     try {
-      const res = await pickFn({
+      const result = await pick({
         type: [
-          DocumentPicker?.types?.csv || 'text/csv',
-          DocumentPicker?.types?.xlsx ||
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          DocumentPicker?.types?.xls || 'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+          'application/vnd.ms-excel', // .xls
+          'text/csv', // CSV
         ],
         allowMultiSelection: false,
       });
 
-      const result = Array.isArray(res) ? res[0] : res;
+      const file = Array.isArray(result) ? result[0] : result;
 
-      if (!result || !result.uri) {
+      if (!file || !file.uri) {
         Toast.show({
           type: 'error',
           text1: 'Import Failed',
@@ -284,220 +376,346 @@ export function VendorSettings() {
         return;
       }
 
-      if (result.size && result.size > 10 * 1024 * 1024) {
-        Toast.show({
-          type: 'error',
-          text1: 'File too large',
-          text2: 'Please select a file smaller than 10MB.',
-        });
+      // Process the file
+      await handleFileImport(file);
+    } catch (error) {
+      if (error.code === 'DOCUMENT_PICKER_CANCELED' || error.message?.includes('cancel')) {
         return;
       }
-
-      await handleFileUpload(result);
-    } catch (err) {
-      const msg = err?.message || err;
-      if (
-        err?.code === 'DOCUMENT_PICKER_CANCELED' ||
-        /cancel/i.test(String(msg))
-      ) {
-        return;
-      }
-
-      console.error('Picker Error:', err);
+      console.error('Picker Error:', error);
       Toast.show({
         type: 'error',
         text1: 'Import Failed',
-        text2: err?.message || 'Failed to select file.',
+        text2: error?.message || 'Failed to select file.',
       });
     }
   };
 
-  const handleFileUpload = async file => {
-    if (!file) return;
-
+  const handleFileImport = async (file) => {
     setIsImporting(true);
+    setImportStatus(null);
+    setFailedItems([]);
+    setSkippedItems([]);
+    setImportProgress({ current: 0, total: 0 });
 
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found.');
+      // Parse the file
+      const parsedData = await parseFile(file.uri, file.name);
+      
+      if (parsedData.length === 0) {
+        throw new Error('No data found in file');
       }
 
-      // Create FormData for upload
-      const formData = new FormData();
-      formData.append('file', {
-        uri: file.uri,
-        type: file.type || 'application/octet-stream',
-        name: file.name,
-      });
+      // Transform data
+      const vendorsData = transformVendorData(parsedData);
+      
+      console.log('Transformed vendors data:', vendorsData);
 
-      const response = await fetch(`${BASE_URL}/api/vendors/import`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to import vendors');
-      }
-
-      let description = `Successfully imported ${data.importedCount} out of ${data.totalCount} vendors.`;
-
-      if (data.errors && data.errors.length > 0) {
-        description += ` ${data.errors.length} records had errors.`;
-        if (data.errors.length <= 3) {
-          description += ` Errors: ${data.errors.join('; ')}`;
-        }
-      }
-
+      // Step 1: Check for existing vendors locally
       Toast.show({
-        type: data.importedCount > 0 ? 'success' : 'error',
-        text1:
-          data.importedCount > 0
-            ? 'Import Completed'
-            : 'Import Completed with Issues',
-        text2: description,
+        type: 'info',
+        text1: 'Checking for duplicate vendors...',
       });
 
-      // Fallback alert in case Toast is not visible
-      try {
-        if (data.importedCount > 0) {
-          Alert.alert('Import Completed', description);
-        }
-      } catch (e) {
-        // Silently handle fallback alert error
+      const { newVendors, existingVendors } = filterExistingVendors(vendorsData);
+      
+      // Store skipped items
+      setSkippedItems(existingVendors);
+
+      // If all vendors already exist
+      if (newVendors.length === 0) {
+        setImportStatus('skipped');
+        Toast.show({
+          type: 'info',
+          text1: 'No New Vendors',
+          text2: 'All vendors in the file already exist in the system.',
+        });
+        setIsImporting(false);
+        return;
       }
 
-      setIsImportModalOpen(false);
-      fetchVendors();
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+      // Step 2: Import only new vendors
+      setImportProgress({ current: 0, total: newVendors.length });
+      
+      Toast.show({
+        type: 'info',
+        text1: 'Importing new vendors...',
+        text2: `Found ${existingVendors.length} existing, ${newVendors.length} new vendors to import`,
+      });
 
+      const failed = await importVendorsSequentially(newVendors);
+      
+      // Update status
+      if (failed.length === 0 && newVendors.length > 0) {
+        setImportStatus('success');
+        Toast.show({
+          type: 'success',
+          text1: 'Import Successful',
+          text2: `Successfully imported ${newVendors.length} new vendors. ${existingVendors.length} vendors already existed.`,
+        });
+        
+        // Refresh vendor list
+        await fetchVendors();
+        
+        // Close modal after delay
+        setTimeout(() => {
+          setIsImportModalOpen(false);
+          setImportStatus(null);
+        }, 3000);
+      } else if (newVendors.length - failed.length > 0) {
+        setImportStatus('partial');
+        setFailedItems(failed);
+        
+        Toast.show({
+          type: 'success',
+          text1: 'Partial Success',
+          text2: `${newVendors.length - failed.length} imported, ${existingVendors.length} already existed, ${failed.length} failed.`,
+        });
+        
+        // Refresh vendor list for successful imports
+        await fetchVendors();
+      } else {
+        setImportStatus('failed');
+        setFailedItems(failed);
+        Toast.show({
+          type: 'error',
+          text1: 'Import Failed',
+          text2: 'Failed to import any new vendors.',
+        });
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      setImportStatus('failed');
       Toast.show({
         type: 'error',
         text1: 'Import Failed',
-        text2: errMsg || 'Failed to import vendors',
+        text2: error.message || 'Failed to import vendors.',
       });
     } finally {
       setIsImporting(false);
     }
   };
 
-  const downloadTemplate = () => {
-    // Define headers matching the API import format
-    const headers = [
-      'vendorName',
-      'contactNumber',
-      'email',
-      'address',
-      'city',
-      'state',
-      'gstin',
-      'gstRegistrationType',
-      'pan',
-      'isTDSApplicable',
-      'tdsRate',
-      'tdsSection',
-    ];
+  const downloadTemplate = async () => {
+    setIsDownloading(true);
+    
+    try {
+      // Create sample vendor data
+      const headers = [
+        'vendorName',
+        'contactNumber',
+        'email',
+        'address',
+        'city',
+        'state',
+        'gstin',
+        'gstRegistrationType',
+        'pan',
+        'isTDSApplicable',
+        'tdsRate',
+        'tdsSection',
+      ];
 
-    // Define sample data rows
-    const sampleRows = [
-      [
-        'ABC Suppliers',
-        '9876543210',
-        'contact@abc.com',
-        '123 Main Street',
-        'Mumbai',
-        'Maharashtra',
-        '22AAAAA0000A1Z5',
-        'Regular',
-        'AAAAA0000A',
-        'true',
-        '2',
-        '194C',
-      ],
-      [
-        'XYZ Traders',
-        '9876543211',
-        'xyz@traders.com',
-        '456 Trade Avenue',
-        'Delhi',
-        'Delhi',
-        '07ABCDE1234F1Z5',
-        'Composition',
-        'ABCDE1234F',
-        'false',
-        '0',
-        '',
-      ],
-    ];
+      // Add note about duplicate prevention
+      const note = [
+        ['IMPORTANT NOTES:', '', '', '', '', '', '', '', '', '', '', ''],
+        ['1. vendorName is REQUIRED and should be unique', '', '', '', '', '', '', '', '', '', '', ''],
+        ['2. Vendors with duplicate names will be skipped automatically', '', '', '', '', '', '', '', '', '', '', ''],
+        ['3. For TDS Applicable, use "Yes"/"No" or "true"/"false"', '', '', '', '', '', '', '', '', '', '', ''],
+        ['', '', '', '', '', '', '', '', '', '', '', ''],
+        headers
+      ];
 
-    // Build CSV content with proper formatting
-    const buildCSVRow = row => {
-      return row
-        .map(field => {
-          // Escape fields that contain commas, quotes, or newlines
-          if (
-            field.includes(',') ||
-            field.includes('"') ||
-            field.includes('\n')
-          ) {
-            return `"${field.replace(/"/g, '""')}"`;
-          }
-          return field;
-        })
-        .join(',');
+      const sampleData = [
+        [
+          'ABC Suppliers',
+          '9876543210',
+          'contact@abc.com',
+          '123 Main Street',
+          'Mumbai',
+          'Maharashtra',
+          '22AAAAA0000A1Z5',
+          'Regular',
+          'AAAAA0000A',
+          'Yes',
+          '2',
+          '194C',
+        ],
+        [
+          'XYZ Traders',
+          '9876543211',
+          'xyz@traders.com',
+          '456 Trade Avenue',
+          'Delhi',
+          'Delhi',
+          '07ABCDE1234F1Z5',
+          'Composition',
+          'ABCDE1234F',
+          'No',
+          '0',
+          '',
+        ],
+        [
+          'LMN Enterprises',
+          '9876543212',
+          'info@lmn.com',
+          '789 Business Park',
+          'Bangalore',
+          'Karnataka',
+          '',
+          'Unregistered',
+          '',
+          'false',
+          '0',
+          '',
+        ],
+      ];
+
+      // Create workbook
+      const ws = XLSX.utils.aoa_to_sheet([...note, ...sampleData]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Vendor Template');
+
+      // Generate Excel file
+      const excelBuffer = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
+      
+      // Save to downloads
+      const fileName = 'vendor_import_template.xlsx';
+      const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+      
+      await RNFS.writeFile(filePath, excelBuffer, 'base64');
+      
+      Toast.show({
+        type: 'success',
+        text1: 'Template Downloaded',
+        text2: `Template saved to Downloads folder`,
+      });
+       try {
+                Alert.alert(
+                  'Template Downloaded',
+                  'Excel template has been downloaded to your device.',
+                );
+              } catch (e) {}
+      
+    } catch (error) {
+      console.error('Download error:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Download Failed',
+        text2: error.message || 'Failed to download template.',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Render import status screen
+  const renderImportStatus = () => {
+    if (!importStatus) return null;
+
+    const statusConfig = {
+      success: {
+        icon: Check,
+        color: '#10b981',
+        title: 'Import Successful!',
+        message: 'All new vendors imported successfully.',
+      },
+      partial: {
+        icon: AlertCircle,
+        color: '#f59e0b',
+        title: 'Partial Success',
+        message: `Some vendors imported successfully.`,
+      },
+      failed: {
+        icon: X,
+        color: '#ef4444',
+        title: 'Import Failed',
+        message: 'Failed to import vendors.',
+      },
+      skipped: {
+        icon: Info,
+        color: '#3b82f6',
+        title: 'No New Vendors',
+        message: 'All vendors in the file already exist in the system.',
+      },
     };
 
-    let csvContent = buildCSVRow(headers) + '\r\n';
-    csvContent += sampleRows.map(buildCSVRow).join('\r\n');
+    const config = statusConfig[importStatus];
+    const IconComponent = config.icon;
 
-    // Create Excel workbook using xlsx library
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Vendor Template');
-
-    // Generate Excel file
-    const excelBuffer = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
-
-    // Save to device
-    const filePath = `${RNFS.DownloadDirectoryPath}/vendor_import_template.xlsx`;
-
-    setIsDownloading(true);
-
-    RNFS.writeFile(filePath, excelBuffer, 'base64')
-      .then(() => {
-        Toast.show({
-          type: 'success',
-          text1: '✓ Template Downloaded',
-          text2: 'Excel template has been saved to Downloads',
-        });
-        try {
-          Alert.alert(
-            'Template Downloaded',
-            'Excel template has been downloaded to your device.',
-          );
-        } catch (e) {}
-      })
-      .catch(error => {
-        console.error('Download error:', error);
-        Toast.show({
-          type: 'error',
-          text1: 'Download Failed',
-          text2:
-            error instanceof Error
-              ? error.message
-              : 'Failed to download template.',
-        });
-      })
-      .finally(() => {
-        setIsDownloading(false);
-      });
+    return (
+      <View style={styles.importStatusContainer}>
+        <IconComponent size={48} color={config.color} />
+        <Text style={[styles.importStatusTitle, { color: config.color }]}>
+          {config.title}
+        </Text>
+        <Text style={styles.importStatusMessage}>
+          {config.message}
+        </Text>
+        
+        {/* Show existing/skipped vendors */}
+        {skippedItems.length > 0 && (
+          <View style={styles.skippedItemsContainer}>
+            <Text style={styles.skippedItemsTitle}>
+              <Info size={14} color="#856404" /> Skipped ({skippedItems.length}):
+            </Text>
+            <ScrollView style={styles.skippedList} nestedScrollEnabled={true}>
+              {skippedItems.slice(0, 5).map((item, index) => (
+                <Text key={index} style={styles.skippedItem}>
+                  • {item.vendor} ({item.reason})
+                </Text>
+              ))}
+              {skippedItems.length > 5 && (
+                <Text style={styles.skippedItem}>
+                  ... and {skippedItems.length - 5} more
+                </Text>
+              )}
+            </ScrollView>
+          </View>
+        )}
+        
+        {/* Show failed items */}
+        {failedItems.length > 0 && (
+          <View style={styles.failedItemsContainer}>
+            <Text style={styles.failedItemsTitle}>
+              <AlertCircle size={14} color="#dc3545" /> Failed ({failedItems.length}):
+            </Text>
+            <ScrollView style={styles.failedList} nestedScrollEnabled={true}>
+              {failedItems.slice(0, 5).map((item, index) => (
+                <Text key={index} style={styles.failedItem}>
+                  • {item.vendor}: {item.error}
+                </Text>
+              ))}
+              {failedItems.length > 5 && (
+                <Text style={styles.failedItem}>
+                  ... and {failedItems.length - 5} more
+                </Text>
+              )}
+            </ScrollView>
+          </View>
+        )}
+        
+        {importStatus === 'success' && (
+          <Text style={styles.autoCloseMessage}>
+            Closing in 3 seconds...
+          </Text>
+        )}
+        
+        <TouchableOpacity
+          style={[styles.closeImportBtn, { backgroundColor: config.color }]}
+          onPress={() => {
+            setIsImportModalOpen(false);
+            setImportStatus(null);
+            setSkippedItems([]);
+            setFailedItems([]);
+          }}
+        >
+          <Text style={styles.closeImportBtnText}>
+            {importStatus === 'success' ? 'Done' : 'Close'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   const renderVendor = ({ item }) => (
@@ -724,84 +942,111 @@ export function VendorSettings() {
           </View>
         )}
 
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="md:max-w-2xl max-w-sm grid-rows-[auto,1fr,auto] max-h-[90vh] p-0">
-              <DialogHeader className="p-6">
-                <DialogTitle>
-                  {selectedVendor ? "Edit Vendor" : "Create New Vendor"}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedVendor
-                    ? "Update the details for this vendor."
-                    : "Fill in the form to add a new vendor."}
-                </DialogDescription>
-              </DialogHeader>
-              <VendorForm
-                vendor={selectedVendor || undefined}
-                onSuccess={handleFormSuccess}
-              />
-            </DialogContent>
-          </Dialog>
-
+        {/* Import Modal */}
         <Modal
           visible={isImportModalOpen}
           animationType="fade"
           transparent={true}
+          onRequestClose={() => !isImporting && setIsImportModalOpen(false)}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.importModalContainer}>
               <View style={styles.importModalHeader}>
-                <Text style={styles.importModalTitle}>Import Vendors</Text>
-                <TouchableOpacity onPress={() => setIsImportModalOpen(false)}>
+                <Text style={styles.importModalTitle}>
+                  {importStatus ? 'Import Status' : 'Import Vendors'}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => !isImporting && setIsImportModalOpen(false)}
+                  disabled={isImporting}
+                >
                   <X size={24} color="black" />
                 </TouchableOpacity>
               </View>
-              <ScrollView style={styles.importModalContent} scrollEnabled={true}>
-                <Text style={styles.importDescription}>
-                  Upload a CSV file containing vendor data. CSV files will be
-                  automatically sanitized for security.
-                </Text>
-
-                <View style={styles.uploadBox}>
-                  <Upload size={40} color="#94a3b8" />
-                  <Text style={styles.uploadText}>Tap to select CSV file</Text>
-                  <TouchableOpacity
-                    style={styles.selectFileBtn}
-                    onPress={pickFileForImport}
-                    disabled={isImporting}
-                  >
-                    {isImporting ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <Text style={styles.selectFileBtnText}>Select File</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.downloadTemplateBtn}
-                  onPress={downloadTemplate}
-                  disabled={isImporting || isDownloading}
-                >
-                  {isDownloading ? (
-                    <ActivityIndicator size="small" color="#3b82f6" />
-                  ) : (
+              
+              {isImporting ? (
+                <View style={styles.importLoadingContainer}>
+                  <ActivityIndicator size="large" color="#3b82f6" />
+                  <Text style={styles.importLoadingText}>
+                    {importProgress.current <= importProgress.total ? 
+                      `Processing ${importProgress.current} of ${importProgress.total} vendors...` :
+                      'Processing file...'}
+                  </Text>
+                  {importProgress.total > 0 && (
                     <>
-                      <Download
-                        size={18}
-                        color="#3b82f6"
-                        style={{ marginRight: 8 }}
-                      />
-                      <Text style={styles.downloadTemplateBtnText}>
-                        Download Template
+                      <View style={styles.progressBar}>
+                        <View style={[
+                          styles.progressFill,
+                          { width: `${(importProgress.current / importProgress.total) * 100}%` }
+                        ]} />
+                      </View>
+                      <Text style={styles.progressPercentage}>
+                        {Math.round((importProgress.current / importProgress.total) * 100)}%
                       </Text>
                     </>
                   )}
-                </TouchableOpacity>
-                <Text style={styles.templateHint}>
-                  Download the template file to ensure proper formatting.
-                </Text>
-              </ScrollView>
+                  <Text style={styles.processingNote}>
+                    Checking for duplicate vendors...
+                  </Text>
+                </View>
+              ) : importStatus ? (
+                renderImportStatus()
+              ) : (
+                <ScrollView style={styles.importModalContent} scrollEnabled={true}>
+                  <Text style={styles.importDescription}>
+                    Upload a CSV or Excel file containing vendor data.
+                  </Text>
+
+                  <View style={styles.featureInfo}>
+                    <Info size={16} color="#3b82f6" />
+                    <Text style={styles.featureInfoText}>
+                      Duplicate vendors (by name) will be automatically skipped
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.uploadBox}
+                    onPress={pickFileForImport}
+                    disabled={isImporting}
+                  >
+                    <Upload size={40} color="#94a3b8" />
+                    <Text style={styles.uploadText}>Tap to select file (CSV or Excel)</Text>
+                    <Text style={styles.uploadSubText}>
+                      Supports .xlsx, .xls, .csv files
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.downloadTemplateBtn}
+                    onPress={downloadTemplate}
+                    disabled={isImporting || isDownloading}
+                  >
+                    {isDownloading ? (
+                      <ActivityIndicator size="small" color="#3b82f6" />
+                    ) : (
+                      <>
+                        <Download
+                          size={18}
+                          color="#3b82f6"
+                          style={{ marginRight: 8 }}
+                        />
+                        <Text style={styles.downloadTemplateBtnText}>
+                          Download Template
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <Text style={styles.templateHint}>
+                    Download the template file to ensure proper formatting.
+                  </Text>
+
+                  <View style={styles.requirementsContainer}>
+                    <Text style={styles.requirementsTitle}>Important Notes:</Text>
+                    <Text style={styles.requirementItem}>• vendorName is REQUIRED (must be unique)</Text>
+                    <Text style={styles.requirementItem}>• Vendors with duplicate names will be skipped</Text>
+                    <Text style={styles.requirementItem}>• For TDS Applicable, use "Yes"/"No" or "true"/"false"</Text>
+                  </View>
+                </ScrollView>
+              )}
             </View>
           </View>
         </Modal>
@@ -859,7 +1104,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'white',
     borderRadius: 16,
-    padding: 16 ,
+    padding: 16,
     paddingBottom: 20,
     marginBottom: 20,
     borderWidth: 1,
@@ -978,13 +1223,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
   modalTitle: { fontSize: 18, fontWeight: 'bold' },
   modalOverlay: {
     flex: 1,
@@ -1049,8 +1287,23 @@ const styles = StyleSheet.create({
   importDescription: {
     fontSize: 14,
     color: '#64748b',
-    marginBottom: 20,
+    marginBottom: 16,
     lineHeight: 20,
+  },
+  featureInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    gap: 8,
+  },
+  featureInfoText: {
+    fontSize: 13,
+    color: '#1e40af',
+    flex: 1,
+    lineHeight: 18,
   },
   uploadBox: {
     borderWidth: 2,
@@ -1063,22 +1316,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   uploadText: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 10,
-    marginBottom: 16,
-  },
-  selectFileBtn: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 10,
-  },
-  selectFileBtnText: {
-    color: 'white',
+    fontSize: 16,
+    color: '#334155',
+    marginTop: 16,
+    marginBottom: 8,
     fontWeight: '600',
-    fontSize: 14,
+  },
+  uploadSubText: {
+    fontSize: 13,
+    color: '#64748b',
+    textAlign: 'center',
   },
   downloadTemplateBtn: {
     borderWidth: 1,
@@ -1089,7 +1336,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   downloadTemplateBtnText: {
     color: '#3b82f6',
@@ -1100,9 +1347,162 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#94a3b8',
     textAlign: 'center',
+    marginBottom: 20,
+  },
+  requirementsContainer: {
+    backgroundColor: '#f8fafc',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 10,
+  },
+  requirementsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 8,
+  },
+  requirementItem: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 4,
+    marginLeft: 8,
   },
   emptyView: {
     alignItems: 'center',
     paddingVertical: 50,
+  },
+  blurEffect: {
+    opacity: 0.5,
+  },
+  importLoadingContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  importLoadingText: {
+    fontSize: 16,
+    color: '#333',
+    marginTop: 20,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  processingNote: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 20,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  progressBar: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#e9ecef',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginTop: 10,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#3b82f6',
+    borderRadius: 4,
+  },
+  progressPercentage: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+  },
+  importStatusContainer: {
+    alignItems: 'center',
+    padding: 24,
+    maxHeight: '70vh',
+  },
+  importStatusTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  importStatusMessage: {
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  skippedItemsContainer: {
+    backgroundColor: '#fff3cd',
+    borderWidth: 1,
+    borderColor: '#ffeaa7',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    width: '100%',
+    marginBottom: 12,
+  },
+  skippedItemsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#856404',
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  skippedList: {
+    maxHeight: 100,
+  },
+  skippedItem: {
+    fontSize: 12,
+    color: '#856404',
+    marginBottom: 4,
+    paddingLeft: 4,
+  },
+  failedItemsContainer: {
+    backgroundColor: '#f8d7da',
+    borderWidth: 1,
+    borderColor: '#f5c6cb',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    width: '100%',
+    marginBottom: 12,
+  },
+  failedItemsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#721c24',
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  failedList: {
+    maxHeight: 100,
+  },
+  failedItem: {
+    fontSize: 12,
+    color: '#721c24',
+    marginBottom: 4,
+    paddingLeft: 4,
+  },
+  autoCloseMessage: {
+    fontSize: 13,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 16,
+  },
+  closeImportBtn: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 24,
+  },
+  closeImportBtnText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
