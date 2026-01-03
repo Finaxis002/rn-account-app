@@ -4,6 +4,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Platform,
+  Alert,
 } from 'react-native';
 import { Card, Button, Dialog, Portal } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -11,6 +13,7 @@ import { pick } from '@react-native-documents/picker';
 import RNFS from 'react-native-fs';
 import XLSX from 'xlsx';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 import { BASE_URL } from '../../config';
 import { useToast } from '../../components/hooks/useToast';
 
@@ -27,7 +30,10 @@ const ExcelImportExport = ({
   const [importPreview, setImportPreview] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+  const [importProgress, setImportProgress] = useState({
+    current: 0,
+    total: 0,
+  });
   const [errorMessage, setErrorMessage] = useState('');
   const [importStatus, setImportStatus] = useState(''); // 'success', 'partial', 'failed'
   const [failedItems, setFailedItems] = useState([]);
@@ -38,13 +44,15 @@ const ExcelImportExport = ({
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.json_to_sheet(templateData);
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
-      
+
       const wbout = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
-      
+
       const fileName = templateFileName || 'template.xlsx';
-      
+
       if (Platform.OS === 'web') {
-        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const blob = new Blob([wbout], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -53,20 +61,30 @@ const ExcelImportExport = ({
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
-        toast({
-          title: 'Template Downloaded',
-          description: 'Template downloaded successfully!',
-        });
+
+        // Show success Alert
+        Alert.alert('Success', 'Template downloaded successfully!', [
+          { text: 'OK', style: 'default' },
+        ]);
       } else {
-        toast({
-          title: 'Download Template',
-          description: 'Please download the template from your computer.',
-        });
+        // Android/iOS - save to Downloads folder
+        const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+        await RNFS.writeFile(filePath, wbout, 'base64');
+
+        // Show success Alert for mobile
+        Alert.alert('Success', `Template saved to Downloads folder`, [
+          { text: 'OK', style: 'default' },
+        ]);
       }
     } catch (error) {
       console.error('Download error:', error);
-      setErrorMessage('Failed to generate template');
+
+      // Show failure Alert
+      Alert.alert(
+        'Download Failed',
+        error.message || 'Failed to download template',
+        [{ text: 'OK', style: 'cancel' }],
+      );
     }
   };
 
@@ -75,7 +93,7 @@ const ExcelImportExport = ({
     setErrorMessage('');
     setImportStatus('');
     setFailedItems([]);
-    
+
     try {
       const result = await pick({
         type: [
@@ -89,11 +107,11 @@ const ExcelImportExport = ({
       if (result && result.length > 0) {
         const file = result[0];
         setImportFile(file);
-        
+
         // Read file content
         let fileContent;
         let fileUri = file.uri;
-        
+
         if (Platform.OS === 'android' && fileUri.startsWith('content://')) {
           const destPath = `${RNFS.TemporaryDirectoryPath}/${file.name}`;
           await RNFS.copyFile(fileUri, destPath);
@@ -101,7 +119,7 @@ const ExcelImportExport = ({
         }
 
         fileContent = await RNFS.readFile(fileUri, 'base64');
-        
+
         if (!fileContent) {
           throw new Error('Failed to read file content');
         }
@@ -117,7 +135,7 @@ const ExcelImportExport = ({
           const firstRow = json[0];
           const fileColumns = Object.keys(firstRow);
           const missingColumns = expectedColumns.filter(
-            col => !fileColumns.includes(col)
+            col => !fileColumns.includes(col),
           );
 
           if (missingColumns.length > 0) {
@@ -134,33 +152,39 @@ const ExcelImportExport = ({
 
         setImportPreview(processedData);
         setErrorMessage(''); // Clear any previous error
-        
+
         toast({
           title: 'File Ready',
           description: `${processedData.length} items loaded successfully.`,
         });
       }
     } catch (error) {
-      if (error.code === 'DOCUMENT_PICKER_CANCELED' || error.message?.includes('cancel')) {
+      if (
+        error.code === 'DOCUMENT_PICKER_CANCELED' ||
+        error.message?.includes('cancel')
+      ) {
         return;
       }
       console.error('Import error:', error);
-      setErrorMessage('Failed to read Excel file. Please check the file format.');
+      setErrorMessage(
+        'Failed to read Excel file. Please check the file format.',
+      );
     }
   };
 
   // Import items one by one
-  const importItemsSequentially = async (items) => {
+  const importItemsSequentially = async items => {
     const token = await AsyncStorage.getItem('token');
-    
+
     if (!token) {
       throw new Error('Authentication token not found');
     }
 
     const failed = [];
-    const endpoint = activeTab === 'products' 
-      ? `${BASE_URL}/api/products` 
-      : `${BASE_URL}/api/services`;
+    const endpoint =
+      activeTab === 'products'
+        ? `${BASE_URL}/api/products`
+        : `${BASE_URL}/api/services`;
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
@@ -171,25 +195,25 @@ const ExcelImportExport = ({
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(item),
         });
 
         const responseData = await response.json();
-        
+
         if (!response.ok) {
           failed.push({
             item: item.name || item.serviceName || `Item ${i + 1}`,
             error: responseData.message || `Status: ${response.status}`,
-            data: item
+            data: item,
           });
         }
       } catch (error) {
         failed.push({
           item: item.name || item.serviceName || `Item ${i + 1}`,
           error: error.message,
-          data: item
+          data: item,
         });
       }
 
@@ -214,10 +238,10 @@ const ExcelImportExport = ({
     try {
       const failedItems = await importItemsSequentially(importPreview);
       setFailedItems(failedItems);
-      
+
       if (failedItems.length === 0) {
         setImportStatus('success');
-        
+
         // Wait a moment to show success message
         setTimeout(() => {
           // Clear state and close dialog
@@ -225,27 +249,54 @@ const ExcelImportExport = ({
           setImportPreview([]);
           setIsDialogOpen(false);
           setImportStatus('');
-          
+
           // Refresh data
           if (onImportSuccess) {
             onImportSuccess();
           }
+
+          // Show success alert
+          Alert.alert(
+            'Import Successful',
+            `All ${importPreview.length} ${activeTab} imported successfully.`,
+            [{ text: 'OK', style: 'default' }],
+          );
         }, 1500);
       } else {
         const successCount = importPreview.length - failedItems.length;
-        
+
         if (failedItems.length === importPreview.length) {
           setImportStatus('failed');
-          setErrorMessage('All items failed to import. Please check your data.');
+          setErrorMessage(
+            'All items failed to import. Please check your data.',
+          );
+
+          Alert.alert(
+            'Import Failed',
+            'All items failed to import. Please check your data.',
+            [{ text: 'OK', style: 'cancel' }],
+          );
         } else {
           setImportStatus('partial');
-          setErrorMessage(`${successCount} items imported, ${failedItems.length} failed.`);
+          setErrorMessage(
+            `${successCount} items imported, ${failedItems.length} failed.`,
+          );
+
+          Alert.alert(
+            'Partial Success',
+            `${successCount} items imported, ${failedItems.length} failed.`,
+            [{ text: 'OK', style: 'default' }],
+          );
         }
       }
     } catch (error) {
       console.error('Import error:', error);
       setImportStatus('failed');
       setErrorMessage(error.message || 'Failed to import data');
+
+      Alert.alert('Import Failed', error.message || 'Failed to import data', [
+        { text: 'OK', style: 'cancel' },
+      ]);
     } finally {
       setIsImporting(false);
     }
@@ -276,21 +327,21 @@ const ExcelImportExport = ({
           color: '#28a745',
           icon: 'check-circle',
           title: 'Import Successful!',
-          message: `All ${importPreview.length} ${activeTab} imported successfully.`
+          message: `All ${importPreview.length} ${activeTab} imported successfully.`,
         };
       case 'partial':
         return {
           color: '#fd7e14',
           icon: 'alert-circle',
           title: 'Partial Success',
-          message: errorMessage
+          message: errorMessage,
         };
       case 'failed':
         return {
           color: '#dc3545',
           icon: 'close-circle',
           title: 'Import Failed',
-          message: errorMessage
+          message: errorMessage,
         };
       default:
         return null;
@@ -312,43 +363,57 @@ const ExcelImportExport = ({
 
       {/* Import Dialog */}
       <Portal>
-        <Dialog 
-          visible={isDialogOpen} 
+        <Dialog
+          visible={isDialogOpen}
           onDismiss={handleCloseDialog}
           style={styles.dialog}
         >
           <Dialog.Title style={styles.dialogTitle}>
-            {isImporting ? 'Importing...' : 
-             statusInfo ? statusInfo.title : 
-             'Import/Export Excel'}
+            {isImporting
+              ? 'Importing...'
+              : statusInfo
+              ? statusInfo.title
+              : 'Import/Export Excel'}
           </Dialog.Title>
-          
+
           <Dialog.Content style={styles.dialogContent}>
             {isImporting ? (
               <View style={styles.loadingContainer}>
                 <Text style={styles.loadingText}>
-                  Importing {importProgress.current} of {importProgress.total} {activeTab}...
+                  Importing {importProgress.current} of {importProgress.total}{' '}
+                  {activeTab}...
                 </Text>
                 <View style={styles.progressBar}>
-                  <View style={[
-                    styles.progressFill,
-                    { width: `${(importProgress.current / importProgress.total) * 100}%` }
-                  ]} />
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: `${
+                          (importProgress.current / importProgress.total) * 100
+                        }%`,
+                      },
+                    ]}
+                  />
                 </View>
                 <Text style={styles.progressPercentage}>
-                  {Math.round((importProgress.current / importProgress.total) * 100)}%
+                  {Math.round(
+                    (importProgress.current / importProgress.total) * 100,
+                  )}
+                  %
                 </Text>
               </View>
             ) : statusInfo ? (
               <View style={styles.statusContainer}>
-                <Icon name={statusInfo.icon} size={48} color={statusInfo.color} />
+                <Icon
+                  name={statusInfo.icon}
+                  size={48}
+                  color={statusInfo.color}
+                />
                 <Text style={[styles.statusTitle, { color: statusInfo.color }]}>
                   {statusInfo.title}
                 </Text>
-                <Text style={styles.statusMessage}>
-                  {statusInfo.message}
-                </Text>
-                
+                <Text style={styles.statusMessage}>{statusInfo.message}</Text>
+
                 {/* Show failed items for partial/failed imports */}
                 {failedItems.length > 0 && (
                   <View style={styles.failedItemsContainer}>
@@ -365,7 +430,7 @@ const ExcelImportExport = ({
                     )}
                   </View>
                 )}
-                
+
                 {/* Auto-close message for success */}
                 {importStatus === 'success' && (
                   <Text style={styles.autoCloseMessage}>
@@ -437,7 +502,7 @@ const ExcelImportExport = ({
                         >
                           Import {importPreview.length} {activeTab}
                         </Button>
-                        
+
                         <Button
                           mode="outlined"
                           onPress={handleClearImport}
@@ -453,21 +518,15 @@ const ExcelImportExport = ({
               </>
             )}
           </Dialog.Content>
-          
+
           <Dialog.Actions style={styles.dialogActions}>
             {!isImporting && !importStatus && (
-              <Button 
-                onPress={handleCloseDialog}
-                textColor="#666"
-              >
+              <Button onPress={handleCloseDialog} textColor="#666">
                 Close
               </Button>
             )}
             {importStatus && importStatus !== 'success' && (
-              <Button 
-                onPress={handleClearImport}
-                textColor="#666"
-              >
+              <Button onPress={handleClearImport} textColor="#666">
                 Try Again
               </Button>
             )}
