@@ -664,23 +664,38 @@ export function VendorSettings() {
       // Generate Excel file
       const excelBuffer = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' });
 
-      // Save to downloads
-      const fileName = 'vendor_import_template.xlsx';
-      const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+      // Save to downloads (match CustomerSettings behaviour)
+      const fileName = `vendor_import_template_${Date.now()}.xlsx`;
+
+      // Determine Path Based On Platform
+      let filePath = '';
+      if (Platform.OS === 'android') {
+        // Path to the public Downloads folder
+        filePath = `${RNFS.ExternalStorageDirectoryPath}/Download/${fileName}`;
+      } else {
+        filePath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+      }
 
       await RNFS.writeFile(filePath, excelBuffer, 'base64');
 
+      // Ensure the file appears in Android file manager immediately
+      if (Platform.OS === 'android') {
+        await RNFS.scanFile(filePath);
+      }
+
+      Alert.alert(
+        'Download Successful',
+        `File saved to: ${
+          Platform.OS === 'android' ? 'Downloads Folder' : 'Documents'
+        }\n\nName: ${fileName}`,
+        [{ text: 'OK' }],
+      );
+
       Toast.show({
         type: 'success',
-        text1: 'Template Downloaded',
-        text2: `Template saved to Downloads folder`,
+        text1: 'Downloaded',
+        text2: 'Template saved to Downloads folder',
       });
-      try {
-        Alert.alert(
-          'Template Downloaded',
-          'Excel template has been downloaded to your device.',
-        );
-      } catch (e) {}
     } catch (error) {
       console.error('Download error:', error);
       Toast.show({
