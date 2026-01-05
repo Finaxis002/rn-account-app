@@ -260,16 +260,14 @@ export function AppSidebar() {
           />
         )}
 
-        {/* Users */}
-        {canSeeUsers && (
-          <MenuButton
-            icon="people-outline"
-            title="Users"
-            isActive={isActive('Users')}
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Users' })}
-            isBottomNav={isMobile}
-          />
-        )}
+        {/* Users: always show */}
+        <MenuButton
+          icon="people-outline"
+          title="Users"
+          isActive={isActive('Users')}
+          onPress={() => navigation.navigate('MainTabs', { screen: 'Users' })}
+          isBottomNav={isMobile}
+        />
 
         {/* Reports - Collapsible for Desktop, Simple for Mobile */}
         {!isMobile ? (
