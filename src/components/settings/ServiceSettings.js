@@ -837,11 +837,13 @@ const ServiceSettings = () => {
                 Download the template file to ensure proper formatting.
               </Text>
 
+              {/* Top-right X close button (replaces bottom Close button) */}
               <TouchableOpacity
-                style={styles.closeImportButton}
+                style={styles.modalCloseButton}
                 onPress={() => setIsImportDialogOpen(false)}
+                accessibilityLabel="Close import dialog"
               >
-                <Text style={styles.closeImportButtonText}>Close</Text>
+                <X size={20} color="#6b7280" />
               </TouchableOpacity>
             </View>
           </View>
@@ -1258,6 +1260,13 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 400,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 10,
+    padding: 8,
   },
   importTitle: {
     fontSize: 18,
