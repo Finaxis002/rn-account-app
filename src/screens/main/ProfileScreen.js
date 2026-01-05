@@ -421,7 +421,7 @@ const UserPermissionsTab = React.memo(() => {
 
 UserPermissionsTab.displayName = 'UserPermissionsTab';
 
-export default function ProfilePage({ navigation }) {
+export default function ProfilePage({ navigation, route }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
 
@@ -448,6 +448,12 @@ export default function ProfilePage({ navigation }) {
   const [selectedTab, setSelectedTab] = useState('profile');
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+
+  useEffect(() => {
+    if (initialLoadComplete && route?.params?.selectTab) {
+      setSelectedTab(route.params.selectTab);
+    }
+  }, [initialLoadComplete, route?.params?.selectTab]);
 
   const handleBackPress = useCallback(() => {
     try {
