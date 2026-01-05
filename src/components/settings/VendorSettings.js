@@ -43,6 +43,13 @@ import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { usePermissions } from '../../contexts/permission-context';
 import { capitalizeWords } from '../../lib/utils';
 import { BASE_URL } from '../../config';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '../../components/ui/Dialog';
 
 export function VendorSettings() {
   const [vendors, setVendors] = useState([]);
@@ -942,6 +949,25 @@ export function VendorSettings() {
           </View>
         )}
 
+        {/* Vendor Form Modal */}
+         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="md:max-w-2xl max-w-sm grid-rows-[auto,1fr,auto] max-h-[90vh] p-0">
+              <DialogHeader className="p-6">
+                <DialogTitle>
+                  {selectedVendor ? "Edit Vendor" : "Create New Vendor"}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedVendor
+                    ? "Update the details for this vendor."
+                    : "Fill in the form to add a new vendor."}
+                </DialogDescription>
+              </DialogHeader>
+              <VendorForm
+                vendor={selectedVendor || undefined}
+                onSuccess={handleFormSuccess}
+              />
+            </DialogContent>
+          </Dialog>
         {/* Import Modal */}
         <Modal
           visible={isImportModalOpen}
@@ -1076,10 +1102,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: '#0f172a',
-    textAlign: 'center',
+    // textAlign: 'center',
   },
-  navSub: { fontSize: 13, color: '#64748b', textAlign: 'center', marginTop: 4 },
-  actionRow: { marginTop: 16, gap: 10 },
+  navSub: { fontSize: 13, color: '#64748b', marginTop: 4 },
+  actionRow: { marginTop: 16, gap: 10, flexDirection: 'row', justifyContent: 'space-between', width:'100%' },
   mainActionBtn: {
     backgroundColor: '#3b82f6',
     flexDirection: 'row',
@@ -1087,6 +1113,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 10,
+    flex: 1, 
+    
   },
   mainActionText: { color: 'white', fontWeight: 'bold', fontSize: 15 },
   secondaryActionBtn: {
@@ -1099,6 +1127,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     borderRadius: 10,
+    flex: 1, 
   },
   secondaryActionText: { color: '#1e293b', fontWeight: '600', fontSize: 15 },
   card: {
@@ -1224,6 +1253,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: { fontSize: 18, fontWeight: 'bold' },
+  
+  // Form Modal Styles
+  formModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  formModalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    maxHeight: '90%',
+    width: '100%',
+    overflow: 'hidden',
+  },
+  formModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  formModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  formModalContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  
+  // Import Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
