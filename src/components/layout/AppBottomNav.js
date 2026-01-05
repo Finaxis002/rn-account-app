@@ -248,7 +248,7 @@ export function AppSidebar() {
         )}
 
         {/* Companies */}
-        {canSeeCompanies && (
+        {canSeeCompanies && currentRole !== 'admin' && (
           <MenuButton
             icon="business-outline"
             title="Companies"
@@ -270,8 +270,6 @@ export function AppSidebar() {
             isBottomNav={isMobile}
           />
         )}
-
-
 
         {/* Reports - Collapsible for Desktop, Simple for Mobile */}
         {!isMobile ? (
