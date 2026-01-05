@@ -590,7 +590,8 @@ export default function ProfilePage({ navigation, route }) {
 
     if (
       isClient ||
-      allow(permissions?.canShowVendors, userCaps?.canShowVendors)
+      allow(permissions?.canShowVendors, userCaps?.canShowVendors) ||
+      allow(permissions?.canCreateVendors, userCaps?.canCreateVendors)
     ) {
       memberTabs.push({
         value: 'vendors',
@@ -602,7 +603,8 @@ export default function ProfilePage({ navigation, route }) {
 
     if (
       isClient ||
-      allow(permissions?.canShowCustomers, userCaps?.canShowCustomers)
+      allow(permissions?.canShowCustomers, userCaps?.canShowCustomers) ||
+      allow(permissions?.canCreateCustomers, userCaps?.canCreateCustomers)
     ) {
       memberTabs.push({
         value: 'customers',
