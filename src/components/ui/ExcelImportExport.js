@@ -63,7 +63,7 @@ const ExcelImportExport = ({
         document.body.removeChild(a);
 
         // Show success Alert
-        Alert.alert('Success', 'Template downloaded successfully!', [
+        Alert.alert('Download Success', 'Template downloaded successfully!', [
           { text: 'OK', style: 'default' },
         ]);
       } else {
@@ -72,7 +72,7 @@ const ExcelImportExport = ({
         await RNFS.writeFile(filePath, wbout, 'base64');
 
         // Show success Alert for mobile
-        Alert.alert('Success', `Template saved to Downloads folder`, [
+        Alert.alert('Download Success', `Template saved to Downloads folder`, [
           { text: 'OK', style: 'default' },
         ]);
       }
