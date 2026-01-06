@@ -406,4 +406,4 @@ const styles = StyleSheet.create({
   deleteText: {
     color: '#dc2626',
   },
-});
+}); 
