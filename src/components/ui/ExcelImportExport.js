@@ -68,13 +68,29 @@ const ExcelImportExport = ({
         ]);
       } else {
         // Android/iOS - save to Downloads folder
-        const filePath = `${RNFS.DownloadDirectoryPath}/${fileName}`;
+        let filePath = '';
+        if (Platform.OS === 'android') {
+          // Path to the public Downloads folder
+          filePath = `${RNFS.ExternalStorageDirectoryPath}/Download/${fileName}`;
+        } else {
+          filePath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
+        }
+
         await RNFS.writeFile(filePath, wbout, 'base64');
 
+        // Ensure the file appears in Android file manager immediately
+        if (Platform.OS === 'android') {
+          await RNFS.scanFile(filePath);
+        }
+
         // Show success Alert for mobile
-        Alert.alert('Download Success', `Template saved to Downloads folder`, [
-          { text: 'OK', style: 'default' },
-        ]);
+        Alert.alert(
+          'Download Success',
+          `File saved to: ${
+            Platform.OS === 'android' ? 'Downloads Folder' : 'Documents'
+          }\n\nName: ${fileName}`,
+          [{ text: 'OK', style: 'default' }],
+        );
       }
     } catch (error) {
       console.error('Download error:', error);
