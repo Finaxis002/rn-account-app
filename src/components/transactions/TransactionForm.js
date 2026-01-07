@@ -3263,7 +3263,29 @@ export function TransactionForm({
     }
   };
 
-  const productOptions = products.map(p => {
+  // Filter products by selected company
+  const filteredProducts = useMemo(() => {
+    if (!selectedCompanyIdWatch) return products;
+    return products.filter(
+      p =>
+        !p.company ||
+        p.company === selectedCompanyIdWatch ||
+        p.company?._id === selectedCompanyIdWatch,
+    );
+  }, [products, selectedCompanyIdWatch]);
+
+  // Filter services by selected company
+  const filteredServices = useMemo(() => {
+    if (!selectedCompanyIdWatch) return services;
+    return services.filter(
+      s =>
+        !s.company ||
+        s.company === selectedCompanyIdWatch ||
+        s.company?._id === selectedCompanyIdWatch,
+    );
+  }, [services, selectedCompanyIdWatch]);
+
+  const productOptions = filteredProducts.map(p => {
     const stockNum = Number(p.stocks ?? p.stock ?? 0);
 
     let stockLabel;
@@ -3281,7 +3303,7 @@ export function TransactionForm({
     };
   });
 
-  const serviceOptions = services.map(s => ({
+  const serviceOptions = filteredServices.map(s => ({
     value: s._id,
     label: s.serviceName,
   }));
