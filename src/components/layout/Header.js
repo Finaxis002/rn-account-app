@@ -24,6 +24,7 @@ import { useCompany } from '../../contexts/company-context';
 // Components
 import { CompanySwitcher } from './CompanySwitcher';
 import Notification from '../notifications/Notification';
+import SupportForm from '../support/SupportForm';
 
 // Config
 import { BASE_URL } from '../../config';
@@ -53,6 +54,7 @@ export default function Header() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showSupportForm, setShowSupportForm] = useState(false);
   const [dateString, setDateString] = useState('');
   const [highlightCount, setHighlightCount] = useState(0);
   const [currentHighlightIndex, setCurrentHighlightIndex] = useState(0);
@@ -138,6 +140,11 @@ export default function Header() {
     }
   };
 
+  const handleSupport = () => {
+    setShowDropdown(false);
+    setShowSupportForm(true);
+  };
+
   // Search highlight functionality
   const handleSearchHighlight = (term) => {
     if (!term.trim()) {
@@ -162,47 +169,6 @@ export default function Header() {
       setCurrentHighlightIndex(prev => prev - 1);
     }
   };
-
-  // Logout functionality
-  // const handleLogout = async () => {
-  //   try {
-  //     const userRole = await AsyncStorage.getItem('role');
-  //     const slug =
-  //       (await AsyncStorage.getItem('tenantSlug')) ||
-  //       (await AsyncStorage.getItem('slug')) ||
-  //       (await AsyncStorage.getItem('clientUsername'));
-
-  //     Alert.alert('Logout', 'Are you sure you want to logout?', [
-  //       {
-  //         text: 'Cancel',
-  //         style: 'cancel',
-  //       },
-  //       {
-  //         text: 'Logout',
-  //         style: 'destructive',
-  //         onPress: async () => {
-  //           await AsyncStorage.clear();
-
-  //           let targetRoute = 'UserLoginScreen';
-  //           if (userRole === 'customer' && slug) {
-  //             targetRoute = 'ClientLoginScreen';
-  //           } else if (userRole === 'master') {
-  //             targetRoute = 'AdminLoginScreen';
-  //           }
-
-  //           navigation.reset({
-  //             index: 0,
-  //             routes: [{ name: targetRoute }],
-  //           });
-  //         },
-  //       },
-  //     ]);
-  //   } catch (error) {
-  //     console.error('Logout error:', error);
-  //     Alert.alert('Error', 'Failed to logout');
-  //   }
-  //   setShowDropdown(false);
-  // };
 
   const handleLogout = async () => {
     try {
@@ -421,6 +387,19 @@ export default function Header() {
                       <Text style={styles.dropdownText}>Settings</Text>
                     </TouchableOpacity>
 
+                    {/* Support Option */}
+                    <TouchableOpacity
+                      style={styles.dropdownItem}
+                      onPress={handleSupport}
+                    >
+                      <Ionicons
+                        name="help-circle-outline"
+                        size={18}
+                        color="#64748b"
+                      />
+                      <Text style={styles.dropdownText}>Support</Text>
+                    </TouchableOpacity>
+
                     <TouchableOpacity
                       style={styles.dropdownItem}
                       onPress={handleLogout}
@@ -441,6 +420,12 @@ export default function Header() {
           </View>
         </View>
       </SafeAreaView>
+
+      {/* Support Form Modal */}
+      <SupportForm
+        isVisible={showSupportForm}
+        onClose={() => setShowSupportForm(false)}
+      />
     </>
   );
 }
