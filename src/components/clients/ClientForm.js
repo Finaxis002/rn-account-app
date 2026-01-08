@@ -8,6 +8,7 @@ import {
   Switch as RNSwitch,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../hooks/useToast';
@@ -597,6 +598,7 @@ export default function ClientForm({
     if (!validatePermissions()) return;
 
     setIsSavingPermissions(true);
+    
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Authentication token not found.');
@@ -618,11 +620,27 @@ export default function ClientForm({
         throw new Error(errorData.message || 'Failed to update permissions.');
       }
 
+      // Show success alert
+      Alert.alert(
+        'Success',
+        `Permissions for ${client.contactName} have been updated successfully!`,
+        [{ text: 'OK' }]
+      );
+
+      // Also show toast if available
       toast({
-        title: 'Permissions Updated',
-        description: `Permissions for ${client.contactName} have been saved.`,
+        variant: 'default',
+        title: 'Success',
+        description: `Permissions for ${client.contactName} have been updated successfully.`,
       });
     } catch (error) {
+      // Show error alert
+      Alert.alert(
+        'Update Failed',
+        error instanceof Error ? error.message : 'Failed to update permissions.',
+        [{ text: 'OK' }]
+      );
+
       toast({
         variant: 'destructive',
         title: 'Update Failed',
@@ -1079,178 +1097,180 @@ export default function ClientForm({
   );
 
   const renderPermissionsForm = () => (
-    <ScrollView style={styles.tabContent}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Manage Permissions</Text>
-        <Text style={styles.sectionSubtitle}>
-          Modify usage limits and feature access for this client.
-        </Text>
-      </View>
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.tabContent}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Manage Permissions</Text>
+          <Text style={styles.sectionSubtitle}>
+            Modify usage limits and feature access for this client.
+          </Text>
+        </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Limits</Text>
-        <View style={styles.gridContainer}>
-          <View style={styles.gridItem}>
-            <Text style={styles.gridLabel}>
-              Max Companies<Text style={styles.required}> *</Text>
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                fieldErrors.maxCompanies && styles.inputError,
-              ]}
-              value={String(currentPermissions.maxCompanies || '')}
-              onChangeText={v => {
-                handlePermissionChange('maxCompanies', Number(v || 0));
-              }}
-              onBlur={() => handleFieldValidation('maxCompanies', currentPermissions.maxCompanies)}
-              keyboardType="numeric"
-            />
-            {fieldErrors.maxCompanies && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={12} color="#dc2626" />
-                <Text style={[styles.errorText, { fontSize: 11 }]}>
-                  {fieldErrors.maxCompanies}
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.gridItem}>
-            <Text style={styles.gridLabel}>
-              Max Users<Text style={styles.required}> *</Text>
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                fieldErrors.maxUsers && styles.inputError,
-              ]}
-              value={String(currentPermissions.maxUsers || '')}
-              onChangeText={v => {
-                handlePermissionChange('maxUsers', Number(v || 0));
-              }}
-              onBlur={() => handleFieldValidation('maxUsers', currentPermissions.maxUsers)}
-              keyboardType="numeric"
-            />
-            {fieldErrors.maxUsers && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={12} color="#dc2626" />
-                <Text style={[styles.errorText, { fontSize: 11 }]}>
-                  {fieldErrors.maxUsers}
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.gridItem}>
-            <Text style={styles.gridLabel}>
-              Max Inventories<Text style={styles.required}> *</Text>
-            </Text>
-            <TextInput
-              style={[
-                styles.input,
-                fieldErrors.maxInventories && styles.inputError,
-              ]}
-              value={String(currentPermissions.maxInventories || '')}
-              onChangeText={v => {
-                handlePermissionChange('maxInventories', Number(v || 0));
-              }}
-              onBlur={() => handleFieldValidation('maxInventories', currentPermissions.maxInventories)}
-              keyboardType="numeric"
-            />
-            {fieldErrors.maxInventories && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={12} color="#dc2626" />
-                <Text style={[styles.errorText, { fontSize: 11 }]}>
-                  {fieldErrors.maxInventories}
-                </Text>
-              </View>
-            )}
+        <View style={styles.section}>
+          <Text style={styles.label}>Limits</Text>
+          <View style={styles.gridContainer}>
+            <View style={styles.gridItem}>
+              <Text style={styles.gridLabel}>
+                Max Companies<Text style={styles.required}> *</Text>
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  fieldErrors.maxCompanies && styles.inputError,
+                ]}
+                value={String(currentPermissions.maxCompanies || '')}
+                onChangeText={v => {
+                  handlePermissionChange('maxCompanies', Number(v || 0));
+                }}
+                onBlur={() => handleFieldValidation('maxCompanies', currentPermissions.maxCompanies)}
+                keyboardType="numeric"
+              />
+              {fieldErrors.maxCompanies && (
+                <View style={styles.errorContainer}>
+                  <AlertCircle size={12} color="#dc2626" />
+                  <Text style={[styles.errorText, { fontSize: 11 }]}>
+                    {fieldErrors.maxCompanies}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.gridItem}>
+              <Text style={styles.gridLabel}>
+                Max Users<Text style={styles.required}> *</Text>
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  fieldErrors.maxUsers && styles.inputError,
+                ]}
+                value={String(currentPermissions.maxUsers || '')}
+                onChangeText={v => {
+                  handlePermissionChange('maxUsers', Number(v || 0));
+                }}
+                onBlur={() => handleFieldValidation('maxUsers', currentPermissions.maxUsers)}
+                keyboardType="numeric"
+              />
+              {fieldErrors.maxUsers && (
+                <View style={styles.errorContainer}>
+                  <AlertCircle size={12} color="#dc2626" />
+                  <Text style={[styles.errorText, { fontSize: 11 }]}>
+                    {fieldErrors.maxUsers}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.gridItem}>
+              <Text style={styles.gridLabel}>
+                Max Inventories<Text style={styles.required}> *</Text>
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  fieldErrors.maxInventories && styles.inputError,
+                ]}
+                value={String(currentPermissions.maxInventories || '')}
+                onChangeText={v => {
+                  handlePermissionChange('maxInventories', Number(v || 0));
+                }}
+                onBlur={() => handleFieldValidation('maxInventories', currentPermissions.maxInventories)}
+                keyboardType="numeric"
+              />
+              {fieldErrors.maxInventories && (
+                <View style={styles.errorContainer}>
+                  <AlertCircle size={12} color="#dc2626" />
+                  <Text style={[styles.errorText, { fontSize: 11 }]}>
+                    {fieldErrors.maxInventories}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.label}>Feature Access</Text>
-        <View style={styles.permissionsGrid}>
-          <View style={styles.permissionItem}>
-            <Text style={styles.permissionLabel}>Send Invoice via Email</Text>
-            <RNSwitch
-              value={currentPermissions.canSendInvoiceEmail}
-              onValueChange={v => handlePermissionChange('canSendInvoiceEmail', v)}
-            />
-          </View>
-          <View style={styles.permissionItem}>
-            <Text style={styles.permissionLabel}>Send Invoice via WhatsApp</Text>
-            <RNSwitch
-              value={currentPermissions.canSendInvoiceWhatsapp}
-              onValueChange={v => handlePermissionChange('canSendInvoiceWhatsapp', v)}
-            />
-          </View>
-          <View style={styles.permissionItem}>
-            <Text style={styles.permissionLabel}>Create Users</Text>
-            <RNSwitch
-              value={currentPermissions.canCreateUsers}
-              onValueChange={v => handlePermissionChange('canCreateUsers', v)}
-            />
-          </View>
-          <View style={styles.permissionItem}>
-            <Text style={styles.permissionLabel}>Create Customers</Text>
-            <RNSwitch
-              value={currentPermissions.canCreateCustomers}
-              onValueChange={v => handlePermissionChange('canCreateCustomers', v)}
-            />
-          </View>
-          <View style={styles.permissionItem}>
-            <Text style={styles.permissionLabel}>Create Vendors</Text>
-            <RNSwitch
-              value={currentPermissions.canCreateVendors}
-              onValueChange={v => handlePermissionChange('canCreateVendors', v)}
-            />
-          </View>
-          <View style={styles.permissionItem}>
-            <Text style={styles.permissionLabel}>Create Products</Text>
-            <RNSwitch
-              value={currentPermissions.canCreateProducts}
-              onValueChange={v => handlePermissionChange('canCreateProducts', v)}
-            />
-          </View>
-          <View style={styles.permissionItem}>
-            <Text style={styles.permissionLabel}>Create Companies</Text>
-            <RNSwitch
-              value={currentPermissions.canCreateCompanies}
-              onValueChange={v => handlePermissionChange('canCreateCompanies', v)}
-            />
-          </View>
-          <View style={styles.permissionItem}>
-            <Text style={styles.permissionLabel}>Update Companies</Text>
-            <RNSwitch
-              value={currentPermissions.canUpdateCompanies}
-              onValueChange={v => handlePermissionChange('canUpdateCompanies', v)}
-            />
+        <View style={styles.section}>
+          <Text style={styles.label}>Feature Access</Text>
+          <View style={styles.permissionsGrid}>
+            <View style={styles.permissionItem}>
+              <Text style={styles.permissionLabel}>Send Invoice via Email</Text>
+              <RNSwitch
+                value={currentPermissions.canSendInvoiceEmail}
+                onValueChange={v => handlePermissionChange('canSendInvoiceEmail', v)}
+              />
+            </View>
+            <View style={styles.permissionItem}>
+              <Text style={styles.permissionLabel}>Send Invoice via WhatsApp</Text>
+              <RNSwitch
+                value={currentPermissions.canSendInvoiceWhatsapp}
+                onValueChange={v => handlePermissionChange('canSendInvoiceWhatsapp', v)}
+              />
+            </View>
+            <View style={styles.permissionItem}>
+              <Text style={styles.permissionLabel}>Create Users</Text>
+              <RNSwitch
+                value={currentPermissions.canCreateUsers}
+                onValueChange={v => handlePermissionChange('canCreateUsers', v)}
+              />
+            </View>
+            <View style={styles.permissionItem}>
+              <Text style={styles.permissionLabel}>Create Customers</Text>
+              <RNSwitch
+                value={currentPermissions.canCreateCustomers}
+                onValueChange={v => handlePermissionChange('canCreateCustomers', v)}
+              />
+            </View>
+            <View style={styles.permissionItem}>
+              <Text style={styles.permissionLabel}>Create Vendors</Text>
+              <RNSwitch
+                value={currentPermissions.canCreateVendors}
+                onValueChange={v => handlePermissionChange('canCreateVendors', v)}
+              />
+            </View>
+            <View style={styles.permissionItem}>
+              <Text style={styles.permissionLabel}>Create Products</Text>
+              <RNSwitch
+                value={currentPermissions.canCreateProducts}
+                onValueChange={v => handlePermissionChange('canCreateProducts', v)}
+              />
+            </View>
+            <View style={styles.permissionItem}>
+              <Text style={styles.permissionLabel}>Create Companies</Text>
+              <RNSwitch
+                value={currentPermissions.canCreateCompanies}
+                onValueChange={v => handlePermissionChange('canCreateCompanies', v)}
+              />
+            </View>
+            <View style={styles.permissionItem}>
+              <Text style={styles.permissionLabel}>Update Companies</Text>
+              <RNSwitch
+                value={currentPermissions.canUpdateCompanies}
+                onValueChange={v => handlePermissionChange('canUpdateCompanies', v)}
+              />
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          onPress={handleSavePermissions}
-          disabled={isSavingPermissions || Object.keys(fieldErrors).some(k => 
-            ['maxCompanies', 'maxUsers', 'maxInventories'].includes(k)
-          )}
-          style={[
-            styles.submitButton,
-            (isSavingPermissions || Object.keys(fieldErrors).some(k => 
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            onPress={handleSavePermissions}
+            disabled={isSavingPermissions || Object.keys(fieldErrors).some(k => 
               ['maxCompanies', 'maxUsers', 'maxInventories'].includes(k)
-            )) && styles.buttonDisabled,
-          ]}
-        >
-          {isSavingPermissions ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.submitText}>Save Permissions</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+            )}
+            style={[
+              styles.submitButton,
+              (isSavingPermissions || Object.keys(fieldErrors).some(k => 
+                ['maxCompanies', 'maxUsers', 'maxInventories'].includes(k)
+              )) && styles.buttonDisabled,
+            ]}
+          >
+            {isSavingPermissions ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.submitText}>Save Permissions</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 
   const renderValidityForm = () => (
