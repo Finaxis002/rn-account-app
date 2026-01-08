@@ -1155,35 +1155,52 @@ export function TransactionForm({
   }, [shippingStateCode]);
 
   const isInitialLoad = useRef(true);
-
   useEffect(() => {
     if (isInitialLoad.current) {
       isInitialLoad.current = false;
       return;
     }
+
     const items = form.getValues('items');
 
     if (items && items.length > 0) {
       const updatedItems = items.map(item => {
-        if (item.itemType === 'product') {
+        if (item.itemType === 'product' && item.product) {
+          const selectedProduct = products.find(p => p._id === item.product);
+
+          const newPrice =
+            type === 'sales'
+              ? Number(selectedProduct?.sellingPrice || 0)
+              : Number(selectedProduct?.costPrice || 0);
+
+          const qty = Number(item.quantity) || 1;
+          const newAmount = qty * newPrice;
+
           return {
             ...item,
-            pricePerUnit: 0,
-            amount: 0,
-            lineTax: 0,
-            lineTotal: 0,
+            pricePerUnit: newPrice,
+            amount: newAmount,
           };
         }
         return item;
       });
 
-      form.setValue('items', updatedItems);
+      // Update all item fields at once and request validation/dirty flag
+      form.setValue('items', updatedItems, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
 
-      form.setValue('totalAmount', 0);
-      form.setValue('taxAmount', 0);
-      form.setValue('invoiceTotal', 0);
+      // Trigger validation/calculation so watched effects recalc totals
+      setTimeout(() => {
+        if (typeof form.trigger === 'function') {
+          try {
+            form.trigger('items');
+          } catch (e) {}
+        }
+      }, 100);
     }
-  }, [type, form]);
+  }, [type, products]);
 
   useEffect(() => {
     if (transactionToEdit && banks.length > 0) {
