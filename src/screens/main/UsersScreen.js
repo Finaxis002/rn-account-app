@@ -44,6 +44,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
 import { usePermissions } from '../../contexts/permission-context';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
+import { useCompany } from '../../contexts/company-context';
 
 const base64Decode = str => {
   const chars =
@@ -74,6 +75,7 @@ export default function UsersPage() {
   const { toast } = useToast();
   const { permissions, refetch } = usePermissions();
   const { refetch: refetchUserPermissions } = useUserPermissions();
+  const { triggerCompaniesRefresh, refreshTrigger } = useCompany();
   const userLoginUrl = 'https://vinimay.sharda.co.in/user-login';
 
   useEffect(() => {
@@ -139,11 +141,40 @@ export default function UsersPage() {
     fetchUsersAndCompanies();
   }, [fetchUsersAndCompanies]);
 
+  // Re-fetch companies silently when global company refresh is triggered
+  const fetchCompaniesOnly = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch(`${BASE_URL}/api/companies/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setCompanies(Array.isArray(data) ? data : data?.data || []);
+    } catch (err) {
+      console.error('UsersScreen fetchCompaniesOnly failed:', err);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      fetchCompaniesOnly().catch(err =>
+        console.error(
+          'UsersScreen fetchCompaniesOnly after trigger failed:',
+          err,
+        ),
+      );
+    }
+  }, [refreshTrigger, fetchCompaniesOnly]);
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await Promise.all([
         fetchUsersAndCompanies(true),
+        triggerCompaniesRefresh(),
         refetch ? refetch() : Promise.resolve(),
         refetchUserPermissions ? refetchUserPermissions() : Promise.resolve(),
       ]);
@@ -202,6 +233,14 @@ export default function UsersPage() {
       toast({
         title: `User ${selectedUser ? 'updated' : 'created'} successfully`,
       });
+
+      // 🔄 Refresh companies if they were assigned/modified
+      if (formDataFromForm.companies && formDataFromForm.companies.length > 0) {
+        console.log(
+          '🔄 Companies assigned/modified - triggering header refresh',
+        );
+        triggerCompaniesRefresh();
+      }
 
       await fetchUsersAndCompanies();
       handleCloseForm();
@@ -332,14 +371,10 @@ export default function UsersPage() {
           {/* Enhanced Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              
               <View>
                 <Text style={styles.title}>User Management</Text>
                 <View style={styles.subtitleRow}>
-                  
-                  <Text style={styles.subtitle}>
-                    Manage your users
-                  </Text>
+                  <Text style={styles.subtitle}>Manage your users</Text>
                 </View>
               </View>
             </View>
@@ -378,7 +413,12 @@ export default function UsersPage() {
                     size={14}
                     color={copied ? '#10B981' : '#3B82F6'}
                   />
-                  <Text style={[styles.copyButtonText, copied && styles.copyButtonTextActive]}>
+                  <Text
+                    style={[
+                      styles.copyButtonText,
+                      copied && styles.copyButtonTextActive,
+                    ]}
+                  >
                     {copied ? 'Copied!' : 'Copy'}
                   </Text>
                 </TouchableOpacity>
@@ -586,7 +626,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     // marginBottom: 10,
     // marginTop: 6,
-    margin:8,
+    margin: 8,
     paddingLeft: 10,
     paddingRight: 10,
   },
@@ -641,8 +681,8 @@ const styles = StyleSheet.create({
   // Enhanced URL Card Styles
   urlCardWrapper: {
     // marginBottom: 12,
-    marginLeft:16,
-    marginRight:16
+    marginLeft: 16,
+    marginRight: 16,
   },
   urlCard: {
     backgroundColor: '#FFFFFF',

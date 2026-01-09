@@ -18,6 +18,7 @@ import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { useCompany } from '../../contexts/company-context';
 import { useToast } from '../../components/hooks/useToast';
 import { BASE_URL } from '../../config';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Dialog,
   DialogContent,
@@ -65,7 +66,16 @@ export default function InventoryScreen() {
     refetch: refetchUserPermissions,
   } = useUserPermissions();
   const { permissions, refetch, isLoading: isLoadingPerms } = usePermissions();
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, triggerCompaniesRefresh, refreshTrigger } =
+    useCompany();
+
+  // Trigger company refresh when screen gains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 InventoryScreen focused - triggering company refresh...');
+      triggerCompaniesRefresh();
+    }, [triggerCompaniesRefresh]),
+  );
 
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
@@ -200,6 +210,34 @@ export default function InventoryScreen() {
     fetchProducts();
     fetchServices();
   }, [fetchCompanies, fetchProducts, fetchServices]);
+
+  // Re-fetch companies silently when global refresh is triggered (avoid full-screen loader)
+  const fetchCompaniesSilent = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch(`${BASE_URL}/api/companies/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setCompanies(Array.isArray(data) ? data : data.companies || []);
+    } catch (err) {
+      console.error('fetchCompaniesSilent failed:', err);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      fetchCompaniesSilent().catch(err =>
+        console.error(
+          'Inventory fetchCompaniesSilent after trigger failed:',
+          err,
+        ),
+      );
+    }
+  }, [refreshTrigger, fetchCompaniesSilent]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -1050,7 +1088,16 @@ export default function InventoryScreen() {
     return (
       <AppLayout>
         <SafeAreaView style={styles.safeArea}>
-          <View style={styles.noCompanyContainer}>
+          <ScrollView
+            contentContainerStyle={styles.noCompanyContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#007AFF']}
+              />
+            }
+          >
             <View style={styles.noCompanyCard}>
               <View style={styles.noCompanyIcon}>
                 <Icon name="business" size={32} color="#007AFF" />
@@ -1077,7 +1124,7 @@ export default function InventoryScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </ScrollView>
         </SafeAreaView>
       </AppLayout>
     );

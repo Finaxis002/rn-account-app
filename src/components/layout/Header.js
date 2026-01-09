@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -34,12 +35,18 @@ const logoPath2 = require('../../../assets/images/vinimay.png');
 // Role label mapping function (Next.js जैसा)
 function roleToLabel(role) {
   switch (role) {
-    case 'master':   return 'Master';
-    case 'admin':    return 'Admin';
-    case 'manager':  return 'Manager';
-    case 'customer': return 'Client';
-    case 'user':     return 'User';
-    default:         return 'User';
+    case 'master':
+      return 'Master';
+    case 'admin':
+      return 'Admin';
+    case 'manager':
+      return 'Manager';
+    case 'customer':
+      return 'Client';
+    case 'user':
+      return 'User';
+    default:
+      return 'User';
   }
 }
 
@@ -66,7 +73,15 @@ export default function Header() {
   const route = useRoute();
 
   // Context data
-  const { currentCompany } = useCompany();
+  const { triggerCompaniesRefresh } = useCompany();
+
+  // Refresh companies whenever Header comes to focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🔄 Header focused - triggering company refresh...');
+      triggerCompaniesRefresh();
+    }, [triggerCompaniesRefresh]),
+  );
 
   useEffect(() => {
     const today = new Date();
@@ -146,7 +161,7 @@ export default function Header() {
   };
 
   // Search highlight functionality
-  const handleSearchHighlight = (term) => {
+  const handleSearchHighlight = term => {
     if (!term.trim()) {
       setHighlightCount(0);
       setCurrentHighlightIndex(0);
@@ -199,7 +214,7 @@ export default function Header() {
     }
     setShowDropdown(false);
   };
-  
+
   // Search UI
   if (showSearch) {
     return (
