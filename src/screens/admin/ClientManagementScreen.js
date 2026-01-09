@@ -228,7 +228,15 @@ export default function ClientManagementPage() {
       }
 
       const data = await response.json();
-      setClients(data);
+      const sortedClients = data.sort((a, b) => {
+      // Extract timestamp from MongoDB ObjectId (first 4 bytes)
+      // This is a simplified approach - for actual use, you might want a more robust solution
+      const timestampA = a._id ? parseInt(a._id.substring(0, 8), 16) * 1000 : 0;
+      const timestampB = b._id ? parseInt(b._id.substring(0, 8), 16) * 1000 : 0;
+      return timestampB - timestampA; // Newest first
+    });
+    
+    setClients(sortedClients);
     } catch (error) {
       toast({
         title: 'Failed to load clients',
