@@ -403,7 +403,9 @@ export default function Header() {
                     </TouchableOpacity>
 
                     {/* Support Option */}
-                    <TouchableOpacity
+                    {role !== 'master'&&(
+
+                      <TouchableOpacity
                       style={styles.dropdownItem}
                       onPress={handleSupport}
                     >
@@ -414,6 +416,8 @@ export default function Header() {
                       />
                       <Text style={styles.dropdownText}>Support</Text>
                     </TouchableOpacity>
+                    )}
+                    
 
                     <TouchableOpacity
                       style={styles.dropdownItem}
