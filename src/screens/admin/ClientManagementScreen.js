@@ -15,6 +15,8 @@ import {
   RefreshControl,
   Animated,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -124,7 +126,10 @@ const Dialog = ({ visible, onClose, title, description, children }) => (
     onRequestClose={onClose}
     statusBarTranslucent={true}
   >
-    <View style={styles.modalOverlay}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.modalOverlay}
+    >
       <View style={styles.dialogContent}>
         <View style={styles.dialogHeader}>
           <Text style={styles.dialogTitle}>{title}</Text>
@@ -135,7 +140,7 @@ const Dialog = ({ visible, onClose, title, description, children }) => (
         </View>
         <View style={styles.dialogBody}>{children}</View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   </Modal>
 );
 
@@ -684,9 +689,11 @@ export default function ClientManagementPage() {
           }
         >
           <ScrollView
-            style={{ flexGrow: 0, maxHeight: 700 }}
-            contentContainerStyle={{ paddingBottom: 16 }}
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 60 }}
             keyboardShouldPersistTaps="handled"
+            scrollEnabled={true}
+            nestedScrollEnabled={true}
           >
             <ClientForm
               client={selectedClient}
