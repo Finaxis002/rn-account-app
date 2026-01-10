@@ -673,176 +673,179 @@ export default function InventoryScreen() {
   // ==========================================
   // PRODUCT CARD (EDIT/DELETE KE PERMISSION CHECKS HATAYE)
   // ==========================================
-  const renderProductCard = (item, index) => {
-    const absoluteIndex = (productCurrentPage - 1) * ITEMS_PER_PAGE + index;
-    const isLowStock = (item.stocks ?? 0) <= 10;
+ const renderProductCard = (item, index) => {
+  const isLowStock = (item.stocks ?? 0) <= 10;
 
-    return (
-      <View style={styles.card} key={item._id}>
-        <View style={styles.cardHeader}>
-          <View style={styles.productInfo}>
-            <View style={styles.productIcon}>
-              <Icon name="inventory" size={20} color="#007AFF" />
-            </View>
-            <View style={styles.productDetails}>
-              <Text style={styles.productName}>
-                {item.name?.charAt(0).toUpperCase() + item.name?.slice(1)}
+  return (
+    <View style={styles.card} key={item._id}>
+      {/* Header - Product Info */}
+      <View style={styles.cardHeader}>
+        <View style={styles.productInfo}>
+          <View style={styles.iconCircle}>
+            <Icon name="inventory-2" size={20} color="#3b82f6" />
+          </View>
+          <View style={styles.productDetails}>
+            <Text style={styles.productName} numberOfLines={1}>
+              {item.name?.charAt(0).toUpperCase() + item.name?.slice(1)}
+            </Text>
+            <Text style={styles.companyName} numberOfLines={1}>
+              {typeof item.company === 'object' && item.company
+                ? item.company.businessName
+                : 'No Company'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Body - Stock Left, Prices Right */}
+      <View style={styles.cardBody}>
+        <View style={styles.mainInfoRow}>
+          {/* Left Side - Stock */}
+          <View style={styles.stockSection}>
+            <Text style={styles.label}>Stock</Text>
+            <View style={styles.stockDisplay}>
+              <Text
+                style={[
+                  styles.stockValue,
+                  (item.stocks ?? 0) > 10
+                    ? styles.stockGood
+                    : (item.stocks ?? 0) > 0
+                    ? styles.stockWarning
+                    : styles.stockDanger,
+                ]}
+              >
+                {item.stocks ?? 0}
               </Text>
-              <Text style={styles.companyName}>
-                {typeof item.company === 'object' && item.company
-                  ? item.company.businessName
-                  : '-'}
-              </Text>
+              <Text style={styles.unit}>{item.unit ?? 'Piece'}</Text>
             </View>
+            {isLowStock && (item.stocks ?? 0) > 0 && (
+              <View style={styles.lowStockBadge}>
+                <Text style={styles.lowStockText}>Low Stock</Text>
+              </View>
+            )}
           </View>
 
+          {/* Right Side - Prices */}
           <View style={styles.priceSection}>
             <View style={styles.priceItem}>
-              <Text style={styles.priceLabel}>Cost Price</Text>
-              <Text style={styles.priceValue}>
-                {item.costPrice ? formatCurrencyINR(item.costPrice) : '-'}
+              <Text style={styles.label}>Cost Price</Text>
+              <Text style={styles.costPrice}>
+                {item.costPrice ? formatCurrencyINR(item.costPrice) : '—'}
               </Text>
             </View>
             <View style={styles.priceItem}>
-              <Text style={styles.priceLabel}>Selling Price</Text>
-              <Text style={styles.priceValue}>
-                {item.sellingPrice ? formatCurrencyINR(item.sellingPrice) : '-'}
+              <Text style={styles.label}>Selling Price</Text>
+              <Text style={styles.sellingPrice}>
+                {item.sellingPrice ? formatCurrencyINR(item.sellingPrice) : '—'}
               </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.stockSection}>
-          <Text style={styles.stockLabel}>Stock</Text>
-          <View style={styles.stockInfo}>
-            <Text
-              style={[
-                styles.stockValue,
-                (item.stocks ?? 0) > 10
-                  ? styles.stockHigh
-                  : (item.stocks ?? 0) > 0
-                  ? styles.stockMedium
-                  : styles.stockLow,
-              ]}
-            >
-              {item.stocks ?? 0}
-            </Text>
-            <Text style={styles.unit}>{item.unit ?? 'Piece'}</Text>
-          </View>
-          {isLowStock && (item.stocks ?? 0) > 0 && (
-            <Text style={styles.lowStockWarning}>Low stock</Text>
-          )}
-        </View>
-
+        {/* HSN if available */}
         {item.hsn && (
-          <View style={styles.hsnSection}>
-            <Text style={styles.hsnLabel}>HSN</Text>
+          <View style={styles.hsnRow}>
+            <Text style={styles.hsnLabel}>HSN: </Text>
             <Text style={styles.hsnValue}>{item.hsn}</Text>
           </View>
         )}
+      </View>
 
-        <View style={styles.cardActions}>
-          <View style={styles.dateContainer}>
-            <Text style={styles.createdDate}>
-              {item.createdAt
-                ? new Date(item.createdAt).toLocaleDateString()
-                : '—'}
-            </Text>
+      {/* Footer - Date & Edit */}
+      <View style={styles.cardFooter}>
+        <Text style={styles.dateText}>
+          {item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })
+            : '—'}
+        </Text>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => openEditProduct(item)}
+        >
+          <Icon name="edit" size={16} color="#3b82f6" />
+          <Text style={styles.editButtonText}>Edit</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+  
+ const renderServiceCard = item => {
+  return (
+    <View style={styles.card} key={item._id}>
+      {/* Header - Service Info */}
+      <View style={styles.cardHeader}>
+        <View style={styles.serviceInfo}>
+          <View style={[styles.iconCircle, { backgroundColor: '#fce7f3' }]}>
+            <Icon name="build" size={20} color="#ec4899" />
           </View>
-
-          {/* EDIT/DELETE BUTTONS - SABKE LIYE (PERMISSION CHECK HATAYA) */}
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.editButton]}
-              onPress={() => openEditProduct(item)}
-            >
-              <Icon name="edit" size={16} color="#007AFF" />
-              <Text style={[styles.actionButtonText, styles.editButtonText]}>
-                Edit
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButton, styles.deleteButton]}
-              onPress={() => confirmDeleteProduct(item)}
-            >
-              <Icon name="delete" size={16} color="#DC2626" />
-              <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
-                Delete
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.serviceDetails}>
+            <Text style={styles.serviceName} numberOfLines={1}>
+              {item.serviceName}
+            </Text>
+            <Text style={styles.serviceSubtext}>Service</Text>
           </View>
         </View>
       </View>
-    );
-  };
 
-  // ==========================================
-  // SERVICE CARD (EDIT/DELETE KE PERMISSION CHECKS HATAYE)
-  // ==========================================
-  const renderServiceCard = item => {
-    return (
-      <View style={styles.card} key={item._id}>
-        <View style={styles.cardHeader}>
-          <View style={styles.serviceInfo}>
-            <View style={[styles.serviceIcon, { backgroundColor: '#EC4899' }]}>
-              <Icon name="build" size={20} color="white" />
-            </View>
-            <View style={styles.serviceDetails}>
-              <Text style={styles.serviceName}>{item.serviceName}</Text>
-            </View>
-          </View>
-
-          <View style={styles.amountSection}>
-            <Text style={styles.amountLabel}>Amount</Text>
-            <Text style={styles.amountValue}>
+      {/* Body - Amount & SAC */}
+      <View style={styles.cardBody}>
+        <View style={styles.serviceInfoRow}>
+          {/* Left Side - Amount */}
+          <View style={styles.serviceAmountBox}>
+            <Text style={styles.label}>Amount</Text>
+            <Text style={styles.serviceAmount}>
               {formatCurrencyINR(item.amount)}
             </Text>
           </View>
-        </View>
 
-        {item.sac && (
-          <View style={styles.sacSection}>
-            <Text style={styles.sacLabel}>SAC</Text>
-            <Text style={styles.sacValue}>{item.sac}</Text>
-          </View>
-        )}
-
-        <View style={styles.cardActions}>
-          <View style={styles.dateContainer}>
-            <Text style={styles.createdDate}>
-              {item.createdAt
-                ? new Date(item.createdAt).toLocaleDateString()
-                : '—'}
-            </Text>
-          </View>
-
-          {/* EDIT/DELETE BUTTONS - SABKE LIYE (PERMISSION CHECK HATAYA) */}
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.editButton]}
-              onPress={() => openEditService(item)}
-            >
-              <Icon name="edit" size={16} color="#007AFF" />
-              <Text style={[styles.actionButtonText, styles.editButtonText]}>
-                Edit
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.actionButton, styles.deleteButton]}
-              onPress={() => confirmDeleteService(item)}
-            >
-              <Icon name="delete" size={16} color="#DC2626" />
-              <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
-                Delete
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {/* Right Side - SAC Badge (if available) */}
+          {item.sac && (
+            <View style={styles.sacBadgeContainer}>
+              <View style={styles.sacBadge}>
+                <Text style={styles.sacLabel}>SAC</Text>
+                <Text style={styles.sacValue}>{item.sac}</Text>
+              </View>
+            </View>
+          )}
         </View>
       </View>
-    );
-  };
+
+      {/* Footer - Date & Actions */}
+      <View style={styles.cardFooter}>
+        <Text style={styles.dateText}>
+          {item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })
+            : '—'}
+        </Text>
+        <View style={styles.serviceActionsContainer}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => openEditService(item)}
+          >
+            <Icon name="edit" size={16} color="#3b82f6" />
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deleteButtonCompact}
+            onPress={() => confirmDeleteService(item)}
+          >
+            <Icon name="delete" size={16} color="#ef4444" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
 
   // ==========================================
   // HEADER COMPONENT
@@ -1312,55 +1315,60 @@ export default function InventoryScreen() {
   );
 }
 // ==========================================
-// STYLES (Unchanged)
-// ==========================================
 const styles = StyleSheet.create({
+  // Main Container
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8fafc',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8fafc',
   },
   contentContainer: {
     padding: 16,
     flexGrow: 1,
   },
+
+  // Loading
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 48,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8fafc',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: '#64748b',
   },
+
+  // Header Section
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#0f172a',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#64748b',
   },
+
+  // Action Buttons
   actionButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     marginTop: 16,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3b82f6',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -1369,10 +1377,10 @@ const styles = StyleSheet.create({
   outlineButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#3b82f6',
   },
   destructiveButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#ef4444',
   },
   buttonText: {
     color: 'white',
@@ -1380,22 +1388,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   outlineButtonText: {
-    color: '#007AFF',
+    color: '#3b82f6',
   },
+
+  // Tabs
   tabsContainer: {
     marginBottom: 16,
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
     padding: 4,
   },
   tab: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
     alignItems: 'center',
   },
   activeTab: {
@@ -1408,46 +1418,103 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
+    color: '#64748b',
+    fontWeight: '600',
   },
   activeTabText: {
-    color: '#333',
+    color: '#0f172a',
   },
+
+  // Bulk Actions
   bulkActions: {
     marginBottom: 16,
     alignItems: 'flex-end',
   },
+
+  // ==========================================
+  // CARD STYLES - SHARED (PRODUCT & SERVICE)
+  // ==========================================
   card: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
+
+  // Card Header (Shared)
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
   },
-  productInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    flex: 1,
-  },
-  productIcon: {
+  
+  // Icon Circle (Shared)
+  iconCircle: {
     width: 40,
     height: 40,
-    borderRadius: 8,
-    backgroundColor: '#E3F2FD',
+    borderRadius: 20,
+    backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+
+  // Card Body (Shared)
+  cardBody: {
+    padding: 16,
+  },
+
+  // Card Footer (Shared)
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f8fafc',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#94a3b8',
+    fontWeight: '500',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  editButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3b82f6',
+  },
+
+  // Label (Shared)
+  label: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+
+  // ==========================================
+  // PRODUCT CARD SPECIFIC STYLES
+  // ==========================================
+  productInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   productDetails: {
     flex: 1,
@@ -1455,103 +1522,111 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#0f172a',
     marginBottom: 4,
   },
   companyName: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500',
   },
-  createdDate: {
-    fontSize: 12,
-    color: '#999',
-  },
-  actionButtonsContainer: {
+
+  // Main Info Row (Product)
+  mainInfoRow: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 12,
   },
+
+  // Stock Section (Left)
+  stockSection: {
+    flex: 1,
+  },
+  stockDisplay: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+    marginBottom: 6,
+  },
+  stockValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  stockGood: {
+    color: '#10b981',
+  },
+  stockWarning: {
+    color: '#f59e0b',
+  },
+  stockDanger: {
+    color: '#ef4444',
+  },
+  unit: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748b',
+    lineHeight: 20,
+    paddingBottom: 1,
+  },
+  lowStockBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  lowStockText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#d97706',
+  },
+
+  // Price Section (Right)
   priceSection: {
     alignItems: 'flex-end',
+    gap: 8,
   },
   priceItem: {
     alignItems: 'flex-end',
-    marginBottom: 4,
   },
-  priceLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  priceValue: {
-    fontSize: 14,
+  costPrice: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#059669',
+    color: '#0f172a',
   },
-  stockSection: {
-    marginBottom: 12,
+  sellingPrice: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#10b981',
   },
-  stockLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
-  },
-  stockInfo: {
+
+  // HSN Section (Product)
+  hsnRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  stockValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  stockHigh: {
-    color: '#059669',
-  },
-  stockMedium: {
-    color: '#D97706',
-  },
-  stockLow: {
-    color: '#DC2626',
-  },
-  unit: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  lowStockWarning: {
-    fontSize: 12,
-    color: '#D97706',
-    fontWeight: '500',
-    marginTop: 4,
-  },
-  hsnSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
   },
   hsnLabel: {
     fontSize: 12,
-    color: '#666',
-    marginRight: 8,
+    color: '#64748b',
+    fontWeight: '500',
   },
   hsnValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0f172a',
   },
+
+  // ==========================================
+  // SERVICE CARD SPECIFIC STYLES
+  // ==========================================
   serviceInfo: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    flex: 1,
-  },
-  serviceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   serviceDetails: {
     flex: 1,
@@ -1559,73 +1634,76 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#0f172a',
     marginBottom: 4,
   },
-  amountSection: {
-    alignItems: 'flex-end',
-  },
-  amountLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  amountValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#059669',
-  },
-  sacSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sacLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginRight: 8,
-  },
-  sacValue: {
-    fontSize: 14,
+  serviceSubtext: {
+    fontSize: 13,
+    color: '#64748b',
     fontWeight: '500',
-    color: '#333',
   },
-  cardActions: {
+
+  // Service Info Row
+  serviceInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
-    marginTop: 8,
+    gap: 16,
   },
-  dateContainer: {
+
+  // Service Amount Box
+  serviceAmountBox: {
     flex: 1,
   },
-  actionButton: {
+  serviceAmount: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#10b981',
+  },
+
+  // SAC Badge Container
+  sacBadgeContainer: {
+    justifyContent: 'center',
+  },
+  sacBadge: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    gap: 6,
+  },
+  sacLabel: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  sacValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+
+  // Service Actions Container
+  serviceActionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteButtonCompact: {
+    width: 32,
+    height: 32,
     borderRadius: 6,
-    gap: 4,
+    backgroundColor: '#fee2e2',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  editButton: {
-    backgroundColor: '#E3F2FD',
-  },
-  deleteButton: {
-    backgroundColor: '#FEE2E2',
-  },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  editButtonText: {
-    color: '#007AFF',
-  },
-  deleteButtonText: {
-    color: '#DC2626',
-  },
+
+  // ==========================================
+  // EMPTY STATE
+  // ==========================================
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1638,30 +1716,34 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#0f172a',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#64748b',
     textAlign: 'center',
     marginBottom: 24,
   },
+
+  // ==========================================
+  // PAGINATION
+  // ==========================================
   pagination: {
     marginTop: 24,
     padding: 16,
     backgroundColor: 'white',
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
   },
   paginationInfo: {
     fontSize: 14,
-    color: '#666',
+    color: '#64748b',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -1676,13 +1758,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: '#e2e8f0',
     backgroundColor: 'white',
     gap: 8,
   },
   paginationButtonPrimary: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
   },
   paginationButtonDisabled: {
     opacity: 0.4,
@@ -1690,19 +1772,23 @@ const styles = StyleSheet.create({
   paginationButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: '#475569',
   },
   paginationButtonTextPrimary: {
     color: 'white',
   },
   paginationButtonTextDisabled: {
-    color: '#9ca3af',
+    color: '#cbd5e1',
   },
+
+  // ==========================================
+  // NO COMPANY STATE
+  // ==========================================
   noCompanyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8fafc',
     padding: 24,
   },
   noCompanyCard: {
@@ -1717,7 +1803,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -1725,13 +1811,13 @@ const styles = StyleSheet.create({
   noCompanyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: '#0f172a',
     marginBottom: 8,
     textAlign: 'center',
   },
   noCompanyDescription: {
     fontSize: 16,
-    color: '#666',
+    color: '#64748b',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
@@ -1744,7 +1830,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3b82f6',
     padding: 16,
     borderRadius: 8,
     gap: 8,
@@ -1759,16 +1845,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#3b82f6',
     padding: 16,
     borderRadius: 8,
     gap: 8,
   },
   secondaryButtonText: {
-    color: '#007AFF',
+    color: '#3b82f6',
     fontWeight: '600',
     fontSize: 16,
   },
+
+  // ==========================================
+  // ALERT DIALOG
+  // ==========================================
   alertOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1786,12 +1876,12 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#0f172a',
     marginBottom: 8,
   },
   alertDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#64748b',
     marginBottom: 24,
     lineHeight: 20,
   },
@@ -1807,19 +1897,23 @@ const styles = StyleSheet.create({
   },
   alertCancelButton: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#e2e8f0',
   },
   alertConfirmButton: {
-    backgroundColor: '#dc2626',
+    backgroundColor: '#ef4444',
   },
   alertCancelButtonText: {
-    color: '#666',
+    color: '#64748b',
     fontWeight: '500',
   },
   alertConfirmButtonText: {
     color: 'white',
     fontWeight: '500',
   },
+
+  // ==========================================
+  // DIALOG HEADER
+  // ==========================================
   dialogHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1827,7 +1921,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#e2e8f0',
   },
   dialogHeaderLeft: {
     flex: 1,
@@ -1835,11 +1929,53 @@ const styles = StyleSheet.create({
   dialogHeaderTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#0f172a',
     marginBottom: 4,
   },
   dialogHeaderSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#64748b',
+  },
+
+  // ==========================================
+  // OLD SERVICE CARD STYLES (FOR COMPATIBILITY)
+  // ==========================================
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 12,
+    marginTop: 8,
+  },
+  dateContainer: {
+    flex: 1,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    gap: 4,
+  },
+  deleteButton: {
+    backgroundColor: '#fee2e2',
+  },
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  deleteButtonText: {
+    color: '#ef4444',
+  },
+  createdDate: {
+    fontSize: 12,
+    color: '#94a3b8',
   },
 });
