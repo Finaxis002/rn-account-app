@@ -441,20 +441,66 @@ export default function InventoryScreen() {
   // ==========================================
   // PAGINATION
   // ==========================================
-  // Filter products/services by selected company (if any)
+
+  // React Native Screen ke andar add karein
+  const userAllowedCompanyIds = useMemo(() => {
+    return companies.map(c => String(c._id));
+  }, [companies]);
+
   const filteredProducts = useMemo(() => {
-    if (!selectedCompanyId) return products;
-    return products.filter(p => {
-      const cId =
-        typeof p.company === 'object' && p.company ? p.company._id : p.company;
-      return String(cId) === String(selectedCompanyId);
-    });
-  }, [products, selectedCompanyId]);
+    let data = products;
+
+    // STEP A: Purani companies ke products hatao (Web logic)
+    if (userAllowedCompanyIds.length > 0) {
+      data = data.filter(p => {
+        const cId = typeof p.company === 'object' ? p.company?._id : p.company;
+        // Sirf active company ke ya bina company wale (!cId) product dikhao
+        return userAllowedCompanyIds.includes(String(cId)) || !cId;
+      });
+    } else if (!isLoadingCompanies && companies.length === 0) {
+      return [];
+    }
+
+    // STEP B: Selected Company Dropdown filter
+    if (selectedCompanyId) {
+      data = data.filter(p => {
+        const cId = typeof p.company === 'object' ? p.company?._id : p.company;
+        return String(cId) === String(selectedCompanyId);
+      });
+    }
+
+    return data;
+  }, [
+    products,
+    selectedCompanyId,
+    userAllowedCompanyIds,
+    companies.length,
+    isLoadingCompanies,
+  ]);
 
   const filteredServices = useMemo(() => {
-    // Services are global (same for all companies) — no company filtering
-    return services;
-  }, [services]);
+    let data = services;
+
+    // STEP A: Security Check (Taaki purani/unauthorized company ka data na aaye)
+    data = data.filter(s => {
+      const cId = typeof s.company === 'object' ? s.company?._id : s.company;
+      // Agar service common hai (!cId) toh dikhao,
+      // agar kisi company ki hai toh check karo wo active list mein hai ya nahi
+      return !cId || userAllowedCompanyIds.includes(String(cId));
+    });
+
+    // STEP B: Dropdown logic (Selected company ya All)
+    if (selectedCompanyId) {
+      data = data.filter(s => {
+        const cId = typeof s.company === 'object' ? s.company?._id : s.company;
+        // Selected company ki service dikhao YA common service (!cId) dikhao
+        return String(cId) === String(selectedCompanyId) || !cId;
+      });
+    }
+
+    return data;
+  }, [services, selectedCompanyId, userAllowedCompanyIds]);
+
 
   const productTotalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
   const serviceTotalPages = Math.ceil(filteredServices.length / ITEMS_PER_PAGE);
