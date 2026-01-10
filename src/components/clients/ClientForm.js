@@ -737,11 +737,10 @@ export default function ClientForm({
     if (!client) return;
 
     if (!handleFieldValidation('newPassword', newPassword)) {
-      toast({
-        variant: 'destructive',
-        title: 'Validation Error',
-        description: fieldErrors.newPassword || 'New password is invalid.',
-      });
+      Alert.alert(
+        'Validation Error',
+        fieldErrors.newPassword || 'New password is invalid.',
+      );
       return;
     }
 
@@ -767,10 +766,11 @@ export default function ClientForm({
         throw new Error(errorData.message || 'Failed to reset password.');
       }
 
-      toast({
-        title: 'Password Reset Successful',
-        description: `Password for ${client.contactName} has been updated.`,
-      });
+      Alert.alert(
+        'Success',
+        `Password for ${client.contactName} has been reset successfully!`,
+        [{ text: 'OK' }],
+      );
 
       setNewPassword('');
       setFieldErrors(prev => {
@@ -778,12 +778,10 @@ export default function ClientForm({
         return rest;
       });
     } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Password Reset Failed',
-        description:
-          error instanceof Error ? error.message : 'Something went wrong.',
-      });
+      Alert.alert(
+        'Password Reset Failed',
+        error instanceof Error ? error.message : 'Something went wrong.',
+      );
     } finally {
       setIsSubmittingPassword(false);
     }
