@@ -8,17 +8,21 @@ import {
   Pressable,
 } from 'react-native';
 
-const AlertDialog = ({ visible, onClose, children }) => {
+const AlertDialog = ({ visible, onClose, open, onOpenChange, children }) => {
+  // Support both visible/onClose and open/onOpenChange APIs
+  const isOpen = typeof open !== 'undefined' ? open : visible;
+  const handleClose = onOpenChange ? () => onOpenChange(false) : onClose;
+
   return (
     <Modal
       transparent
-      visible={visible}
+      visible={isOpen}
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
         {/* Backdrop: Clicking outside closes the modal */}
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable style={styles.backdrop} onPress={handleClose} />
 
         {/* Dialog Box (Material 3 Surface) */}
         <View style={styles.content}>{children}</View>
@@ -64,6 +68,8 @@ const AlertDialogCancel = ({ onPress, children, style }) => (
     <Text style={styles.cancelText}>{children}</Text>
   </TouchableOpacity>
 );
+
+const AlertDialogContent = ({ children }) => <View>{children}</View>;
 
 const styles = StyleSheet.create({
   overlay: {
@@ -136,4 +142,5 @@ export {
   AlertDialogFooter,
   AlertDialogAction,
   AlertDialogCancel,
+  AlertDialogContent,
 };

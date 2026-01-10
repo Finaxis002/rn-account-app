@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Clipboard,
   Dimensions,
   RefreshControl,
@@ -93,7 +92,11 @@ export default function UsersPage() {
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      Alert.alert('Error', 'Failed to copy URL. Please copy manually.');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to copy URL. Please copy manually.',
+      });
     }
   };
 
@@ -131,7 +134,11 @@ export default function UsersPage() {
       setUsers(filteredUsers);
       setCompanies(companiesData);
     } catch (err) {
-      Alert.alert('Error', err.message || 'Failed to fetch data');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: err.message || 'Failed to fetch data',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -180,7 +187,11 @@ export default function UsersPage() {
       ]);
       toast({ title: 'Users data refreshed successfully' });
     } catch (error) {
-      Alert.alert('Refresh Failed', error.message || 'Failed to refresh data');
+      toast({
+        variant: 'destructive',
+        title: 'Refresh Failed',
+        description: error.message || 'Failed to refresh data',
+      });
     } finally {
       setRefreshing(false);
     }
@@ -200,7 +211,11 @@ export default function UsersPage() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        Alert.alert('Error', 'Authentication token not found.');
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Authentication token not found.',
+        });
         return;
       }
 
@@ -221,12 +236,13 @@ export default function UsersPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        Alert.alert(
-          'Operation Failed',
-          data.message ||
+        toast({
+          variant: 'destructive',
+          title: 'Operation Failed',
+          description:
+            data.message ||
             `Failed to ${selectedUser ? 'update' : 'create'} user.`,
-          [{ text: 'OK' }],
-        );
+        });
         return;
       }
 
@@ -245,11 +261,11 @@ export default function UsersPage() {
       await fetchUsersAndCompanies();
       handleCloseForm();
     } catch (error) {
-      Alert.alert(
-        'Operation Failed',
-        error.message || 'Something went wrong.',
-        [{ text: 'OK' }],
-      );
+      toast({
+        variant: 'destructive',
+        title: 'Operation Failed',
+        description: error.message || 'Something went wrong.',
+      });
     }
   };
 
@@ -263,7 +279,11 @@ export default function UsersPage() {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        Alert.alert('Error', 'Authentication token not found.');
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Authentication token not found.',
+        });
         return;
       }
 
@@ -282,7 +302,11 @@ export default function UsersPage() {
       setIsAlertOpen(false);
       setUserToDelete(null);
     } catch (error) {
-      Alert.alert('Deletion Failed', error.message || 'Something went wrong.');
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: error.message || 'Something went wrong.',
+      });
     }
   };
 
