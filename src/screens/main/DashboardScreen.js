@@ -67,25 +67,9 @@ const toArray = data => {
   return [];
 };
 
-const num = v => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
-
 const getAmount = (type, row) => {
-  switch (type) {
-    case 'sales':
-      return num(row?.amount ?? row?.totalAmount);
-    case 'purchases':
-      return num(row?.totalAmount ?? row?.amount);
-    case 'receipt':
-    case 'payment':
-      return num(row?.amount ?? row?.totalAmount);
-    case 'journal':
-      return 0;
-    default:
-      return 0;
-  }
+  const val = row?.amount ?? row?.totalAmount ?? 0;
+  return Number(val) || 0;
 };
 
 // --- Skeleton Components (Simplified for RN) ---
@@ -225,9 +209,10 @@ export default function DashboardPage() {
           }
         }
 
-        const queryParam = selectedCompanyId
-          ? `?companyId=${selectedCompanyId}`
-          : '';
+        const queryParam =
+          selectedCompanyId && selectedCompanyId !== 'all'
+            ? `?companyId=${selectedCompanyId}&limit=10000`
+            : '?limit=10000';
 
         // Batch critical API calls first
         const [salesRes, purchasesRes, companiesRes] = await Promise.all([
@@ -268,7 +253,7 @@ export default function DashboardPage() {
           users: 0, // Will be updated in secondary load
           companies: companiesCount,
           recentTransactions: [],
-          serviceNameById: new Map(),
+          serviceNameById: {},
         };
 
         setDashboardData(initialData);
