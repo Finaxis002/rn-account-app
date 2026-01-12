@@ -297,6 +297,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 4,
     margin: 16,
+    marginTop:14,
+    marginBottom:0
   },
   tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
   activeTab: {
@@ -331,6 +333,8 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     padding: 16,
+    paddingTop:10,
+    paddingBottom:10,
     backgroundColor: '#f8fafc',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
