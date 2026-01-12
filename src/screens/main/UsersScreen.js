@@ -696,6 +696,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
+    marginTop:6
   },
   addUserButtonText: {
     color: '#FFFFFF',

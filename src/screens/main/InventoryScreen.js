@@ -1326,7 +1326,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   contentContainer: {
-    padding: 16,
+    padding: 14,
+    paddingTop:4,
     flexGrow: 1,
   },
 
@@ -1346,13 +1347,13 @@ const styles = StyleSheet.create({
 
   // Header Section
   header: {
-    marginBottom: 20,
+    marginBottom: 14,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   subtitle: {
     fontSize: 15,
@@ -1363,7 +1364,7 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 16,
+    marginTop: 12,
   },
   button: {
     flexDirection: 'row',
@@ -1393,7 +1394,7 @@ const styles = StyleSheet.create({
 
   // Tabs
   tabsContainer: {
-    marginBottom: 16,
+    marginBottom: 10,
   },
   tabs: {
     flexDirection: 'row',
