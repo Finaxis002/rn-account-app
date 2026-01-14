@@ -634,8 +634,7 @@ export function TransactionForm({
   });
   const type = form.watch('type');
 
-  // Reset UI-only state when switching transaction type to avoid leftover
-  // open dropdowns, dialogs or menus causing layout issues.
+ 
   useEffect(() => {
     // Close common dropdowns and dialogs
     setPartyDropdownOpen(false);
@@ -661,8 +660,7 @@ export function TransactionForm({
     // Reset transient UI helpers
     setItemRenderKeys({});
 
-    // Note: per-component `expandedSections` is managed inside the
-    // SalesPurchasesFields component. Do not call setExpandedSections here.
+    
   }, [type]);
 
   const partyCreatable = useMemo(() => {
@@ -1784,6 +1782,31 @@ export function TransactionForm({
     shippingAddresses,
     transactionToEdit,
   ]);
+  // Reset party/customer selection when company changes
+useEffect(() => {
+  const currentPartyId = form.getValues('party');
+  
+  if (!currentPartyId || !selectedCompanyIdWatch) return;
+  
+  // Check if current party belongs to selected company
+  const isValid = (type === 'sales' || type === 'receipt') 
+    ? filteredParties.some(p => p._id === currentPartyId)
+    : filteredVendors.some(v => v._id === currentPartyId);
+  
+  // Clear party if it doesn't belong to the selected company
+  if (!isValid) {
+    form.setValue('party', '', { shouldValidate: true });
+    setPartyBalance(null);
+    setVendorBalance(null);
+    setBalance(null);
+    
+    setSnackbar({
+      visible: true,
+      message: 'Customer/Vendor cleared - not associated with selected company',
+      type: 'info',
+    });
+  }
+}, [selectedCompanyIdWatch, type]);
 
   useEffect(() => {}, [shippingAddresses]);
 
@@ -3426,51 +3449,53 @@ export function TransactionForm({
     name: 'paymentMethod',
   });
 
-  const getPartyOptions = () => {
-    if (type === 'sales' || type === 'receipt') {
-      const source = parties;
+ const getPartyOptions = () => {
+  if (type === 'sales' || type === 'receipt') {
+    const source = filteredParties; 
 
-      const nameCount = source.reduce((acc, p) => {
-        const name = p.name || '';
-        acc[name] = (acc[name] || 0) + 1;
-        return acc;
-      }, {});
+    const nameCount = source.reduce((acc, p) => {
+      const name = p.name || '';
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {});
 
-      return source.map(p => {
-        const name = p.name || '';
-        const hasDuplicates = nameCount[name] > 1;
-        const label = hasDuplicates
-          ? `${name} (${p.contactNumber || ''})`
-          : name;
-        return {
-          label: String(label),
-          value: p._id,
-        };
-      });
-    }
+    return source.map(p => {
+      const name = p.name || '';
+      const hasDuplicates = nameCount[name] > 1;
+      const label = hasDuplicates
+        ? `${name} (${p.contactNumber || ''})`
+        : name;
+      return {
+        label: String(label),
+        value: p._id,
+      };
+    });
+  }
 
-    if (type === 'purchases' || type === 'payment') {
-      const nameCount = vendors.reduce((acc, v) => {
-        const name = v.vendorName || '';
-        acc[name] = (acc[name] || 0) + 1;
-        return acc;
-      }, {});
+  if (type === 'purchases' || type === 'payment') {
+    const source = filteredVendors; 
+    
+    const nameCount = source.reduce((acc, v) => {
+      const name = v.vendorName || '';
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {});
 
-      return vendors.map(v => {
-        const name = v.vendorName || '';
-        const hasDuplicates = nameCount[name] > 1;
-        const label = hasDuplicates
-          ? `${name} (${v.contactNumber || ''})`
-          : name;
-        return {
-          label: String(label),
-          value: v._id,
-        };
-      });
-    }
+    return source.map(v => {
+      const name = v.vendorName || '';
+      const hasDuplicates = nameCount[name] > 1;
+      const label = hasDuplicates
+        ? `${name} (${v.contactNumber || ''})`
+        : name;
+      return {
+        label: String(label),
+        value: v._id,
+      };
+    });
+  }
 
-    return [];
-  };
+  return [];
+};
 
   const getPartyLabel = () => {
     switch (type) {
@@ -3508,6 +3533,54 @@ export function TransactionForm({
         s.company?._id === selectedCompanyIdWatch,
     );
   }, [services, selectedCompanyIdWatch]);
+
+// Filter parties/customers based on selected company
+const filteredParties = useMemo(() => {
+  if (!selectedCompanyIdWatch) return parties;
+  
+  return parties.filter(p => {
+    let partyCompanies = [];
+    if (Array.isArray(p.company)) {
+      partyCompanies = p.company;
+    } else if (p.company) {
+      partyCompanies = [p.company];
+    }
+    
+    
+    if (partyCompanies.length === 0) return true;
+    
+   
+    return partyCompanies.some(comp => {
+      const compId = (typeof comp === 'object' && comp !== null) ? comp._id : comp;
+      return String(compId) === String(selectedCompanyIdWatch);
+    });
+  });
+}, [parties, selectedCompanyIdWatch]);
+
+// Filter vendors based on selected company
+const filteredVendors = useMemo(() => {
+  if (!selectedCompanyIdWatch) return vendors;
+  
+  return vendors.filter(v => {
+    
+    let vendorCompanies = [];
+    if (Array.isArray(v.company)) {
+      vendorCompanies = v.company;
+    } else if (v.company) {
+      vendorCompanies = [v.company];
+    }
+    
+    
+    if (vendorCompanies.length === 0) return true;
+    
+    
+
+    return vendorCompanies.some(comp => {
+      const compId = (typeof comp === 'object' && comp !== null) ? comp._id : comp;
+      return String(compId) === String(selectedCompanyIdWatch);
+    });
+  });
+}, [vendors, selectedCompanyIdWatch]);
 
   const productOptions = filteredProducts.map(p => {
     const stockNum = Number(p.stocks ?? p.stock ?? 0);
