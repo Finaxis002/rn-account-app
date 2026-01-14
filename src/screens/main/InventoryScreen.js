@@ -1397,10 +1397,17 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   tabs: {
-    flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 10,
+     flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
     padding: 4,
+    // margin: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   tab: {
     flex: 1,
@@ -1410,7 +1417,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activeTab: {
-    backgroundColor: 'white',
+    backgroundColor: '#3b82f6',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -1423,7 +1430,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activeTabText: {
-    color: '#0f172a',
+    color: 'white',
   },
 
   // Bulk Actions
@@ -1432,9 +1439,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
 
-  // ==========================================
-  // CARD STYLES - SHARED (PRODUCT & SERVICE)
-  // ==========================================
   card: {
     backgroundColor: 'white',
     borderRadius: 12,

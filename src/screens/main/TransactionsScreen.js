@@ -1395,7 +1395,7 @@ const TransactionsScreen = ({ navigation }) => {
       case TABS.PROFORMA:
         return 'file-text';
       case TABS.RECEIPTS:
-        return 'receipt';
+        return 'pocket';
       case TABS.PAYMENTS:
         return 'credit-card';
       case TABS.JOURNALS:
@@ -1416,8 +1416,8 @@ const TransactionsScreen = ({ navigation }) => {
       >
         <Feather
           name={getTabIcon(tab)}
-          size={16}
-          color={isActive ? '#3b82f6' : '#6b7280'}
+          size={18}
+          color={isActive ? '#ffffff' : '#3c3c43'}
         />
         <Text style={[styles.tabText, isActive && styles.activeTabText]}>
           {label}
@@ -1578,27 +1578,24 @@ const TransactionsScreen = ({ navigation }) => {
           {canCreateAny && (
             <View style={styles.headerButtons}>
               <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  styles.roleBadgeButton,
-                  styles.actionButtonPrimary,
-                ]}
+                style={[styles.headerActionButton, styles.headerPrimaryButton]}
                 onPress={() => handleOpenForm(null)}
               >
-                <Text
-                  style={[styles.roleBadgeButtonText, styles.actionButtonText]}
-                >
+                {/* <Icon name="add" size={14} color="#ffffff" /> */}
+                <Text style={styles.headerPrimaryButtonText}>
                   New Transaction
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.actionButton, styles.roleBadgeButton]}
+                style={[
+                  styles.headerActionButton,
+                  styles.headerSecondaryButton,
+                ]}
                 onPress={() => setIsProformaFormOpen(true)}
               >
-                <Text
-                  style={[styles.roleBadgeButtonText, styles.actionButtonText]}
-                >
+                {/* <Feather name="file-text" size={13} color="#007AFF" /> */}
+                <Text style={styles.headerSecondaryButtonText}>
                   Proforma Invoice
                 </Text>
               </TouchableOpacity>
@@ -1694,7 +1691,7 @@ const TransactionsScreen = ({ navigation }) => {
         )}
 
         {/* Modals */}
-        {/* Transaction Form Modal */}
+
         <Modal
           visible={isFormOpen}
           animationType="slide"
@@ -2250,6 +2247,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     alignItems: 'center',
+    marginTop: 4,
+  },
+  headerActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 4,
+    minHeight: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  headerPrimaryButton: {
+    backgroundColor: '#007AFF',
+    borderWidth: 0,
+  },
+  headerSecondaryButton: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e5ea',
+  },
+  headerPrimaryButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
+    letterSpacing: -0.2,
+  },
+  headerSecondaryButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
+    letterSpacing: -0.2,
   },
   actionButton: {
     flexDirection: 'row',
@@ -2341,26 +2374,39 @@ const styles = StyleSheet.create({
   tabButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+    marginRight: 12,
+    borderRadius: 14,
     gap: 8,
+    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    backgroundColor: '#f9fafb',
+    borderColor: '#e5e5ea',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    minHeight: 40,
   },
   activeTabButton: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#3b82f6',
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6b7280',
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#45454e',
+    letterSpacing: -0.3,
   },
   activeTabText: {
-    color: '#3b82f6',
+    color: '#ffffff',
+    fontWeight: '700',
   },
   dropdownContainer: {
     paddingHorizontal: 16,
