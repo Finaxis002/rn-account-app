@@ -52,8 +52,8 @@ export function EmailSendingConsent() {
   useEffect(() => {
     GoogleSignin.configure({
       webClientId:
-        '627437378841-j3v3hhhos4db0mc7e1m7n2sfbddvgn3d.apps.googleusercontent.com', // Get from Firebase Console
-      offlineAccess: true, // Get refresh token
+        '627437378841-j3v3hhhos4db0mc7e1m7n2sfbddvgn3d.apps.googleusercontent.com',
+      offlineAccess: true,
       scopes: [
         'https://www.googleapis.com/auth/gmail.send',
         'https://www.googleapis.com/auth/userinfo.email',
@@ -68,7 +68,6 @@ export function EmailSendingConsent() {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active') {
-        // App foreground आने पर status refresh करें
         refreshStatus();
       }
     });
@@ -275,12 +274,10 @@ export function EmailSendingConsent() {
 
     switch (error.code) {
       case statusCodes.SIGN_IN_CANCELLED:
-        // User cancelled the sign-in flow - silent fail
         console.log('User cancelled Google Sign-In');
         break;
 
       case statusCodes.IN_PROGRESS:
-        // Operation (e.g., sign in) is already in progress
         console.log('Google Sign-In already in progress');
         break;
 
@@ -293,7 +290,6 @@ export function EmailSendingConsent() {
         break;
 
       default:
-        // Check if it's a DEVELOPER_ERROR (Firebase config issue)
         if (
           error.code === 'DEVELOPER_ERROR' ||
           error.message?.includes('DEVELOPER_ERROR')
@@ -330,10 +326,8 @@ export function EmailSendingConsent() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Sign out from Google
               await GoogleSignin.signOut();
 
-              // Disconnect from your backend
               const { token } = await getAuthToken();
               const response = await fetch(
                 `${BASE_URL}/api/integrations/gmail/disconnect`,
@@ -349,15 +343,13 @@ export function EmailSendingConsent() {
               if (!response.ok)
                 throw new Error('Failed to disconnect from backend');
 
-              // Update local state
               setStatus({
                 connected: false,
                 email: null,
-                termsAcceptedAt: status.termsAcceptedAt, // Keep terms acceptance
+                termsAcceptedAt: status.termsAcceptedAt,
               });
               setReconnectNotice(false);
 
-              // Remove from AsyncStorage
               await AsyncStorage.removeItem('gmailLinkedEmail');
 
               Alert.alert(
@@ -377,23 +369,19 @@ export function EmailSendingConsent() {
 
   const handleConnectFlow = () => {
     if (!status.termsAcceptedAt) {
-      // Show terms modal first
       setShowTermsModal(true);
     } else {
-      // Directly connect to Google
       handleGoogleSignIn();
     }
   };
 
   const handleAcceptTerms = async () => {
     try {
-      // Save terms acceptance
       const termsData = {
         acceptedAt: new Date().toISOString(),
         accepted: true,
       };
 
-      // Save to your backend
       const { token } = await getAuthToken();
       await fetch(`${BASE_URL}/api/integrations/gmail/accept-terms`, {
         method: 'POST',
@@ -404,22 +392,15 @@ export function EmailSendingConsent() {
         body: JSON.stringify(termsData),
       });
 
-      // Update local state
       setStatus(prev => ({ ...prev, termsAcceptedAt: termsData.acceptedAt }));
       setShowTermsModal(false);
 
-      // Now connect to Google
       handleGoogleSignIn();
     } catch (error) {
       console.error('Error accepting terms:', error);
       Alert.alert('Error', 'Failed to accept terms. Please try again.');
     }
   };
-
-  const needsReconnect =
-    reconnectNotice ||
-    (status.termsAcceptedAt && !!status.email && !status.connected) ||
-    (status.termsAcceptedAt && status.reason === 'token_expired');
 
   if (loading) {
     return (
@@ -432,44 +413,6 @@ export function EmailSendingConsent() {
 
   return (
     <View style={styles.container}>
-      {/* Reconnect Notice */}
-      {/* {needsReconnect && (
-        <View style={styles.alertContainer}>
-          <View style={styles.alertHeader}>
-            <Icon name="alert-triangle" size={20} color="#f59e0b" />
-            <Text style={styles.alertTitle}>
-              Gmail disconnected — action required
-            </Text>
-          </View>
-          <Text style={styles.alertDescription}>
-            {status.reason === 'token_expired'
-              ? 'Your Gmail session has expired. Please reconnect to continue emailing invoices.'
-              : 'To email invoices, please reconnect your Gmail account.'}
-          </Text>
-
-          {status.lastFailureAt ? (
-            <Text style={styles.failureText}>
-              Last send failure:{' '}
-              {new Date(status.lastFailureAt).toLocaleString()}
-            </Text>
-          ) : null}
-
-          <TouchableOpacity
-            style={styles.reconnectButton}
-            onPress={handleConnectFlow}
-            disabled={connecting}
-          >
-            {connecting ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Text style={styles.reconnectButtonText}>
-                {status.email ? 'Reconnect Gmail' : 'Connect Gmail'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )} */}
-
       {/* Email Account Card */}
       <View style={styles.card}>
         <View style={styles.cardContent}>
@@ -496,11 +439,6 @@ export function EmailSendingConsent() {
                   <View style={styles.connectedBadge}>
                     <Icon name="check-circle" size={16} color="#10b981" />
                     <Text style={styles.connectedText}>Connected</Text>
-                    {status.email && (
-                      <Text style={styles.emailTextSmall}>
-                        : {status.email}
-                      </Text>
-                    )}
                   </View>
                   <TouchableOpacity
                     style={styles.disconnectButton}
@@ -537,7 +475,7 @@ export function EmailSendingConsent() {
         </View>
       </View>
 
-      {/* Terms Modal (use RN Modal so overlay covers full screen) */}
+      {/* Terms Modal */}
       <Modal
         visible={showTermsModal}
         transparent
@@ -613,50 +551,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
   },
-  alertContainer: {
-    backgroundColor: '#fef3c7',
-    borderWidth: 1,
-    borderColor: '#f59e0b',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-  },
-  alertHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  alertTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#92400e',
-  },
-  alertDescription: {
-    fontSize: 13,
-    color: '#92400e',
-    lineHeight: 18,
-    marginBottom: 8,
-  },
-  failureText: {
-    fontSize: 12,
-    color: '#92400e',
-    opacity: 0.8,
-    marginBottom: 12,
-  },
-  reconnectButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-    minWidth: 140,
-  },
-  reconnectButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '500',
-  },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 8,
@@ -721,12 +615,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#059669',
     fontWeight: '500',
-  },
-  emailTextSmall: {
-    fontSize: 12,
-    color: '#059669',
-    fontWeight: '500',
-    maxWidth: 150,
   },
   disconnectButton: {
     backgroundColor: '#ef4444',

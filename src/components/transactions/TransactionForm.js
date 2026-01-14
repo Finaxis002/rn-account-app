@@ -3645,7 +3645,7 @@ export function TransactionForm({
 
   return (
     <View style={styles.container}>
-      <KeyboardAwareScrollView
+      <View
         ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: 140 }}
@@ -3777,7 +3777,7 @@ export function TransactionForm({
             canCreateVendor,
           }}
         />
-      </KeyboardAwareScrollView>
+      </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

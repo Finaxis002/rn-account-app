@@ -1,4 +1,4 @@
-// ProductSettings.js (React Native)
+// ProductSettings.js (React Native) - Complete Working Code
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
@@ -36,8 +36,6 @@ import {
   Loader2,
 } from 'lucide-react-native';
 import axios from 'axios';
-
-
 
 // Custom Components
 import ProductForm from '../products/ProductForm';
@@ -320,6 +318,13 @@ export default function ProductSettings() {
   const handleNextPage = () => paginate(currentPage + 1);
   const handlePrevPage = () => paginate(currentPage - 1);
 
+  // Close dropdown when clicking anywhere
+  const handleOutsideClick = () => {
+    if (openDropdownId) {
+      setOpenDropdownId(null);
+    }
+  };
+
   // Render product item for FlatList
   const renderProductItem = ({ item: product }) => {
     const role = AsyncStorage.getItem('role');
@@ -376,30 +381,32 @@ export default function ProductSettings() {
               </TouchableOpacity>
 
               {openDropdownId === product._id && (
-                <View style={styles.dropdown}>
-                  <TouchableOpacity
-                    style={styles.dropdownItem}
-                    onPress={() => handleEditProduct(product)}
-                  >
-                    <Edit2 size={16} color="#3b82f6" />
-                    <Text style={styles.dropdownItemText}>Edit</Text>
-                  </TouchableOpacity>
-                  <View style={styles.dropdownDivider} />
-                  <TouchableOpacity
-                    style={styles.dropdownItem}
-                    onPress={() => handleDeleteProductFromDropdown(product)}
-                  >
-                    <Trash2 size={16} color="#ef4444" />
-                    <Text
-                      style={[
-                        styles.dropdownItemText,
-                        styles.dropdownItemTextDanger,
-                      ]}
+                <TouchableWithoutFeedback>
+                  <View style={styles.dropdown}>
+                    <TouchableOpacity
+                      style={styles.dropdownItem}
+                      onPress={() => handleEditProduct(product)}
                     >
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                      <Edit2 size={16} color="#3b82f6" />
+                      <Text style={styles.dropdownItemText}>Edit</Text>
+                    </TouchableOpacity>
+                    <View style={styles.dropdownDivider} />
+                    {/* <TouchableOpacity
+                      style={styles.dropdownItem}
+                      onPress={() => handleDeleteProductFromDropdown(product)}
+                    >
+                      <Trash2 size={16} color="#ef4444" />
+                      <Text
+                        style={[
+                          styles.dropdownItemText,
+                          styles.dropdownItemTextDanger,
+                        ]}
+                      >
+                        Delete
+                      </Text>
+                    </TouchableOpacity> */}
+                  </View>
+                </TouchableWithoutFeedback>
               )}
             </View>
           )}
@@ -544,285 +551,288 @@ export default function ProductSettings() {
   }
 
   return (
-    <TouchableWithoutFeedback onPress={() => setOpenDropdownId(null)}>
-      <ScrollView
-        style={styles.container}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.card}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Manage Products & Services</Text>
-              <Text style={styles.description}>
-                A list of all your products or services.
-              </Text>
-            </View>
-
-            {canCreateProducts && (
-              <View style={styles.headerButtons}>
-                <ExcelImportExport
-                  templateData={[
-                    {
-                      Company: '',
-                      'Item Name': '',
-                      Stock: '',
-                      Unit: '',
-                      'Cost Price': '',
-                      'Selling Price': '',
-                      HSN: '',
-                    },
-                  ]}
-                  templateFileName="product_template.xlsx"
-                  importEndpoint={`${BASE_URL}/api/products`}
-                  onImportSuccess={fetchProducts}
-                  expectedColumns={[
-                    'Company',
-                    'Item Name',
-                    'Stock',
-                    'Unit',
-                    'Cost Price',
-                    'Selling Price',
-                    'HSN',
-                  ]}
-                  transformImportData={data => {
-                    return data.map(item => {
-                      const companyName = item['Company']?.trim();
-                      const foundCompany = companies.find(
-                        c =>
-                          c.businessName.toLowerCase() ===
-                          companyName?.toLowerCase(),
-                      );
-
-                      return {
-                        company: foundCompany?._id || companies[0]?._id || '',
-                        name: item['Item Name'],
-                        stocks: item['Stock'] || 0,
-                        unit: item['Unit'] || 'Piece',
-                        costPrice: extractNumber(item['Cost Price']),
-                        sellingPrice: extractNumber(item['Selling Price']),
-                        hsn: item['HSN'] || '',
-                      };
-                    });
-                  }}
-                />
-
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={() => handleOpenForm()}
-                >
-                  <PlusCircle size={16} color="white" />
-                  <Text style={styles.addButtonText}>Add Product</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          {/* Content */}
-          {isLoading ? (
-            <View style={styles.centerContainer}>
-              <ActivityIndicator size="large" color="#3b82f6" />
-            </View>
-          ) : products.length > 0 ? (
-            <>
-              {/* Bulk actions */}
-              {selectedProducts.length > 0 && (
-                <View style={styles.bulkActions}>
-                  <Text style={styles.bulkText}>
-                    {selectedProducts.length} item(s) selected
+    <View style={styles.container}>
+      <TouchableWithoutFeedback onPress={handleOutsideClick}>
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            refreshControl={
+              <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+            }
+          >
+            <View style={styles.card}>
+              {/* Header */}
+              <View style={styles.header}>
+                <View>
+                  <Text style={styles.title}>Manage Products & Services</Text>
+                  <Text style={styles.description}>
+                    A list of all your products or services.
                   </Text>
-                  <TouchableOpacity
-                    style={styles.bulkDeleteButton}
-                    onPress={handleBulkDelete}
-                  >
-                    <Trash2 size={16} color="white" />
-                    <Text style={styles.bulkDeleteText}>
-                      Delete ({selectedProducts.length})
-                    </Text>
-                  </TouchableOpacity>
                 </View>
-              )}
 
-              {/* Products list */}
-              <FlatList
-                data={currentProducts}
-                renderItem={renderProductItem}
-                keyExtractor={item => item._id}
-                scrollEnabled={false} // Since we're inside ScrollView
-                ListFooterComponent={
-                  <View style={styles.pagination}>
-                    <TouchableOpacity
-                      style={[
-                        styles.paginationButton,
-                        currentPage === 1 && styles.paginationButtonDisabled,
+                {canCreateProducts && (
+                  <View style={styles.headerButtons}>
+                    <ExcelImportExport
+                      templateData={[
+                        {
+                          Company: '',
+                          'Item Name': '',
+                          Stock: '',
+                          Unit: '',
+                          'Cost Price': '',
+                          'Selling Price': '',
+                          HSN: '',
+                        },
                       ]}
-                      onPress={handlePrevPage}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft
-                        size={16}
-                        color={currentPage === 1 ? '#9ca3af' : '#4b5563'}
-                      />
-                      <Text
-                        style={[
-                          styles.paginationText,
-                          currentPage === 1 && styles.paginationTextDisabled,
-                        ]}
-                      >
-                        Previous
-                      </Text>
-                    </TouchableOpacity>
+                      templateFileName="product_template.xlsx"
+                      importEndpoint={`${BASE_URL}/api/products`}
+                      onImportSuccess={fetchProducts}
+                      expectedColumns={[
+                        'Company',
+                        'Item Name',
+                        'Stock',
+                        'Unit',
+                        'Cost Price',
+                        'Selling Price',
+                        'HSN',
+                      ]}
+                      transformImportData={data => {
+                        return data.map(item => {
+                          const companyName = item['Company']?.trim();
+                          const foundCompany = companies.find(
+                            c =>
+                              c.businessName.toLowerCase() ===
+                              companyName?.toLowerCase(),
+                          );
 
-                    <Text style={styles.pageInfo}>
-                      Page {currentPage} of {totalPages}
-                    </Text>
+                          return {
+                            company: foundCompany?._id || companies[0]?._id || '',
+                            name: item['Item Name'],
+                            stocks: item['Stock'] || 0,
+                            unit: item['Unit'] || 'Piece',
+                            costPrice: extractNumber(item['Cost Price']),
+                            sellingPrice: extractNumber(item['Selling Price']),
+                            hsn: item['HSN'] || '',
+                          };
+                        });
+                      }}
+                    />
 
                     <TouchableOpacity
-                      style={[
-                        styles.paginationButton,
-                        currentPage === totalPages &&
-                          styles.paginationButtonDisabled,
-                      ]}
-                      onPress={handleNextPage}
-                      disabled={currentPage === totalPages}
+                      style={styles.addButton}
+                      onPress={() => handleOpenForm()}
                     >
-                      <Text
-                        style={[
-                          styles.paginationText,
-                          currentPage === totalPages &&
-                            styles.paginationTextDisabled,
-                        ]}
-                      >
-                        Next
-                      </Text>
-                      <ChevronRight
-                        size={16}
-                        color={
-                          currentPage === totalPages ? '#9ca3af' : '#4b5563'
-                        }
-                      />
+                      <PlusCircle size={16} color="white" />
+                      <Text style={styles.addButtonText}>Add Product</Text>
                     </TouchableOpacity>
                   </View>
-                }
-              />
-            </>
-          ) : (
-            <View style={styles.emptyState}>
-              <Package size={48} color="#9ca3af" />
-              <Text style={styles.emptyTitle}>No Products Found</Text>
-              <Text style={styles.emptyDescription}>
-                Get started by adding your first product or service.
-              </Text>
-              {canCreateProducts && (
-                <TouchableOpacity
-                  style={styles.emptyAddButton}
-                  onPress={() => handleOpenForm()}
-                >
-                  <PlusCircle size={16} color="white" />
-                  <Text style={styles.emptyAddButtonText}>Add Product</Text>
-                </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Content */}
+              {isLoading ? (
+                <View style={styles.centerContainer}>
+                  <ActivityIndicator size="large" color="#3b82f6" />
+                </View>
+              ) : products.length > 0 ? (
+                <>
+                  {/* Bulk actions */}
+                  {/* {selectedProducts.length > 0 && (
+                    <View style={styles.bulkActions}>
+                      <Text style={styles.bulkText}>
+                        {selectedProducts.length} item(s) selected
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.bulkDeleteButton}
+                        onPress={handleBulkDelete}
+                      >
+                        <Trash2 size={16} color="white" />
+                        <Text style={styles.bulkDeleteText}>
+                          Delete ({selectedProducts.length})
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )} */}
+
+                  {/* Products list */}
+                  <FlatList
+                    data={currentProducts}
+                    renderItem={renderProductItem}
+                    keyExtractor={item => item._id}
+                    scrollEnabled={false} // Since we're inside ScrollView
+                    ListFooterComponent={
+                      <View style={styles.pagination}>
+                        <TouchableOpacity
+                          style={[
+                            styles.paginationButton,
+                            currentPage === 1 && styles.paginationButtonDisabled,
+                          ]}
+                          onPress={handlePrevPage}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft
+                            size={16}
+                            color={currentPage === 1 ? '#9ca3af' : '#4b5563'}
+                          />
+                          <Text
+                            style={[
+                              styles.paginationText,
+                              currentPage === 1 && styles.paginationTextDisabled,
+                            ]}
+                          >
+                            Previous
+                          </Text>
+                        </TouchableOpacity>
+
+                        <Text style={styles.pageInfo}>
+                          Page {currentPage} of {totalPages}
+                        </Text>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.paginationButton,
+                            currentPage === totalPages &&
+                              styles.paginationButtonDisabled,
+                          ]}
+                          onPress={handleNextPage}
+                          disabled={currentPage === totalPages}
+                        >
+                          <Text
+                            style={[
+                              styles.paginationText,
+                              currentPage === totalPages &&
+                                styles.paginationTextDisabled,
+                            ]}
+                          >
+                            Next
+                          </Text>
+                          <ChevronRight
+                            size={16}
+                            color={
+                              currentPage === totalPages ? '#9ca3af' : '#4b5563'
+                            }
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    }
+                  />
+                </>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Package size={48} color="#9ca3af" />
+                  <Text style={styles.emptyTitle}>No Products Found</Text>
+                  <Text style={styles.emptyDescription}>
+                    Get started by adding your first product or service.
+                  </Text>
+                  {canCreateProducts && (
+                    <TouchableOpacity
+                      style={styles.emptyAddButton}
+                      onPress={() => handleOpenForm()}
+                    >
+                      <PlusCircle size={16} color="white" />
+                      <Text style={styles.emptyAddButtonText}>Add Product</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
             </View>
-          )}
+
+            {/* Product Form Modal */}
+            <Dialog
+              open={isFormOpen}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) setSelectedProduct(null);
+                setIsFormOpen(isOpen);
+              }}
+            >
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>
+                    {selectedProduct ? "Edit Product" : "Create New Product"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {selectedProduct
+                      ? "Update the details for this item."
+                      : "Fill in the form to add a new product or service."}
+                  </DialogDescription>
+                </DialogHeader>
+                <ProductForm
+                  product={selectedProduct || undefined}
+                  onSuccess={handleFormSuccess}
+                />
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+              <View style={styles.dialogContent}>
+                <Text style={styles.dialogTitle}>Are you absolutely sure?</Text>
+                <Text style={styles.dialogDescription}>
+                  This action cannot be undone. This will permanently delete the
+                  item.
+                </Text>
+                <View style={styles.dialogButtons}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => setIsAlertOpen(false)}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={handleDeleteProduct}
+                  >
+                    <Text style={styles.deleteButtonText}>Continue</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Dialog>
+
+            {/* Product Name Dialog */}
+            {openNameDialog && (
+              <Dialog
+                open={!!openNameDialog}
+                onOpenChange={() => setOpenNameDialog(null)}
+              >
+                <View style={styles.nameDialogContent}>
+                  <View style={styles.nameDialogHeader}>
+                    <Package size={20} color="#3b82f6" />
+                    <Text style={styles.nameDialogTitle}>Product Overview</Text>
+                  </View>
+
+                  <View style={styles.nameCard}>
+                    <View style={styles.nameCardIcon}>
+                      <Package size={16} color="#3b82f6" />
+                    </View>
+                    <View>
+                      <Text style={styles.nameCardLabel}>PRODUCT NAME</Text>
+                      <Text style={styles.nameCardValue}>
+                        {openNameDialog.charAt(0).toUpperCase() +
+                          openNameDialog.slice(1)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.nameCard, styles.companyCard]}>
+                    <View style={[styles.nameCardIcon, styles.companyCardIcon]}>
+                      <Building size={16} color="#10b981" />
+                    </View>
+                    <View>
+                      <Text style={[styles.nameCardLabel, styles.companyCardLabel]}>
+                        COMPANY
+                      </Text>
+                      <Text style={styles.nameCardValue}>
+                        Company Name
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </Dialog>
+            )}
+          </ScrollView>
         </View>
-
-        {/* Product Form Modal */}
-          <Dialog
-            open={isFormOpen}
-            onOpenChange={(isOpen) => {
-              if (!isOpen) setSelectedProduct(null);
-              setIsFormOpen(isOpen);
-            }}
-          >
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedProduct ? "Edit Product" : "Create New Product"}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedProduct
-                    ? "Update the details for this item."
-                    : "Fill in the form to add a new product or service."}
-                </DialogDescription>
-              </DialogHeader>
-              <ProductForm
-                product={selectedProduct || undefined}
-                onSuccess={handleFormSuccess}
-              />
-            </DialogContent>
-          </Dialog>
-
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-          <View style={styles.dialogContent}>
-            <Text style={styles.dialogTitle}>Are you absolutely sure?</Text>
-            <Text style={styles.dialogDescription}>
-              This action cannot be undone. This will permanently delete the
-              item.
-            </Text>
-            <View style={styles.dialogButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setIsAlertOpen(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={handleDeleteProduct}
-              >
-                <Text style={styles.deleteButtonText}>Continue</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Dialog>
-
-        {/* Product Name Dialog */}
-        {openNameDialog && (
-          <Dialog
-            open={!!openNameDialog}
-            onOpenChange={() => setOpenNameDialog(null)}
-          >
-            <View style={styles.nameDialogContent}>
-              <View style={styles.nameDialogHeader}>
-                <Package size={20} color="#3b82f6" />
-                <Text style={styles.nameDialogTitle}>Product Overview</Text>
-              </View>
-
-              <View style={styles.nameCard}>
-                <View style={styles.nameCardIcon}>
-                  <Package size={16} color="#3b82f6" />
-                </View>
-                <View>
-                  <Text style={styles.nameCardLabel}>PRODUCT NAME</Text>
-                  <Text style={styles.nameCardValue}>
-                    {openNameDialog.charAt(0).toUpperCase() +
-                      openNameDialog.slice(1)}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.nameCard, styles.companyCard]}>
-                <View style={[styles.nameCardIcon, styles.companyCardIcon]}>
-                  <Building size={16} color="#10b981" />
-                </View>
-                <View>
-                  <Text style={[styles.nameCardLabel, styles.companyCardLabel]}>
-                    COMPANY
-                  </Text>
-                  <Text style={styles.nameCardValue}>
-                    {/* You would need to find the company name here */}
-                    Company Name
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </Dialog>
-        )}
-      </ScrollView>
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
+    </View>
   );
 }
 
@@ -873,7 +883,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#3b82f6',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 15,
     borderRadius: 8,
     gap: 8,
   },
@@ -954,416 +964,416 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#8b5cf6',
     borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  serviceBadgeText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#8b5cf6',
-  },
-  companyName: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginLeft: 24,
-  },
- moreButton: {
-  padding: 8,
-  borderRadius: 8,
+paddingHorizontal: 6,
+paddingVertical: 2,
+},
+serviceBadgeText: {
+fontSize: 10,
+fontWeight: '500',
+color: '#8b5cf6',
+},
+companyName: {
+fontSize: 12,
+color: '#6b7280',
+marginLeft: 24,
+},
+moreButton: {
+padding: 8,
+borderRadius: 8,
 },
 dropdown: {
-  position: 'absolute',
-  top: 24,
-  right: 0,
-  backgroundColor: 'white',
-  borderRadius: 12,
-  borderWidth: 1,
-  borderColor: '#e2e8f0',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.1,
-  shadowRadius: 12,
-  elevation: 5,
-  minWidth: 100,
-  zIndex: 1000,
+position: 'absolute',
+top: 24,
+right: 0,
+backgroundColor: 'white',
+borderRadius: 12,
+borderWidth: 1,
+borderColor: '#e2e8f0',
+shadowColor: '#000',
+shadowOffset: { width: 0, height: 4 },
+shadowOpacity: 0.1,
+shadowRadius: 12,
+elevation: 5,
+minWidth: 100,
+zIndex: 1000,
 },
 dropdownItem: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  gap: 10,
+flexDirection: 'row',
+alignItems: 'center',
+paddingVertical: 12,
+paddingHorizontal: 16,
+gap: 10,
 },
 dropdownItemText: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#334155',
+fontSize: 14,
+fontWeight: '600',
+color: '#334155',
 },
 dropdownItemTextDanger: {
-  color: '#ef4444',
+color: '#ef4444',
 },
 dropdownDivider: {
-  height: 1,
-  backgroundColor: '#f1f5f9',
+height: 1,
+backgroundColor: '#f1f5f9',
 },
-  createdDate: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 12,
-    marginLeft: 28,
-  },
-  dateText: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  infoGrid: {
-    flexDirection: 'row',
-    gap: 16,
-    backgroundColor: '#f9fafb',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  infoColumn: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  infoValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  stockIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  stockText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  infoValue: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '600',
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#f9fafb',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  priceColumn: {
-    flex: 1,
-  },
-  priceLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  priceValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  hsnContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#f9fafb',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  hsnText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6b7280',
-  },
-  viewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 12,
-  },
-  viewButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#3b82f6',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 48,
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    marginTop: 20,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  emptyDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  emptyAddButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 8,
-  },
-  emptyAddButtonText: {
-    color: 'white',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-  },
-  paginationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    gap: 8,
-  },
-  paginationButtonDisabled: {
-    opacity: 0.5,
-  },
-  paginationText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#4b5563',
-  },
-  paginationTextDisabled: {
-    color: '#9ca3af',
-  },
-  pageInfo: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6b7280',
-  },
-  noCompanyCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    alignItems: 'center',
-    margin: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  noCompanyIcon: {
-    backgroundColor: '#dbeafe',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  noCompanyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  noCompanyDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  contactButtons: {
-    width: '100%',
-    gap: 12,
-  },
-  phoneButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3b82f6',
-    paddingVertical: 14,
-    borderRadius: 8,
-    gap: 10,
-  },
-  phoneButtonText: {
-    color: 'white',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  emailButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-    paddingVertical: 14,
-    borderRadius: 8,
-    gap: 10,
-  },
-  emailButtonText: {
-    color: '#3b82f6',
-    fontWeight: '500',
-    fontSize: 14,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 16,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  modalDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  formContainer: {
-    padding: 20,
-  },
-  dialogContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-  },
-  dialogTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  dialogDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 20,
-  },
-  dialogButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-  cancelButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 6,
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6b7280',
-  },
-  deleteButton: {
-    backgroundColor: '#ef4444',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 6,
-  },
-  deleteButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'white',
-  },
-  nameDialogContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-  },
-  nameDialogHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
-  },
-  nameDialogTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  nameCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#dbeafe',
-    borderWidth: 1,
-    borderColor: '#bfdbfe',
-    borderRadius: 8,
-    padding: 16,
-    gap: 12,
-    marginBottom: 12,
-  },
-  nameCardIcon: {
-    backgroundColor: '#bfdbfe',
-    padding: 8,
-    borderRadius: 6,
-  },
-  nameCardLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#3b82f6',
-    marginBottom: 2,
-  },
-  nameCardValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  companyCard: {
-    backgroundColor: '#d1fae5',
-    borderColor: '#a7f3d0',
-  },
-  companyCardIcon: {
-    backgroundColor: '#a7f3d0',
-  },
-  companyCardLabel: {
-    color: '#10b981',
-  },
+createdDate: {
+flexDirection: 'row',
+alignItems: 'center',
+gap: 6,
+marginBottom: 12,
+marginLeft: 28,
+},
+dateText: {
+fontSize: 12,
+color: '#6b7280',
+fontWeight: '500',
+},
+infoGrid: {
+flexDirection: 'row',
+gap: 16,
+backgroundColor: '#f9fafb',
+padding: 12,
+borderRadius: 8,
+marginBottom: 8,
+},
+infoColumn: {
+flex: 1,
+},
+infoLabel: {
+fontSize: 12,
+fontWeight: '500',
+color: '#6b7280',
+marginBottom: 4,
+},
+infoValueContainer: {
+flexDirection: 'row',
+alignItems: 'center',
+gap: 6,
+},
+stockIndicator: {
+width: 8,
+height: 8,
+borderRadius: 4,
+},
+stockText: {
+fontSize: 14,
+fontWeight: '600',
+},
+infoValue: {
+fontSize: 14,
+color: '#374151',
+fontWeight: '600',
+},
+priceContainer: {
+flexDirection: 'row',
+backgroundColor: '#f9fafb',
+padding: 12,
+borderRadius: 8,
+marginBottom: 8,
+},
+priceColumn: {
+flex: 1,
+},
+priceLabel: {
+fontSize: 12,
+fontWeight: '500',
+color: '#6b7280',
+marginBottom: 4,
+},
+priceValue: {
+fontSize: 14,
+fontWeight: '600',
+color: '#374151',
+},
+hsnContainer: {
+flexDirection: 'row',
+alignItems: 'center',
+gap: 6,
+backgroundColor: '#f9fafb',
+padding: 12,
+borderRadius: 8,
+marginBottom: 12,
+},
+hsnText: {
+fontSize: 12,
+fontWeight: '500',
+color: '#6b7280',
+},
+viewButton: {
+flexDirection: 'row',
+alignItems: 'center',
+justifyContent: 'center',
+gap: 6,
+borderTopWidth: 1,
+borderTopColor: '#e5e7eb',
+paddingTop: 12,
+},
+viewButtonText: {
+fontSize: 12,
+fontWeight: '500',
+color: '#3b82f6',
+},
+emptyState: {
+alignItems: 'center',
+paddingVertical: 48,
+borderWidth: 2,
+borderColor: '#e5e7eb',
+borderStyle: 'dashed',
+borderRadius: 12,
+marginTop: 20,
+},
+emptyTitle: {
+fontSize: 18,
+fontWeight: '600',
+color: '#111827',
+marginTop: 12,
+marginBottom: 4,
+},
+emptyDescription: {
+fontSize: 14,
+color: '#6b7280',
+textAlign: 'center',
+marginBottom: 20,
+},
+emptyAddButton: {
+flexDirection: 'row',
+alignItems: 'center',
+backgroundColor: '#3b82f6',
+paddingHorizontal: 20,
+paddingVertical: 12,
+borderRadius: 8,
+gap: 8,
+},
+emptyAddButtonText: {
+color: 'white',
+fontWeight: '500',
+fontSize: 14,
+},
+pagination: {
+flexDirection: 'row',
+justifyContent: 'space-between',
+alignItems: 'center',
+marginTop: 20,
+paddingTop: 16,
+borderTopWidth: 1,
+borderTopColor: '#e5e7eb',
+},
+paginationButton: {
+flexDirection: 'row',
+alignItems: 'center',
+backgroundColor: 'white',
+paddingHorizontal: 16,
+paddingVertical: 10,
+borderRadius: 8,
+borderWidth: 1,
+borderColor: '#d1d5db',
+gap: 8,
+},
+paginationButtonDisabled: {
+opacity: 0.5,
+},
+paginationText: {
+fontSize: 14,
+fontWeight: '500',
+color: '#4b5563',
+},
+paginationTextDisabled: {
+color: '#9ca3af',
+},
+pageInfo: {
+fontSize: 14,
+fontWeight: '500',
+color: '#6b7280',
+},
+noCompanyCard: {
+backgroundColor: 'white',
+borderRadius: 12,
+padding: 24,
+alignItems: 'center',
+margin: 20,
+shadowColor: '#000',
+shadowOffset: { width: 0, height: 2 },
+shadowOpacity: 0.1,
+shadowRadius: 4,
+elevation: 3,
+},
+noCompanyIcon: {
+backgroundColor: '#dbeafe',
+width: 64,
+height: 64,
+borderRadius: 32,
+justifyContent: 'center',
+alignItems: 'center',
+marginBottom: 16,
+},
+noCompanyTitle: {
+fontSize: 20,
+fontWeight: '600',
+color: '#111827',
+marginBottom: 8,
+textAlign: 'center',
+},
+noCompanyDescription: {
+fontSize: 14,
+color: '#6b7280',
+textAlign: 'center',
+marginBottom: 24,
+},
+contactButtons: {
+width: '100%',
+gap: 12,
+},
+phoneButton: {
+flexDirection: 'row',
+alignItems: 'center',
+justifyContent: 'center',
+backgroundColor: '#3b82f6',
+paddingVertical: 14,
+borderRadius: 8,
+gap: 10,
+},
+phoneButtonText: {
+color: 'white',
+fontWeight: '500',
+fontSize: 14,
+},
+emailButton: {
+flexDirection: 'row',
+alignItems: 'center',
+justifyContent: 'center',
+borderWidth: 1,
+borderColor: '#3b82f6',
+paddingVertical: 14,
+borderRadius: 8,
+gap: 10,
+},
+emailButtonText: {
+color: '#3b82f6',
+fontWeight: '500',
+fontSize: 14,
+},
+modalContainer: {
+flex: 1,
+justifyContent: 'center',
+backgroundColor: 'rgba(0, 0, 0, 0.5)',
+padding: 16,
+},
+modalContent: {
+backgroundColor: 'white',
+borderRadius: 12,
+maxHeight: '80%',
+},
+modalHeader: {
+padding: 20,
+borderBottomWidth: 1,
+borderBottomColor: '#e5e7eb',
+},
+modalTitle: {
+fontSize: 18,
+fontWeight: '600',
+color: '#111827',
+marginBottom: 4,
+},
+modalDescription: {
+fontSize: 14,
+color: '#6b7280',
+},
+formContainer: {
+padding: 20,
+},
+dialogContent: {
+backgroundColor: 'white',
+borderRadius: 12,
+padding: 24,
+},
+dialogTitle: {
+fontSize: 18,
+fontWeight: '600',
+color: '#111827',
+marginBottom: 8,
+},
+dialogDescription: {
+fontSize: 14,
+color: '#6b7280',
+marginBottom: 20,
+},
+dialogButtons: {
+flexDirection: 'row',
+justifyContent: 'flex-end',
+gap: 12,
+},
+cancelButton: {
+paddingHorizontal: 16,
+paddingVertical: 10,
+borderRadius: 6,
+},
+cancelButtonText: {
+fontSize: 14,
+fontWeight: '500',
+color: '#6b7280',
+},
+deleteButton: {
+backgroundColor: '#ef4444',
+paddingHorizontal: 16,
+paddingVertical: 10,
+borderRadius: 6,
+},
+deleteButtonText: {
+fontSize: 14,
+fontWeight: '500',
+color: 'white',
+},
+nameDialogContent: {
+backgroundColor: 'white',
+borderRadius: 12,
+padding: 24,
+},
+nameDialogHeader: {
+flexDirection: 'row',
+alignItems: 'center',
+gap: 8,
+marginBottom: 20,
+},
+nameDialogTitle: {
+fontSize: 18,
+fontWeight: '600',
+color: '#111827',
+},
+nameCard: {
+flexDirection: 'row',
+alignItems: 'center',
+backgroundColor: '#dbeafe',
+borderWidth: 1,
+borderColor: '#bfdbfe',
+borderRadius: 8,
+padding: 16,
+gap: 12,
+marginBottom: 12,
+},
+nameCardIcon: {
+backgroundColor: '#bfdbfe',
+padding: 8,
+borderRadius: 6,
+},
+nameCardLabel: {
+fontSize: 10,
+fontWeight: '500',
+color: '#3b82f6',
+marginBottom: 2,
+},
+nameCardValue: {
+fontSize: 16,
+fontWeight: '600',
+color: '#111827',
+},
+companyCard: {
+backgroundColor: '#d1fae5',
+borderColor: '#a7f3d0',
+},
+companyCardIcon: {
+backgroundColor: '#a7f3d0',
+},
+companyCardLabel: {
+color: '#10b981',
+},
 });
