@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function CompanySwitcher() {
   const [companies, setCompanies] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Initial load ke liye true rakhein
+  const [isLoading, setIsLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { selectedCompanyId, setSelectedCompanyId, refreshTrigger } = useCompany();
@@ -40,17 +40,25 @@ export function CompanySwitcher() {
       const data = await res.json();
       setCompanies(data);
 
-      const savedCompanyId = await AsyncStorage.getItem('selectedCompanyId');
-      if (data.length > 0) {
-        if (savedCompanyId) {
-          const companyExists = data.some(c => c._id === savedCompanyId);
-          setSelectedCompanyId(
-            companyExists
-              ? savedCompanyId === 'all' ? null : savedCompanyId
-              : data[0]._id,
-          );
-        } else {
-          setSelectedCompanyId(data[0]._id);
+      // ✅ FIX: Only set company on initial load, not on every fetch
+      if (showLoading) {
+        const savedCompanyId = await AsyncStorage.getItem('selectedCompanyId');
+        
+        if (data.length > 0) {
+          if (savedCompanyId) {
+            // ✅ Handle "all" case properly
+            if (savedCompanyId === 'all') {
+              setSelectedCompanyId(null);
+            } else {
+              // Check if saved company still exists
+              const companyExists = data.some(c => c._id === savedCompanyId);
+              setSelectedCompanyId(companyExists ? savedCompanyId : data[0]._id);
+            }
+          } else {
+            // No saved company, default to first
+            setSelectedCompanyId(data[0]._id);
+            await AsyncStorage.setItem('selectedCompanyId', data[0]._id);
+          }
         }
       }
     } catch (error) {
@@ -61,29 +69,32 @@ export function CompanySwitcher() {
   };
 
   useEffect(() => {
-    fetchCompanies(true);
+    fetchCompanies(true); // Only initial load should reset selection
   }, []);
 
   useEffect(() => {
-    if (refreshTrigger > 0) fetchCompanies(false);
+    if (refreshTrigger > 0) fetchCompanies(false); // Don't reset on refresh
   }, [refreshTrigger]);
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchCompanies(false);
+      fetchCompanies(false); // Don't reset on screen focus
     }, []),
   );
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') fetchCompanies(false);
+      if (state === 'active') fetchCompanies(false); // Don't reset on app resume
     });
     return () => subscription.remove();
   }, []);
 
   const handleCompanyChange = async (companyId) => {
-    setSelectedCompanyId(companyId === 'all' ? null : companyId);
-    await AsyncStorage.setItem('selectedCompanyId', companyId);
+    const valueToStore = companyId; // 'all' or actual company ID
+    const valueForContext = companyId === 'all' ? null : companyId;
+    
+    setSelectedCompanyId(valueForContext);
+    await AsyncStorage.setItem('selectedCompanyId', valueToStore);
     setShowDropdown(false);
   };
 
@@ -97,7 +108,7 @@ export function CompanySwitcher() {
 
   // --- ORDERED RENDER LOGIC (Flicker Fix) ---
 
-  // 1. Sabse pehle Loading check karein
+  // 1. Loading check
   if (isLoading && companies.length === 0) {
     return (
       <View style={[styles.triggerButton, { opacity: 0.7 }]}>
@@ -107,7 +118,7 @@ export function CompanySwitcher() {
     );
   }
 
-  // 2. "No Companies" sirf tab dikhega jab loading khatam ho jaye aur array empty ho
+  // 2. No Companies
   if (!isLoading && companies.length === 0) {
     return (
       <View style={styles.singleCompanyContainer}>
