@@ -1792,7 +1792,12 @@ export function TransactionForm({
   useEffect(() => {
     const currentPartyId = form.getValues('party');
 
-    if (!currentPartyId || !selectedCompanyIdWatch) return;
+    // AGAR:
+    // 1. Koi party selected nahi hai
+    // 2. Ya abhi data load ho raha hai (isLoading)
+    // 3. Ya hum EDIT mode mein hain (transactionToEdit)
+    // TOH: Humein validation karne ki zarurat nahi hai.
+    if (!currentPartyId || isLoading || transactionToEdit) return;
 
     // Check if current party belongs to selected company
     const isValid =
@@ -1800,8 +1805,13 @@ export function TransactionForm({
         ? filteredParties.some(p => p._id === currentPartyId)
         : filteredVendors.some(v => v._id === currentPartyId);
 
-    // Clear party if it doesn't belong to the selected company
-    if (!isValid) {
+    // Web ki tarah behavior: Tabhi reset karein jab lists load ho chuki hon (length > 0)
+    const isListReady =
+      type === 'sales' || type === 'receipt'
+        ? filteredParties.length > 0
+        : filteredVendors.length > 0;
+
+    if (!isValid && isListReady) {
       form.setValue('party', '', { shouldValidate: true });
       setPartyBalance(null);
       setVendorBalance(null);
@@ -1814,7 +1824,15 @@ export function TransactionForm({
         type: 'info',
       });
     }
-  }, [selectedCompanyIdWatch, type]);
+    // Dependencies mein filtered lists add karna zaruri hai
+  }, [
+    selectedCompanyIdWatch,
+    type,
+    isLoading,
+    filteredParties,
+    filteredVendors,
+    transactionToEdit,
+  ]);
 
   useEffect(() => {}, [shippingAddresses]);
 
