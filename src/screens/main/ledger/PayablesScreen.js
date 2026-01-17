@@ -1114,6 +1114,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+    paddingTop: -50,
   },
   scrollView: {
     flex: 1,
@@ -1121,12 +1122,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 6,
-    marginTop: -10,
+    // marginTop: -10,
   },
   loadingScreen: {
     flex: 1,
     backgroundColor: '#f8fafc',
-    padding: 16,
+    // padding: 16,
   },
   loadingContent: {
     flex: 1,
