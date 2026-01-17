@@ -278,7 +278,16 @@ const Snackbar = ({ visible, children, onDismiss, duration, style }) => {
 
   return (
     <View style={[styles.snackbar, style]}>
-      <Text style={styles.snackbarText}>{children}</Text>
+      {/* Yahan style update kiya gaya hai taaki text wrap ho aur kate nahi */}
+      <RNTextInput
+        editable={false}
+        multiline={true} // Isse text wrap hoga
+        scrollEnabled={false} // Scrolling off taaki sirf display ho
+        style={[styles.snackbarText, { paddingLeft: 5 }]} // Thodi padding add ki
+      >
+        {children}
+      </RNTextInput>
+
       <TouchableOpacity onPress={onDismiss} style={styles.snackbarCloseButton}>
         <Icon name="close" size={20} color="#fff" />
       </TouchableOpacity>
@@ -634,7 +643,6 @@ export function TransactionForm({
   });
   const type = form.watch('type');
 
- 
   useEffect(() => {
     // Close common dropdowns and dialogs
     setPartyDropdownOpen(false);
@@ -659,8 +667,6 @@ export function TransactionForm({
 
     // Reset transient UI helpers
     setItemRenderKeys({});
-
-    
   }, [type]);
 
   const partyCreatable = useMemo(() => {
@@ -1783,30 +1789,32 @@ export function TransactionForm({
     transactionToEdit,
   ]);
   // Reset party/customer selection when company changes
-useEffect(() => {
-  const currentPartyId = form.getValues('party');
-  
-  if (!currentPartyId || !selectedCompanyIdWatch) return;
-  
-  // Check if current party belongs to selected company
-  const isValid = (type === 'sales' || type === 'receipt') 
-    ? filteredParties.some(p => p._id === currentPartyId)
-    : filteredVendors.some(v => v._id === currentPartyId);
-  
-  // Clear party if it doesn't belong to the selected company
-  if (!isValid) {
-    form.setValue('party', '', { shouldValidate: true });
-    setPartyBalance(null);
-    setVendorBalance(null);
-    setBalance(null);
-    
-    setSnackbar({
-      visible: true,
-      message: 'Customer/Vendor cleared - not associated with selected company',
-      type: 'info',
-    });
-  }
-}, [selectedCompanyIdWatch, type]);
+  useEffect(() => {
+    const currentPartyId = form.getValues('party');
+
+    if (!currentPartyId || !selectedCompanyIdWatch) return;
+
+    // Check if current party belongs to selected company
+    const isValid =
+      type === 'sales' || type === 'receipt'
+        ? filteredParties.some(p => p._id === currentPartyId)
+        : filteredVendors.some(v => v._id === currentPartyId);
+
+    // Clear party if it doesn't belong to the selected company
+    if (!isValid) {
+      form.setValue('party', '', { shouldValidate: true });
+      setPartyBalance(null);
+      setVendorBalance(null);
+      setBalance(null);
+
+      setSnackbar({
+        visible: true,
+        message:
+          'Customer/Vendor cleared - not associated with selected company',
+        type: 'info',
+      });
+    }
+  }, [selectedCompanyIdWatch, type]);
 
   useEffect(() => {}, [shippingAddresses]);
 
@@ -3449,53 +3457,53 @@ useEffect(() => {
     name: 'paymentMethod',
   });
 
- const getPartyOptions = () => {
-  if (type === 'sales' || type === 'receipt') {
-    const source = filteredParties; 
+  const getPartyOptions = () => {
+    if (type === 'sales' || type === 'receipt') {
+      const source = filteredParties;
 
-    const nameCount = source.reduce((acc, p) => {
-      const name = p.name || '';
-      acc[name] = (acc[name] || 0) + 1;
-      return acc;
-    }, {});
+      const nameCount = source.reduce((acc, p) => {
+        const name = p.name || '';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {});
 
-    return source.map(p => {
-      const name = p.name || '';
-      const hasDuplicates = nameCount[name] > 1;
-      const label = hasDuplicates
-        ? `${name} (${p.contactNumber || ''})`
-        : name;
-      return {
-        label: String(label),
-        value: p._id,
-      };
-    });
-  }
+      return source.map(p => {
+        const name = p.name || '';
+        const hasDuplicates = nameCount[name] > 1;
+        const label = hasDuplicates
+          ? `${name} (${p.contactNumber || ''})`
+          : name;
+        return {
+          label: String(label),
+          value: p._id,
+        };
+      });
+    }
 
-  if (type === 'purchases' || type === 'payment') {
-    const source = filteredVendors; 
-    
-    const nameCount = source.reduce((acc, v) => {
-      const name = v.vendorName || '';
-      acc[name] = (acc[name] || 0) + 1;
-      return acc;
-    }, {});
+    if (type === 'purchases' || type === 'payment') {
+      const source = filteredVendors;
 
-    return source.map(v => {
-      const name = v.vendorName || '';
-      const hasDuplicates = nameCount[name] > 1;
-      const label = hasDuplicates
-        ? `${name} (${v.contactNumber || ''})`
-        : name;
-      return {
-        label: String(label),
-        value: v._id,
-      };
-    });
-  }
+      const nameCount = source.reduce((acc, v) => {
+        const name = v.vendorName || '';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {});
 
-  return [];
-};
+      return source.map(v => {
+        const name = v.vendorName || '';
+        const hasDuplicates = nameCount[name] > 1;
+        const label = hasDuplicates
+          ? `${name} (${v.contactNumber || ''})`
+          : name;
+        return {
+          label: String(label),
+          value: v._id,
+        };
+      });
+    }
+
+    return [];
+  };
 
   const getPartyLabel = () => {
     switch (type) {
@@ -3534,53 +3542,49 @@ useEffect(() => {
     );
   }, [services, selectedCompanyIdWatch]);
 
-// Filter parties/customers based on selected company
-const filteredParties = useMemo(() => {
-  if (!selectedCompanyIdWatch) return parties;
-  
-  return parties.filter(p => {
-    let partyCompanies = [];
-    if (Array.isArray(p.company)) {
-      partyCompanies = p.company;
-    } else if (p.company) {
-      partyCompanies = [p.company];
-    }
-    
-    
-    if (partyCompanies.length === 0) return true;
-    
-   
-    return partyCompanies.some(comp => {
-      const compId = (typeof comp === 'object' && comp !== null) ? comp._id : comp;
-      return String(compId) === String(selectedCompanyIdWatch);
-    });
-  });
-}, [parties, selectedCompanyIdWatch]);
+  // Filter parties/customers based on selected company
+  const filteredParties = useMemo(() => {
+    if (!selectedCompanyIdWatch) return parties;
 
-// Filter vendors based on selected company
-const filteredVendors = useMemo(() => {
-  if (!selectedCompanyIdWatch) return vendors;
-  
-  return vendors.filter(v => {
-    
-    let vendorCompanies = [];
-    if (Array.isArray(v.company)) {
-      vendorCompanies = v.company;
-    } else if (v.company) {
-      vendorCompanies = [v.company];
-    }
-    
-    
-    if (vendorCompanies.length === 0) return true;
-    
-    
+    return parties.filter(p => {
+      let partyCompanies = [];
+      if (Array.isArray(p.company)) {
+        partyCompanies = p.company;
+      } else if (p.company) {
+        partyCompanies = [p.company];
+      }
 
-    return vendorCompanies.some(comp => {
-      const compId = (typeof comp === 'object' && comp !== null) ? comp._id : comp;
-      return String(compId) === String(selectedCompanyIdWatch);
+      if (partyCompanies.length === 0) return true;
+
+      return partyCompanies.some(comp => {
+        const compId =
+          typeof comp === 'object' && comp !== null ? comp._id : comp;
+        return String(compId) === String(selectedCompanyIdWatch);
+      });
     });
-  });
-}, [vendors, selectedCompanyIdWatch]);
+  }, [parties, selectedCompanyIdWatch]);
+
+  // Filter vendors based on selected company
+  const filteredVendors = useMemo(() => {
+    if (!selectedCompanyIdWatch) return vendors;
+
+    return vendors.filter(v => {
+      let vendorCompanies = [];
+      if (Array.isArray(v.company)) {
+        vendorCompanies = v.company;
+      } else if (v.company) {
+        vendorCompanies = [v.company];
+      }
+
+      if (vendorCompanies.length === 0) return true;
+
+      return vendorCompanies.some(comp => {
+        const compId =
+          typeof comp === 'object' && comp !== null ? comp._id : comp;
+        return String(compId) === String(selectedCompanyIdWatch);
+      });
+    });
+  }, [vendors, selectedCompanyIdWatch]);
 
   const productOptions = filteredProducts.map(p => {
     const stockNum = Number(p.stocks ?? p.stock ?? 0);
@@ -4550,7 +4554,7 @@ const styles = StyleSheet.create({
   snackbar: {
     backgroundColor: '#2c2c2c',
     position: 'absolute',
-    bottom: 20,
+    bottom: 90, // Submit button ke thoda upar rakhein taaki button ise na dhake
     left: 16,
     right: 16,
     borderRadius: 12,
@@ -4559,20 +4563,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    zIndex: 9999, // Sabse upar dikhane ke liye
+    elevation: 10, // Android ke liye shadow aur layer
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
   },
   snackbarText: {
     color: '#fff',
-    flex: 1,
+    flex: 1, // Poori width lega
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
+    textAlignVertical: 'center', // Android ke liye
+    paddingRight: 10, // Close button se doori
+    minHeight: 40, // Minimum height taaki text kate nahi
   },
   snackbarCloseButton: {
     padding: 6,
