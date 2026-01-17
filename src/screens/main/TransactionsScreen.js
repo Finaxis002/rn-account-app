@@ -24,10 +24,12 @@ import {
   PermissionsAndroid,
   Share,
   useWindowDimensions,
+  TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 import Pdf from 'react-native-pdf';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useCompany } from '../../contexts/company-context';
 import { useToast } from '../../components/hooks/useToast';
 import { usePermissions } from '../../contexts/permission-context';
@@ -117,6 +119,15 @@ const TransactionsScreen = ({ navigation }) => {
   const [isPdfViewOpen, setIsPdfViewOpen] = useState(false);
   const [pdfUri, setPdfUri] = useState(null);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+
+  // Date filter states
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [dateRange, setDateRange] = useState({
+    startDate: '',
+    endDate: new Date().toISOString().split('T')[0],
+  });
 
   const [transactionToDelete, setTransactionToDelete] = useState(null);
   const [transactionToEdit, setTransactionToEdit] = useState(null);
@@ -227,9 +238,15 @@ const TransactionsScreen = ({ navigation }) => {
         const token = await AsyncStorage.getItem('token');
         if (!token) throw new Error('Authentication token not found.');
 
-        const queryParam = selectedCompanyId
-          ? `?companyId=${selectedCompanyId}`
-          : '';
+        const queryParams = [
+          selectedCompanyId ? `companyId=${selectedCompanyId}` : '',
+          dateRange.startDate ? `startDate=${dateRange.startDate}` : '',
+          dateRange.endDate ? `endDate=${dateRange.endDate}` : '',
+        ]
+          .filter(Boolean)
+          .join('&');
+
+        const queryParam = queryParams ? `?${queryParams}` : '';
 
         const parseResponse = (data, possibleArrayKeys = []) => {
           if (Array.isArray(data)) return data;
@@ -450,6 +467,7 @@ const TransactionsScreen = ({ navigation }) => {
       canJournal,
       toast,
       initialLoad,
+      dateRange,
     ],
   );
 
@@ -478,6 +496,26 @@ const TransactionsScreen = ({ navigation }) => {
   const customFilterFn = useMemo(
     () => makeCustomFilterFn(serviceNameById),
     [serviceNameById],
+  );
+
+  // Date filtering helper
+  const filteredByDate = useCallback(
+    data => {
+      if (!dateRange.startDate && !dateRange.endDate) return data;
+
+      return data.filter(item => {
+        const itemDate = new Date(item.date).getTime();
+        const start = dateRange.startDate
+          ? new Date(dateRange.startDate + 'T00:00:00').getTime()
+          : null;
+        const end = dateRange.endDate
+          ? new Date(dateRange.endDate + 'T23:59:59').getTime()
+          : null;
+
+        return (!start || itemDate >= start) && (!end || itemDate <= end);
+      });
+    },
+    [dateRange],
   );
 
   // Filter data based on company
@@ -552,39 +590,46 @@ const TransactionsScreen = ({ navigation }) => {
   ]);
 
   const searchedAll = useMemo(() => {
-    if (!filter) return allVisibleTransactions;
-    return allVisibleTransactions.filter(item => customFilterFn(item, filter));
-  }, [filter, allVisibleTransactions, customFilterFn]);
+    const dateFiltered = filteredByDate(allVisibleTransactions);
+    if (!filter) return dateFiltered;
+    return dateFiltered.filter(item => customFilterFn(item, filter));
+  }, [filter, allVisibleTransactions, customFilterFn, filteredByDate]);
 
   const searchedSales = useMemo(() => {
-    if (!filter) return visibleSales;
-    return visibleSales.filter(item => customFilterFn(item, filter));
-  }, [filter, visibleSales, customFilterFn]);
+    const dateFiltered = filteredByDate(visibleSales);
+    if (!filter) return dateFiltered;
+    return dateFiltered.filter(item => customFilterFn(item, filter));
+  }, [filter, visibleSales, customFilterFn, filteredByDate]);
 
   const searchedPurchases = useMemo(() => {
-    if (!filter) return visiblePurchases;
-    return visiblePurchases.filter(item => customFilterFn(item, filter));
-  }, [filter, visiblePurchases, customFilterFn]);
+    const dateFiltered = filteredByDate(visiblePurchases);
+    if (!filter) return dateFiltered;
+    return dateFiltered.filter(item => customFilterFn(item, filter));
+  }, [filter, visiblePurchases, customFilterFn, filteredByDate]);
 
   const searchedProforma = useMemo(() => {
-    if (!filter) return visibleProforma;
-    return visibleProforma.filter(item => customFilterFn(item, filter));
-  }, [filter, visibleProforma, customFilterFn]);
+    const dateFiltered = filteredByDate(visibleProforma);
+    if (!filter) return dateFiltered;
+    return dateFiltered.filter(item => customFilterFn(item, filter));
+  }, [filter, visibleProforma, customFilterFn, filteredByDate]);
 
   const searchedReceipts = useMemo(() => {
-    if (!filter) return visibleReceipts;
-    return visibleReceipts.filter(item => customFilterFn(item, filter));
-  }, [filter, visibleReceipts, customFilterFn]);
+    const dateFiltered = filteredByDate(visibleReceipts);
+    if (!filter) return dateFiltered;
+    return dateFiltered.filter(item => customFilterFn(item, filter));
+  }, [filter, visibleReceipts, customFilterFn, filteredByDate]);
 
   const searchedPayments = useMemo(() => {
-    if (!filter) return visiblePayments;
-    return visiblePayments.filter(item => customFilterFn(item, filter));
-  }, [filter, visiblePayments, customFilterFn]);
+    const dateFiltered = filteredByDate(visiblePayments);
+    if (!filter) return dateFiltered;
+    return dateFiltered.filter(item => customFilterFn(item, filter));
+  }, [filter, visiblePayments, customFilterFn, filteredByDate]);
 
   const searchedJournals = useMemo(() => {
-    if (!filter) return visibleJournals;
-    return visibleJournals.filter(item => customFilterFn(item, filter));
-  }, [filter, visibleJournals, customFilterFn]);
+    const dateFiltered = filteredByDate(visibleJournals);
+    if (!filter) return dateFiltered;
+    return dateFiltered.filter(item => customFilterFn(item, filter));
+  }, [filter, visibleJournals, customFilterFn, filteredByDate]);
 
   const onFilterChange = text => {
     setFilter(text);
@@ -1475,6 +1520,18 @@ const TransactionsScreen = ({ navigation }) => {
           key={`${refreshTrigger}-${activeTab}`}
           refreshing={isLoading ? false : isRefreshing}
           onRefresh={onRefresh}
+          onFilterButtonPress={() => setIsFilterModalOpen(true)}
+          isFilterActive={
+            !!dateRange.startDate ||
+            dateRange.endDate !== new Date().toISOString().split('T')[0]
+          }
+          dateRange={dateRange}
+          onFilterReset={() => {
+            setDateRange({
+              startDate: '',
+              endDate: new Date().toISOString().split('T')[0],
+            });
+          }}
         />
       </View>
     );
@@ -2054,6 +2111,115 @@ const TransactionsScreen = ({ navigation }) => {
             </View>
           </View>
         </Modal>
+
+        {/* Filter by Date Modal */}
+        <Modal
+          visible={isFilterModalOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsFilterModalOpen(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.filterModalOverlay}
+            onPress={() => setIsFilterModalOpen(false)}
+          >
+            <View style={styles.filterModalContent}>
+              <View style={styles.filterModalHeader}>
+                <Text style={styles.filterModalTitle}>Filter by Date</Text>
+                <TouchableOpacity onPress={() => setIsFilterModalOpen(false)}>
+                  <Icon name="close" size={24} color="#374151" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.filterDateSection}>
+                <Text style={styles.filterDateLabel}>From Date</Text>
+                <TouchableOpacity
+                  style={styles.filterDateButton}
+                  onPress={() => setShowStartDatePicker(true)}
+                >
+                  <Feather name="calendar" size={18} color="#3b82f6" />
+                  <Text style={styles.filterDateText}>
+                    {dateRange.startDate || 'Select date'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.filterDateSection}>
+                <Text style={styles.filterDateLabel}>To Date</Text>
+                <TouchableOpacity
+                  style={styles.filterDateButton}
+                  onPress={() => setShowEndDatePicker(true)}
+                >
+                  <Feather name="calendar" size={18} color="#3b82f6" />
+                  <Text style={styles.filterDateText}>
+                    {dateRange.endDate || 'Select date'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.filterModalActions}>
+                <TouchableOpacity
+                  style={styles.filterResetButton}
+                  onPress={() => {
+                    setDateRange({
+                      startDate: '',
+                      endDate: new Date().toISOString().split('T')[0],
+                    });
+                    setIsFilterModalOpen(false);
+                  }}
+                >
+                  <Text style={styles.filterResetButtonText}>Reset</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.filterApplyButton}
+                  onPress={() => setIsFilterModalOpen(false)}
+                >
+                  <Text style={styles.filterApplyButtonText}>Apply</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        {/* DateTimePicker for Start Date */}
+        {showStartDatePicker && (
+          <DateTimePicker
+            value={
+              dateRange.startDate ? new Date(dateRange.startDate) : new Date()
+            }
+            mode="date"
+            display="spinner"
+            onChange={(event, selectedDate) => {
+              if (selectedDate) {
+                setDateRange({
+                  ...dateRange,
+                  startDate: selectedDate.toISOString().split('T')[0],
+                });
+              }
+              setShowStartDatePicker(false);
+            }}
+          />
+        )}
+
+        {/* DateTimePicker for End Date */}
+        {showEndDatePicker && (
+          <DateTimePicker
+            value={dateRange.endDate ? new Date(dateRange.endDate) : new Date()}
+            mode="date"
+            display="spinner"
+            onChange={(event, selectedDate) => {
+              if (selectedDate) {
+                setDateRange({
+                  ...dateRange,
+                  endDate: selectedDate.toISOString().split('T')[0],
+                });
+              }
+              setShowEndDatePicker(false);
+            }}
+          />
+        )}
+
         {/* Transaction manager modals (action sheet, PDF viewer, email dialogs, copy success) */}
         {transactionManager?.renderActionSheet &&
           transactionManager.renderActionSheet()}
@@ -2941,6 +3107,94 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 14,
+  },
+  filterModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    width: '85%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  filterModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  filterModalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  filterDateSection: {
+    marginBottom: 16,
+  },
+  filterDateLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  filterDateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  filterDateText: {
+    fontSize: 14,
+    color: '#1f2937',
+    flex: 1,
+  },
+  filterModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  filterResetButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterResetButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  filterApplyButton: {
+    flex: 1,
+    backgroundColor: '#3b82f6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterApplyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
   },
 });
 
