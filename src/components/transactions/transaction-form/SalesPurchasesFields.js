@@ -2518,7 +2518,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 0,
-    marginBottom: 60,
+    marginBottom: 0,
   },
   card: {
     backgroundColor: 'white',
