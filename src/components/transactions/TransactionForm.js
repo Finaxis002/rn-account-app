@@ -3540,38 +3540,36 @@ export function TransactionForm({
 
   // Filter products by selected company
   const filteredProducts = useMemo(() => {
-    if (!selectedCompanyIdWatch) return products;
-    return products.filter(
-      p =>
-        !p.company ||
-        p.company === selectedCompanyIdWatch ||
-        p.company?._id === selectedCompanyIdWatch,
-    );
+    if (!selectedCompanyIdWatch) return []; // List khali rakhein agar company select nahi hai
+    return products.filter(p => {
+      const prodCompanies = Array.isArray(p.company) ? p.company : (p.company ? [p.company] : []);
+      if (prodCompanies.length === 0) return true; // Global products
+      return prodCompanies.some(comp => {
+          const compId = typeof comp === 'object' && comp !== null ? comp._id : comp;
+          return String(compId) === String(selectedCompanyIdWatch);
+      });
+    });
   }, [products, selectedCompanyIdWatch]);
 
   // Filter services by selected company
   const filteredServices = useMemo(() => {
-    if (!selectedCompanyIdWatch) return services;
-    return services.filter(
-      s =>
-        !s.company ||
-        s.company === selectedCompanyIdWatch ||
-        s.company?._id === selectedCompanyIdWatch,
-    );
+    if (!selectedCompanyIdWatch) return [];
+    return services.filter(s => {
+      const serviceCompanies = Array.isArray(s.company) ? s.company : (s.company ? [s.company] : []);
+      if (serviceCompanies.length === 0) return true; // Global services
+      return serviceCompanies.some(comp => {
+          const compId = typeof comp === 'object' && comp !== null ? comp._id : comp;
+          return String(compId) === String(selectedCompanyIdWatch);
+      });
+    });
   }, [services, selectedCompanyIdWatch]);
 
   // Filter parties/customers based on selected company
   const filteredParties = useMemo(() => {
-    if (!selectedCompanyIdWatch) return parties;
+    if (!selectedCompanyIdWatch) return [];
 
     return parties.filter(p => {
-      let partyCompanies = [];
-      if (Array.isArray(p.company)) {
-        partyCompanies = p.company;
-      } else if (p.company) {
-        partyCompanies = [p.company];
-      }
-
+      const partyCompanies = Array.isArray(p.company) ? p.company : (p.company ? [p.company] : []);
       if (partyCompanies.length === 0) return true;
 
       return partyCompanies.some(comp => {
@@ -3584,16 +3582,10 @@ export function TransactionForm({
 
   // Filter vendors based on selected company
   const filteredVendors = useMemo(() => {
-    if (!selectedCompanyIdWatch) return vendors;
+    if (!selectedCompanyIdWatch) return [];
 
     return vendors.filter(v => {
-      let vendorCompanies = [];
-      if (Array.isArray(v.company)) {
-        vendorCompanies = v.company;
-      } else if (v.company) {
-        vendorCompanies = [v.company];
-      }
-
+      const vendorCompanies = Array.isArray(v.company) ? v.company : (v.company ? [v.company] : []);
       if (vendorCompanies.length === 0) return true;
 
       return vendorCompanies.some(comp => {

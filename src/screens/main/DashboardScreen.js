@@ -393,7 +393,7 @@ export default function DashboardPage() {
       const paymentsArr = toArray(rawPayments);
       const journalsArr = toArray(rawJournals);
 
-      const allTransactions = [
+      let allTransactions = [
         ...salesArr.map(s => ({ ...s, type: 'sales' })),
         ...purchasesArr.map(p => ({ ...p, type: 'purchases' })),
         ...receiptsArr.map(r => ({ ...r, type: 'receipt' })),
@@ -403,7 +403,20 @@ export default function DashboardPage() {
           description: j?.narration ?? j?.description ?? '',
           type: 'journal',
         })),
-      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      ];
+
+      // If a company is selected on the dashboard, filter the transactions
+      if (selectedCompanyId && selectedCompanyId !== 'all') {
+        allTransactions = allTransactions.filter(t => {
+          const transCompanyId =
+            typeof t.company === 'object' ? t.company?._id : t.company;
+          return transCompanyId === selectedCompanyId;
+        });
+      }
+
+      allTransactions.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
 
       const servicesArr = Array.isArray(servicesJson)
         ? servicesJson
@@ -417,7 +430,7 @@ export default function DashboardPage() {
       const updatedData = {
         ...initialData,
         users: usersData?.length || 0,
-        recentTransactions: allTransactions.slice(0, 4),
+        recentTransactions: allTransactions.slice(0, 4), // Top 4 filtered transactions
         serviceNameById: sMap,
       };
 
