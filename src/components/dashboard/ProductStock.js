@@ -339,8 +339,19 @@ const ProductStock = ({
       });
 
       if (!res.ok) throw new Error('Failed to fetch products.');
-      const data = await res.json();
-      setProducts(Array.isArray(data) ? data : data.products || []);
+      let data = await res.json();
+      let productsList = Array.isArray(data) ? data : data.products || [];
+
+      // Client-side extra safety filter
+      if (selectedCompanyId) {
+        productsList = productsList.filter(p => {
+          // Product's company can be an object or a string ID
+          const cId = typeof p.company === 'object' ? p.company?._id : p.company;
+          return cId === selectedCompanyId || !cId; // !cId handles products that are globally available
+        });
+      }
+
+      setProducts(productsList);
     } catch (error) {
       toast({
         variant: 'destructive',

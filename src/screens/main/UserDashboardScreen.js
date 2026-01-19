@@ -234,7 +234,7 @@ export default function UserDashboardScreen({ navigation, route }) {
       });
 
       
-      const allTransactions = [
+      let allTransactions = [
         ...salesArr.map(s => ({ ...s, type: 'sales' })),
         ...purchasesArr.map(p => ({ ...p, type: 'purchases' })),
         ...receiptsArr.map(r => ({ ...r, type: 'receipt' })),
@@ -244,7 +244,19 @@ export default function UserDashboardScreen({ navigation, route }) {
           description: j?.narration ?? j?.description ?? '',
           type: 'journal',
         })),
-      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      ];
+
+      if (selectedCompanyId && selectedCompanyId !== 'all') {
+        allTransactions = allTransactions.filter(t => {
+          const transCompanyId =
+            typeof t.company === 'object' ? t.company?._id : t.company;
+          return transCompanyId === selectedCompanyId;
+        });
+      }
+
+      allTransactions.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      );
 
       setRecentTransactions(allTransactions.slice(0, 5));
 
