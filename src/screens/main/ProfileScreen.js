@@ -573,7 +573,7 @@ export default function ProfilePage({ navigation, route }) {
     ];
 
     const permissionsTab = isUser
-      ? {git 
+      ? {
           value: 'my-permissions',
           label: 'My Permissions',
           icon: Shield,
