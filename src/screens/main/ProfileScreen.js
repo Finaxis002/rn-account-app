@@ -573,7 +573,7 @@ export default function ProfilePage({ navigation, route }) {
     ];
 
     const permissionsTab = isUser
-      ? {
+      ? {git 
           value: 'my-permissions',
           label: 'My Permissions',
           icon: Shield,
@@ -823,7 +823,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tabsScrollContent: {
-    paddingHorizontal: 8,
+    // paddingHorizontal: 8,
     paddingVertical: 4,
   },
   tabItem: {
@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: 16,
     borderRadius: 12,
-    elevation: 2,
+    elevation: 0.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -981,7 +981,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   emailConsentSection: {
-    marginTop: 20,
+    marginTop: 0,
   },
   permissionsContainer: {
     flex: 1,

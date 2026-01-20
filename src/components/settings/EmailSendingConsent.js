@@ -9,6 +9,7 @@ import {
   AppState,
   Modal,
   TouchableWithoutFeedback,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Feather';
@@ -413,64 +414,64 @@ export function EmailSendingConsent() {
 
   return (
     <View style={styles.container}>
-      {/* Email Account Card */}
       <View style={styles.card}>
         <View style={styles.cardContent}>
-          <View style={styles.cardHeader}>
-            <View style={styles.emailInfo}>
-              <Icon name="mail" size={20} color="#64748b" />
-              <View style={styles.emailText}>
-                <Text style={styles.emailLabel}>Email account</Text>
-                {status.connected && status.email ? (
-                  <Text style={styles.connectedEmail}>{status.email}</Text>
-                ) : (
-                  <Text style={styles.noEmailText}>
-                    {status.termsAcceptedAt
-                      ? 'No email connected yet.'
-                      : 'Accept terms first to connect an email.'}
-                  </Text>
-                )}
-              </View>
+          {/* Top Section: Icon and Label */}
+          <View style={styles.headerInfo}>
+            <View style={styles.iconCircle}>
+              <Icon name="mail" size={18} color="#64748b" />
             </View>
-
-            <View style={styles.actionContainer}>
-              {status.connected ? (
-                <View style={styles.connectedContainer}>
-                  <View style={styles.connectedBadge}>
-                    <Icon name="check-circle" size={16} color="#10b981" />
-                    <Text style={styles.connectedText}>Connected</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.disconnectButton}
-                    onPress={handleDisconnect}
-                  >
-                    <Text style={styles.disconnectButtonText}>Disconnect</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.connectButton}
-                  onPress={handleConnectFlow}
-                  disabled={connecting}
-                >
-                  {connecting ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
-                  ) : (
-                    <>
-                      <Icon
-                        name="link"
-                        size={16}
-                        color="#ffffff"
-                        style={styles.buttonIcon}
-                      />
-                      <Text style={styles.connectButtonText}>
-                        {status.email ? 'Reconnect Gmail' : 'Connect Gmail'}
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+            <View style={styles.labelContainer}>
+              <Text style={styles.emailLabel}>Email account</Text>
+              {!status.connected && (
+                <Text style={styles.subText}>
+                  {!status.termsAcceptedAt
+                    ? 'Accept terms first to connect an email.'
+                    : 'No email connected yet.'}
+                </Text>
               )}
             </View>
+          </View>
+
+          {/* Bottom Section: Status and Buttons */}
+          <View style={styles.footerActions}>
+            {status.connected ? (
+              <View style={styles.connectedRow}>
+                <View style={styles.badge}>
+                  <View style={styles.dot} />
+                  <View style={styles.emailTextContainer}>
+                    <Text style={styles.connectedLabel}>Connected:</Text>
+                    <Text
+                      style={styles.emailDisplay}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {status.email}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.disconnectBtn}
+                  onPress={handleDisconnect}
+                >
+                  <Text style={styles.disconnectBtnText}>Disconnect</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.connectBtn}
+                onPress={handleConnectFlow}
+                disabled={connecting}
+              >
+                {connecting ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.connectBtnText}>
+                    {status.email ? 'Reconnect Gmail' : 'Connect Gmail'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -488,7 +489,7 @@ export function EmailSendingConsent() {
               <View style={styles.modalContent}>
                 <Text style={styles.modalTitle}>Terms & Conditions</Text>
 
-                <View style={styles.termsScroll}>
+                <ScrollView style={styles.termsScroll}>
                   <Text style={styles.termsSectionTitle}>
                     Email Sending Service
                   </Text>
@@ -510,7 +511,7 @@ export function EmailSendingConsent() {
                     You can revoke access at any time from your Google Account
                     settings or from within this app.
                   </Text>
-                </View>
+                </ScrollView>
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity
@@ -539,119 +540,133 @@ export function EmailSendingConsent() {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 8,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#64748b',
+    marginVertical: 20,
+    paddingHorizontal: 0,
+    marginTop: -4,
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    elevation: 0.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 2,
   },
   cardContent: {
     padding: 16,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  emailInfo: {
+  headerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    flex: 1,
+    marginBottom: 8,
   },
-  emailText: {
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f8fafc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  labelContainer: {
     flex: 1,
   },
   emailLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0f172a',
   },
-  connectedEmail: {
-    fontSize: 13,
-    color: '#059669',
-    fontWeight: '500',
+  subText: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
   },
-  noEmailText: {
-    fontSize: 13,
-    color: '#6b7280',
+  footerActions: {
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    paddingTop: 8,
+    marginTop: 4,
   },
-  actionContainer: {
-    alignItems: 'flex-end',
-  },
-  connectedContainer: {
+  connectedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  connectedBadge: {
+  badge: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#d1fae5',
+    alignItems: 'flex-start',
+    backgroundColor: '#f0fdf4',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 6,
-    gap: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#dcfce7',
+    flex: 1,
+    marginRight: 8,
   },
-  connectedText: {
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#22c55e',
+    marginRight: 8,
+    marginTop: 2,
+  },
+  emailTextContainer: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  connectedLabel: {
+    fontSize: 11,
+    color: '#166534',
+    fontWeight: '600',
+  },
+  emailDisplay: {
     fontSize: 12,
-    color: '#059669',
+    color: '#166534',
     fontWeight: '500',
+    flexShrink: 1,
   },
-  disconnectButton: {
+  disconnectBtn: {
     backgroundColor: '#ef4444',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 6,
   },
-  disconnectButtonText: {
+  disconnectBtnText: {
     color: '#ffffff',
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  connectButton: {
-    backgroundColor: '#3b82f6',
+  connectBtn: {
+    backgroundColor: '#4285F4',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  connectBtnText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 6,
-    gap: 8,
-    minWidth: 140,
-    justifyContent: 'center',
+    padding: 20,
   },
-  buttonIcon: {
-    marginRight: 4,
-  },
-  connectButtonText: {
-    color: '#ffffff',
+  loadingText: {
+    marginLeft: 8,
+    color: '#64748b',
     fontSize: 14,
-    fontWeight: '500',
   },
   modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -664,11 +679,6 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     maxHeight: '80%',
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
   },
   modalTitle: {
     fontSize: 18,
@@ -680,7 +690,6 @@ const styles = StyleSheet.create({
   termsScroll: {
     maxHeight: 300,
     marginBottom: 20,
-    paddingRight: 8,
   },
   termsSectionTitle: {
     fontSize: 16,
