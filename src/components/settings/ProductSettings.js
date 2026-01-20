@@ -606,7 +606,8 @@ export default function ProductSettings() {
                           );
 
                           return {
-                            company: foundCompany?._id || companies[0]?._id || '',
+                            company:
+                              foundCompany?._id || companies[0]?._id || '',
                             name: item['Item Name'],
                             stocks: item['Stock'] || 0,
                             unit: item['Unit'] || 'Piece',
@@ -665,7 +666,8 @@ export default function ProductSettings() {
                         <TouchableOpacity
                           style={[
                             styles.paginationButton,
-                            currentPage === 1 && styles.paginationButtonDisabled,
+                            currentPage === 1 &&
+                              styles.paginationButtonDisabled,
                           ]}
                           onPress={handlePrevPage}
                           disabled={currentPage === 1}
@@ -677,7 +679,8 @@ export default function ProductSettings() {
                           <Text
                             style={[
                               styles.paginationText,
-                              currentPage === 1 && styles.paginationTextDisabled,
+                              currentPage === 1 &&
+                                styles.paginationTextDisabled,
                             ]}
                           >
                             Previous
@@ -740,7 +743,7 @@ export default function ProductSettings() {
             {/* Product Form Modal */}
             <Dialog
               open={isFormOpen}
-              onOpenChange={(isOpen) => {
+              onOpenChange={isOpen => {
                 if (!isOpen) setSelectedProduct(null);
                 setIsFormOpen(isOpen);
               }}
@@ -748,12 +751,12 @@ export default function ProductSettings() {
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>
-                    {selectedProduct ? "Edit Product" : "Create New Product"}
+                    {selectedProduct ? 'Edit Product' : 'Create New Product'}
                   </DialogTitle>
                   <DialogDescription>
                     {selectedProduct
-                      ? "Update the details for this item."
-                      : "Fill in the form to add a new product or service."}
+                      ? 'Update the details for this item.'
+                      : 'Fill in the form to add a new product or service.'}
                   </DialogDescription>
                 </DialogHeader>
                 <ProductForm
@@ -818,12 +821,12 @@ export default function ProductSettings() {
                       <Building size={16} color="#10b981" />
                     </View>
                     <View>
-                      <Text style={[styles.nameCardLabel, styles.companyCardLabel]}>
+                      <Text
+                        style={[styles.nameCardLabel, styles.companyCardLabel]}
+                      >
                         COMPANY
                       </Text>
-                      <Text style={styles.nameCardValue}>
-                        Company Name
-                      </Text>
+                      <Text style={styles.nameCardValue}>Company Name</Text>
                     </View>
                   </View>
                 </View>
@@ -850,8 +853,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'white',
     borderRadius: 12,
-    margin: 16,
-    padding: 16,
+    margin: 0,
+    padding: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -860,12 +863,14 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 20,
+    paddingHorizontal: 12,
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 4,
+    marginTop: 8,
   },
   description: {
     fontSize: 14,
@@ -874,16 +879,16 @@ const styles = StyleSheet.create({
   },
   headerButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start', // 'space-between' ki jagah 'flex-start' use karein taaki buttons pass aa jayein
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3b82f6',
-    paddingHorizontal: 16,
-    paddingVertical: 15,
+    paddingHorizontal: 12, // Horizontal padding thodi kam ki
+    paddingVertical: 10,
     borderRadius: 8,
     gap: 8,
   },
@@ -964,416 +969,416 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#8b5cf6',
     borderRadius: 4,
-paddingHorizontal: 6,
-paddingVertical: 2,
-},
-serviceBadgeText: {
-fontSize: 10,
-fontWeight: '500',
-color: '#8b5cf6',
-},
-companyName: {
-fontSize: 12,
-color: '#6b7280',
-marginLeft: 24,
-},
-moreButton: {
-padding: 8,
-borderRadius: 8,
-},
-dropdown: {
-position: 'absolute',
-top: 24,
-right: 0,
-backgroundColor: 'white',
-borderRadius: 12,
-borderWidth: 1,
-borderColor: '#e2e8f0',
-shadowColor: '#000',
-shadowOffset: { width: 0, height: 4 },
-shadowOpacity: 0.1,
-shadowRadius: 12,
-elevation: 5,
-minWidth: 100,
-zIndex: 1000,
-},
-dropdownItem: {
-flexDirection: 'row',
-alignItems: 'center',
-paddingVertical: 12,
-paddingHorizontal: 16,
-gap: 10,
-},
-dropdownItemText: {
-fontSize: 14,
-fontWeight: '600',
-color: '#334155',
-},
-dropdownItemTextDanger: {
-color: '#ef4444',
-},
-dropdownDivider: {
-height: 1,
-backgroundColor: '#f1f5f9',
-},
-createdDate: {
-flexDirection: 'row',
-alignItems: 'center',
-gap: 6,
-marginBottom: 12,
-marginLeft: 28,
-},
-dateText: {
-fontSize: 12,
-color: '#6b7280',
-fontWeight: '500',
-},
-infoGrid: {
-flexDirection: 'row',
-gap: 16,
-backgroundColor: '#f9fafb',
-padding: 12,
-borderRadius: 8,
-marginBottom: 8,
-},
-infoColumn: {
-flex: 1,
-},
-infoLabel: {
-fontSize: 12,
-fontWeight: '500',
-color: '#6b7280',
-marginBottom: 4,
-},
-infoValueContainer: {
-flexDirection: 'row',
-alignItems: 'center',
-gap: 6,
-},
-stockIndicator: {
-width: 8,
-height: 8,
-borderRadius: 4,
-},
-stockText: {
-fontSize: 14,
-fontWeight: '600',
-},
-infoValue: {
-fontSize: 14,
-color: '#374151',
-fontWeight: '600',
-},
-priceContainer: {
-flexDirection: 'row',
-backgroundColor: '#f9fafb',
-padding: 12,
-borderRadius: 8,
-marginBottom: 8,
-},
-priceColumn: {
-flex: 1,
-},
-priceLabel: {
-fontSize: 12,
-fontWeight: '500',
-color: '#6b7280',
-marginBottom: 4,
-},
-priceValue: {
-fontSize: 14,
-fontWeight: '600',
-color: '#374151',
-},
-hsnContainer: {
-flexDirection: 'row',
-alignItems: 'center',
-gap: 6,
-backgroundColor: '#f9fafb',
-padding: 12,
-borderRadius: 8,
-marginBottom: 12,
-},
-hsnText: {
-fontSize: 12,
-fontWeight: '500',
-color: '#6b7280',
-},
-viewButton: {
-flexDirection: 'row',
-alignItems: 'center',
-justifyContent: 'center',
-gap: 6,
-borderTopWidth: 1,
-borderTopColor: '#e5e7eb',
-paddingTop: 12,
-},
-viewButtonText: {
-fontSize: 12,
-fontWeight: '500',
-color: '#3b82f6',
-},
-emptyState: {
-alignItems: 'center',
-paddingVertical: 48,
-borderWidth: 2,
-borderColor: '#e5e7eb',
-borderStyle: 'dashed',
-borderRadius: 12,
-marginTop: 20,
-},
-emptyTitle: {
-fontSize: 18,
-fontWeight: '600',
-color: '#111827',
-marginTop: 12,
-marginBottom: 4,
-},
-emptyDescription: {
-fontSize: 14,
-color: '#6b7280',
-textAlign: 'center',
-marginBottom: 20,
-},
-emptyAddButton: {
-flexDirection: 'row',
-alignItems: 'center',
-backgroundColor: '#3b82f6',
-paddingHorizontal: 20,
-paddingVertical: 12,
-borderRadius: 8,
-gap: 8,
-},
-emptyAddButtonText: {
-color: 'white',
-fontWeight: '500',
-fontSize: 14,
-},
-pagination: {
-flexDirection: 'row',
-justifyContent: 'space-between',
-alignItems: 'center',
-marginTop: 20,
-paddingTop: 16,
-borderTopWidth: 1,
-borderTopColor: '#e5e7eb',
-},
-paginationButton: {
-flexDirection: 'row',
-alignItems: 'center',
-backgroundColor: 'white',
-paddingHorizontal: 16,
-paddingVertical: 10,
-borderRadius: 8,
-borderWidth: 1,
-borderColor: '#d1d5db',
-gap: 8,
-},
-paginationButtonDisabled: {
-opacity: 0.5,
-},
-paginationText: {
-fontSize: 14,
-fontWeight: '500',
-color: '#4b5563',
-},
-paginationTextDisabled: {
-color: '#9ca3af',
-},
-pageInfo: {
-fontSize: 14,
-fontWeight: '500',
-color: '#6b7280',
-},
-noCompanyCard: {
-backgroundColor: 'white',
-borderRadius: 12,
-padding: 24,
-alignItems: 'center',
-margin: 20,
-shadowColor: '#000',
-shadowOffset: { width: 0, height: 2 },
-shadowOpacity: 0.1,
-shadowRadius: 4,
-elevation: 3,
-},
-noCompanyIcon: {
-backgroundColor: '#dbeafe',
-width: 64,
-height: 64,
-borderRadius: 32,
-justifyContent: 'center',
-alignItems: 'center',
-marginBottom: 16,
-},
-noCompanyTitle: {
-fontSize: 20,
-fontWeight: '600',
-color: '#111827',
-marginBottom: 8,
-textAlign: 'center',
-},
-noCompanyDescription: {
-fontSize: 14,
-color: '#6b7280',
-textAlign: 'center',
-marginBottom: 24,
-},
-contactButtons: {
-width: '100%',
-gap: 12,
-},
-phoneButton: {
-flexDirection: 'row',
-alignItems: 'center',
-justifyContent: 'center',
-backgroundColor: '#3b82f6',
-paddingVertical: 14,
-borderRadius: 8,
-gap: 10,
-},
-phoneButtonText: {
-color: 'white',
-fontWeight: '500',
-fontSize: 14,
-},
-emailButton: {
-flexDirection: 'row',
-alignItems: 'center',
-justifyContent: 'center',
-borderWidth: 1,
-borderColor: '#3b82f6',
-paddingVertical: 14,
-borderRadius: 8,
-gap: 10,
-},
-emailButtonText: {
-color: '#3b82f6',
-fontWeight: '500',
-fontSize: 14,
-},
-modalContainer: {
-flex: 1,
-justifyContent: 'center',
-backgroundColor: 'rgba(0, 0, 0, 0.5)',
-padding: 16,
-},
-modalContent: {
-backgroundColor: 'white',
-borderRadius: 12,
-maxHeight: '80%',
-},
-modalHeader: {
-padding: 20,
-borderBottomWidth: 1,
-borderBottomColor: '#e5e7eb',
-},
-modalTitle: {
-fontSize: 18,
-fontWeight: '600',
-color: '#111827',
-marginBottom: 4,
-},
-modalDescription: {
-fontSize: 14,
-color: '#6b7280',
-},
-formContainer: {
-padding: 20,
-},
-dialogContent: {
-backgroundColor: 'white',
-borderRadius: 12,
-padding: 24,
-},
-dialogTitle: {
-fontSize: 18,
-fontWeight: '600',
-color: '#111827',
-marginBottom: 8,
-},
-dialogDescription: {
-fontSize: 14,
-color: '#6b7280',
-marginBottom: 20,
-},
-dialogButtons: {
-flexDirection: 'row',
-justifyContent: 'flex-end',
-gap: 12,
-},
-cancelButton: {
-paddingHorizontal: 16,
-paddingVertical: 10,
-borderRadius: 6,
-},
-cancelButtonText: {
-fontSize: 14,
-fontWeight: '500',
-color: '#6b7280',
-},
-deleteButton: {
-backgroundColor: '#ef4444',
-paddingHorizontal: 16,
-paddingVertical: 10,
-borderRadius: 6,
-},
-deleteButtonText: {
-fontSize: 14,
-fontWeight: '500',
-color: 'white',
-},
-nameDialogContent: {
-backgroundColor: 'white',
-borderRadius: 12,
-padding: 24,
-},
-nameDialogHeader: {
-flexDirection: 'row',
-alignItems: 'center',
-gap: 8,
-marginBottom: 20,
-},
-nameDialogTitle: {
-fontSize: 18,
-fontWeight: '600',
-color: '#111827',
-},
-nameCard: {
-flexDirection: 'row',
-alignItems: 'center',
-backgroundColor: '#dbeafe',
-borderWidth: 1,
-borderColor: '#bfdbfe',
-borderRadius: 8,
-padding: 16,
-gap: 12,
-marginBottom: 12,
-},
-nameCardIcon: {
-backgroundColor: '#bfdbfe',
-padding: 8,
-borderRadius: 6,
-},
-nameCardLabel: {
-fontSize: 10,
-fontWeight: '500',
-color: '#3b82f6',
-marginBottom: 2,
-},
-nameCardValue: {
-fontSize: 16,
-fontWeight: '600',
-color: '#111827',
-},
-companyCard: {
-backgroundColor: '#d1fae5',
-borderColor: '#a7f3d0',
-},
-companyCardIcon: {
-backgroundColor: '#a7f3d0',
-},
-companyCardLabel: {
-color: '#10b981',
-},
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  serviceBadgeText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#8b5cf6',
+  },
+  companyName: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 24,
+  },
+  moreButton: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 24,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    minWidth: 100,
+    zIndex: 1000,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  dropdownItemTextDanger: {
+    color: '#ef4444',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+  },
+  createdDate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+    marginLeft: 28,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  infoGrid: {
+    flexDirection: 'row',
+    gap: 16,
+    backgroundColor: '#f9fafb',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  infoColumn: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  infoValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stockIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  stockText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f9fafb',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  priceColumn: {
+    flex: 1,
+  },
+  priceLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  priceValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  hsnContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#f9fafb',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  hsnText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingTop: 12,
+  },
+  viewButtonText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#3b82f6',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  emptyAddButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  emptyAddButtonText: {
+    color: 'white',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  paginationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    gap: 8,
+  },
+  paginationButtonDisabled: {
+    opacity: 0.5,
+  },
+  paginationText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4b5563',
+  },
+  paginationTextDisabled: {
+    color: '#9ca3af',
+  },
+  pageInfo: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  noCompanyCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    margin: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  noCompanyIcon: {
+    backgroundColor: '#dbeafe',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  noCompanyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  noCompanyDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  contactButtons: {
+    width: '100%',
+    gap: 12,
+  },
+  phoneButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3b82f6',
+    paddingVertical: 14,
+    borderRadius: 8,
+    gap: 10,
+  },
+  phoneButtonText: {
+    color: 'white',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  emailButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+    paddingVertical: 14,
+    borderRadius: 8,
+    gap: 10,
+  },
+  emailButtonText: {
+    color: '#3b82f6',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 16,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  formContainer: {
+    padding: 20,
+  },
+  dialogContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+  },
+  dialogTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  dialogDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 20,
+  },
+  dialogButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  cancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'white',
+  },
+  nameDialogContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 24,
+  },
+  nameDialogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+  },
+  nameDialogTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  nameCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dbeafe',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 8,
+    padding: 16,
+    gap: 12,
+    marginBottom: 12,
+  },
+  nameCardIcon: {
+    backgroundColor: '#bfdbfe',
+    padding: 8,
+    borderRadius: 6,
+  },
+  nameCardLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#3b82f6',
+    marginBottom: 2,
+  },
+  nameCardValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  companyCard: {
+    backgroundColor: '#d1fae5',
+    borderColor: '#a7f3d0',
+  },
+  companyCardIcon: {
+    backgroundColor: '#a7f3d0',
+  },
+  companyCardLabel: {
+    color: '#10b981',
+  },
 });
