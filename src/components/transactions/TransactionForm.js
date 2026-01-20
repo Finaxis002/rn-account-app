@@ -1230,13 +1230,13 @@ export function TransactionForm({
       });
 
       // Trigger validation/calculation so watched effects recalc totals
-      setTimeout(() => {
-        if (typeof form.trigger === 'function') {
-          try {
-            form.trigger('items');
-          } catch (e) {}
-        }
-      }, 100);
+      // setTimeout(() => {
+      //   if (typeof form.trigger === 'function') {
+      //     try {
+      //       form.trigger('items');
+      //     } catch (e) {}
+      //   }
+      // }, 100);
     }
   }, [type, products]);
 
