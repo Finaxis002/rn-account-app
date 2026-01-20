@@ -329,7 +329,7 @@ export default function Header() {
             {/* Notification Component */}
             {showNotification && (
               <View style={styles.notificationContainer}>
-                <Notification />
+                <Notification socket={null} />
               </View>
             )}
 
