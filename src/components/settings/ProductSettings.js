@@ -887,8 +887,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3b82f6',
-    paddingHorizontal: 12, // Horizontal padding thodi kam ki
-    paddingVertical: 10,
+    paddingHorizontal: 20, // Horizontal padding thodi kam ki
+    paddingVertical: 15,
     borderRadius: 8,
     gap: 8,
   },
