@@ -9,12 +9,7 @@ import {
   Modal,
   RefreshControl,
 } from 'react-native';
-import {
-  Badge,
-  ActivityIndicator,
-  Card,
-  Divider,
-} from 'react-native-paper';
+import { Badge, ActivityIndicator, Card, Divider } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -23,7 +18,7 @@ import { BASE_URL } from '../../config';
 
 const Notification = ({ socket }) => {
   const [notifications, setNotifications] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,7 +74,10 @@ const Notification = ({ socket }) => {
 
         if (Array.isArray(response.data)) {
           notificationsData = response.data;
-        } else if (response.data.notifications && Array.isArray(response.data.notifications)) {
+        } else if (
+          response.data.notifications &&
+          Array.isArray(response.data.notifications)
+        ) {
           notificationsData = response.data.notifications;
         } else if (Array.isArray(response.data.data)) {
           notificationsData = response.data.data;
@@ -89,7 +87,8 @@ const Notification = ({ socket }) => {
       } catch (apiError) {
         let fallbackUrl = '';
         if (apiUrl.includes('/user/')) {
-          let clientId = user.clientId || user.clientID || user.client || userId;
+          let clientId =
+            user.clientId || user.clientID || user.client || userId;
           fallbackUrl = `${BASE_URL}/api/notifications/client/${clientId}`;
         } else {
           fallbackUrl = `${BASE_URL}/api/notifications/user/${userId}`;
@@ -101,7 +100,10 @@ const Notification = ({ socket }) => {
 
         if (Array.isArray(fallbackResponse.data)) {
           notificationsData = fallbackResponse.data;
-        } else if (fallbackResponse.data.notifications && Array.isArray(fallbackResponse.data.notifications)) {
+        } else if (
+          fallbackResponse.data.notifications &&
+          Array.isArray(fallbackResponse.data.notifications)
+        ) {
           notificationsData = fallbackResponse.data.notifications;
         } else if (Array.isArray(fallbackResponse.data.data)) {
           notificationsData = fallbackResponse.data.data;
@@ -141,6 +143,12 @@ const Notification = ({ socket }) => {
     setRefreshing(false);
   }, [fetchNotifications]);
 
+  // Fetch notifications on component mount (immediate) - यह तुरंत डेटा लोड करेगा
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  // Also refetch when modal opens (to get fresh data)
   useEffect(() => {
     if (isModalVisible) {
       fetchNotifications();
@@ -154,7 +162,7 @@ const Notification = ({ socket }) => {
   const markAsRead = useCallback(async notificationId => {
     try {
       const token = await AsyncStorage.getItem('token');
-      
+
       // Optimistically update UI
       setNotifications(prev =>
         prev.map(notification =>
@@ -291,7 +299,10 @@ const Notification = ({ socket }) => {
           <View style={styles.notificationContent}>
             <View style={styles.iconContainer}>
               <Icon
-                name={getNotificationIcon(notification.type, notification.action)}
+                name={getNotificationIcon(
+                  notification.type,
+                  notification.action,
+                )}
                 size={20}
                 color={getIconColor(notification.type)}
               />
@@ -320,7 +331,9 @@ const Notification = ({ socket }) => {
                 {notification.message}
               </Text>
               <Text style={styles.notificationTime}>
-                {formatDate(notification.metadata?.createdAt || notification.createdAt)}
+                {formatDate(
+                  notification.metadata?.createdAt || notification.createdAt,
+                )}
               </Text>
             </View>
           </View>
@@ -389,14 +402,14 @@ const Notification = ({ socket }) => {
         <View style={styles.modalContainer}>
           <View style={styles.header}>
             <View style={styles.headerTop}>
-               <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              <TouchableOpacity
-                onPress={() => setIsModalVisible(false)}
-                style={styles.backButton}
-              >
-                <Icon name="arrow-left" size={24} color="#000" />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Notifications</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => setIsModalVisible(false)}
+                  style={styles.backButton}
+                >
+                  <Icon name="arrow-left" size={24} color="#000" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Notifications</Text>
               </View>
               {unreadCount > 0 && (
                 <TouchableOpacity onPress={markAllAsRead}>
