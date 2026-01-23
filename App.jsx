@@ -13,6 +13,7 @@ import { CompanyProvider } from './src/contexts/company-context';
 import { PermissionProvider } from './src/contexts/permission-context';
 import { UserPermissionsProvider } from './src/contexts/user-permissions-context';
 import { SupportProvider } from './src/contexts/support-context';
+import AppSocketWrapper from './src/components/AppSocketWrapper';
 
 const theme = {
   ...DefaultTheme,
@@ -55,10 +56,13 @@ export default function App() {
           <PermissionProvider>
             <UserPermissionsProvider>
               <SupportProvider>
-                <NavigationContainer ref={navigationRef}>
-                  <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-                  <AppNavigator role={role} setRole={setRole} />
-                </NavigationContainer>
+                {/* 🆕 Socket Manager - Mounts all socket listeners */}
+                <AppSocketWrapper>
+                  <NavigationContainer ref={navigationRef}>
+                    <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+                    <AppNavigator role={role} setRole={setRole} />
+                  </NavigationContainer>
+                </AppSocketWrapper>
               </SupportProvider>
             </UserPermissionsProvider>
           </PermissionProvider>

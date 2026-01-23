@@ -39,6 +39,11 @@ import {
 import { BASE_URL } from '../../config';
 import { usePermissions } from '../../contexts/permission-context';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
+import {
+  useSocket,
+  usePermissionSocket,
+  useUserPermissionSocket,
+} from '../../components/hooks/useSocket';
 import { getCurrentUser } from '../../lib/auth';
 
 import { VendorSettings } from '../../components/settings/VendorSettings';
@@ -424,24 +429,48 @@ UserPermissionsTab.displayName = 'UserPermissionsTab';
 export default function ProfilePage({ navigation, route }) {
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const { socket, isConnected } = useSocket(); // Singleton Socket call
+  const { permissions, refetch: refetchPermissions } = usePermissions();
 
-  const {
-    permissions,
-    isLoading: permissionsLoading,
-    refetch: refetchPermissions,
-  } = usePermissions();
+  const { permissions: userCaps, refetch: refetchUserPermissions } =
+    useUserPermissions();
 
-  const {
-    permissions: userCaps,
-    isLoading: userCapsLoading,
-    refetch: refetchUserPermissions,
-  } = useUserPermissions();
-
+  // 1. Unified Socket Monitor (For Debugging)
   useEffect(() => {
-    console.log('🛡️ ProfileScreen permissions:', {
-      accountPermissions: permissions,
-      userPermissions: userCaps,
-    });
+    if (socket) {
+      const debug = (event, ...args) => {
+        console.log(`⭐ SERVER SENT SOMETHING: [${event}]`, args);
+      };
+      socket.onAny(debug);
+      return () => socket.offAny(debug);
+    }
+  }, [socket]);
+
+  // 2. Real-time Permission Listeners
+  usePermissionSocket(data => {
+    console.log('--- 🟢 LIVE: Account Permission Update Received ---', data);
+    refetchPermissions?.();
+  });
+
+  useUserPermissionSocket(data => {
+    // AGAR YE LOG DIKHA, TO HI SOCKET LIVE HAI
+    console.log('--- 🚀 EMERGENCY: LIVE DATA ARRIVED! ---', data);
+    refetchUserPermissions();
+  });
+
+  // 3. UI State Logger (Check if refetch actually worked)
+  useEffect(() => {
+    console.log('--- 🛡️ PERMISSION STATE SYNCED ---');
+    console.log(
+      'Current Account Data:',
+      permissions?.maxUsers ? 'Loaded' : 'Null',
+    );
+    console.log(
+      'Current User Data:',
+      userCaps?.canCreateSaleEntries
+        ? 'Permissions Active'
+        : 'Permissions Restricted',
+    );
   }, [permissions, userCaps]);
 
   const [currentUser, setCurrentUser] = useState(null);
@@ -547,6 +576,8 @@ export default function ProfilePage({ navigation, route }) {
     refetchPermissions,
     refetchUserPermissions,
     loadCurrentUser,
+    permissions,
+    userCaps,
   ]);
 
   const allow = useCallback(
