@@ -13,7 +13,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getCurrentUser } from '../../lib/auth';
 import { usePermissions } from '../../contexts/permission-context';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
-
+import {
+  usePermissionSocket,
+  useUserPermissionSocket,
+} from '../../components/hooks/useSocket';
 // ----- Animated Menu Button for Mobile -----
 const AnimatedMenuButton = ({ icon, title, isActive, onPress }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -77,10 +80,7 @@ const AnimatedMenuButton = ({ icon, title, isActive, onPress }) => {
           color={isActive ? '#3b82f6' : '#94a3b8'}
         />
         <Text
-          style={[
-            styles.bottomNavText,
-            isActive && styles.bottomNavTextActive,
-          ]}
+          style={[styles.bottomNavText, isActive && styles.bottomNavTextActive]}
           numberOfLines={1}
         >
           {title}
@@ -95,8 +95,29 @@ export function AppSidebar() {
   const navigation = useNavigation();
   const route = useRoute();
   const [currentUser, setCurrentUser] = useState(null);
-  const { permissions: clientPermissions } = usePermissions();
-  const { permissions: userCaps } = useUserPermissions();
+  const {
+    permissions: clientPermissions,
+    isLoading: permissionsLoading,
+    refetch: refetchPermissions,
+  } = usePermissions();
+  const {
+    permissions: userCaps,
+    isLoading: userPermissionsLoading,
+    refetch: refetchUserPermissions,
+  } = useUserPermissions();
+
+  // Socket listeners for real-time permission updates
+  usePermissionSocket(() => {
+    console.log('🔔 AppBottomNav: Permission update received, refetching...');
+    refetchPermissions();
+  });
+
+  useUserPermissionSocket(() => {
+    console.log(
+      '🔔 AppBottomNav: User permission update received, refetching...',
+    );
+    refetchUserPermissions();
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -180,9 +201,7 @@ export function AppSidebar() {
       <AnimatedMenuButton
         icon="grid"
         title="Dashboard"
-        isActive={
-          isActive('UserDashboard') || isActive('CustomerDashboard')
-        }
+        isActive={isActive('UserDashboard') || isActive('CustomerDashboard')}
         onPress={() =>
           navigation.navigate('MainTabs', { screen: 'CustomerDashboard' })
         }
@@ -227,9 +246,7 @@ export function AppSidebar() {
         icon="people"
         title="Users"
         isActive={isActive('Users')}
-        onPress={() =>
-          navigation.navigate('MainTabs', { screen: 'Users' })
-        }
+        onPress={() => navigation.navigate('MainTabs', { screen: 'Users' })}
       />
 
       {/* Reports */}
@@ -237,9 +254,7 @@ export function AppSidebar() {
         icon="document-text"
         title="Reports"
         isActive={isReportsActive}
-        onPress={() =>
-          navigation.navigate('MainTabs', { screen: 'Reports' })
-        }
+        onPress={() => navigation.navigate('MainTabs', { screen: 'Reports' })}
       />
 
       {/* Ledger */}
@@ -247,9 +262,7 @@ export function AppSidebar() {
         icon="document"
         title="Ledger"
         isActive={isLedgerActive}
-        onPress={() =>
-          navigation.navigate('MainTabs', { screen: 'Ledger' })
-        }
+        onPress={() => navigation.navigate('MainTabs', { screen: 'Ledger' })}
       />
     </>
   );

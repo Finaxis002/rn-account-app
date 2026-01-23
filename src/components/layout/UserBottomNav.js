@@ -14,6 +14,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { getCurrentUser, logout } from '../../lib/auth';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useUserPermissionSocket } from '../../components/hooks/useSocket';
 
 const { width } = Dimensions.get('window');
 const isMobile = width < 768;
@@ -81,10 +82,7 @@ const AnimatedMenuButton = ({ icon, title, isActive, onPress }) => {
           color={isActive ? '#3b82f6' : '#94a3b8'}
         />
         <Text
-          style={[
-            styles.bottomNavText,
-            isActive && styles.bottomNavTextActive,
-          ]}
+          style={[styles.bottomNavText, isActive && styles.bottomNavTextActive]}
           numberOfLines={1}
         >
           {title}
@@ -102,8 +100,17 @@ export default function UserSidebar() {
     permissions: userCaps,
     isLoading,
     role: userRole,
+    refetch: refetchUserPermissions,
   } = useUserPermissions();
 
+  // Socket listener for real-time user permission updates
+  useUserPermissionSocket(() => {
+    console.log(
+      '🔔 UserBottomNav: User permission update received, refetching...',
+    );
+    refetchUserPermissions();
+  });
+  
   const currentRole = currentUser?.role || userRole || 'user';
   const roleLower = currentRole.toLowerCase();
 
@@ -148,10 +155,7 @@ export default function UserSidebar() {
     return (
       <TouchableOpacity
         onPress={onPress}
-        style={[
-          styles.menuButton,
-          isActive && styles.menuButtonActive,
-        ]}
+        style={[styles.menuButton, isActive && styles.menuButtonActive]}
         disabled={isLoading}
       >
         <View style={styles.menuButtonContent}>
