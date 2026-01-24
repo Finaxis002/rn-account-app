@@ -35,7 +35,6 @@ export function EmailSendingConsent() {
   const prevConnectedRef = useRef(null);
   const POLL_MS = 120000;
 
-  // Helper to read auth token from multiple possible AsyncStorage keys
   const getAuthToken = async () => {
     const keys = ['authToken', 'token'];
     for (const k of keys) {
@@ -49,7 +48,6 @@ export function EmailSendingConsent() {
     return { token: null, key: null };
   };
 
-  // Configure Google Sign-In once
   useEffect(() => {
     GoogleSignin.configure({
       webClientId:
@@ -65,7 +63,6 @@ export function EmailSendingConsent() {
     loadInitialStatus();
   }, []);
 
-  // Add AppState handler for foreground refresh
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active') {
@@ -80,11 +77,6 @@ export function EmailSendingConsent() {
     try {
       const { token, key } = await getAuthToken();
       const url = `${BASE_URL}/api/integrations/gmail/status`;
-      console.log('[EmailSendingConsent] refreshStatus ->', {
-        url,
-        tokenPresent: !!token,
-        tokenKey: key,
-      });
 
       const response = await fetch(url, {
         headers: {
@@ -100,11 +92,6 @@ export function EmailSendingConsent() {
         } catch (e) {
           bodyText = '<unable to read body>';
         }
-        console.error(
-          '[EmailSendingConsent] refreshStatus failed',
-          response.status,
-          bodyText,
-        );
         throw new Error('Failed to load email status');
       }
 
@@ -116,7 +103,6 @@ export function EmailSendingConsent() {
       setStatus(data);
       prevConnectedRef.current = nowConnected;
 
-      // Show reconnect notice if connection was lost
       if (wasConnected && !nowConnected && data.email) {
         setReconnectNotice(true);
         const message =
@@ -127,7 +113,7 @@ export function EmailSendingConsent() {
         Alert.alert('Gmail needs reconnect', message, [{ text: 'OK' }]);
       }
     } catch (error) {
-      console.error('Error refreshing status:', error);
+      // Error handled silently
     }
   }, []);
 
@@ -135,13 +121,12 @@ export function EmailSendingConsent() {
     try {
       await refreshStatus();
     } catch (error) {
-      console.error('Failed to load initial status:', error);
+      // Error handled silently
     } finally {
       setLoading(false);
     }
   };
 
-  // Poll for status updates when terms are accepted
   useEffect(() => {
     if (!status.termsAcceptedAt) return;
 
@@ -152,19 +137,16 @@ export function EmailSendingConsent() {
     return () => clearInterval(intervalId);
   }, [status.termsAcceptedAt, refreshStatus]);
 
-  // Handle Google Sign-In natively
   const handleGoogleSignIn = async () => {
     try {
       setConnecting(true);
 
-      // Clear any existing session first
       try {
         await GoogleSignin.signOut();
       } catch (signOutError) {
         // Ignore if not signed in
       }
 
-      // Check if Google Play Services are available (Android only)
       try {
         await GoogleSignin.hasPlayServices();
       } catch (error) {
@@ -176,38 +158,28 @@ export function EmailSendingConsent() {
         return;
       }
 
-      // Sign in with Google
       const userInfo = await GoogleSignin.signIn();
 
-      // If signIn returned no user (user cancelled), bail out gracefully
       if (!userInfo || !userInfo.user) {
-        console.log('[EmailSendingConsent] Google sign-in aborted by user');
         setConnecting(false);
         return;
       }
 
-      // Get access tokens (may throw if user cancelled or not signed in)
       let tokens;
       try {
         tokens = await GoogleSignin.getTokens();
       } catch (err) {
-        // Treat "not signed in" / cancelled as a normal cancellation
         const msg = err && err.message ? err.message : String(err);
         if (
           msg.includes('getTokens requires a user to be signed in') ||
           msg.includes('SIGN_IN_CANCELLED')
         ) {
-          console.log(
-            '[EmailSendingConsent] getTokens cancelled or user not signed in:',
-            msg,
-          );
           setConnecting(false);
           return;
         }
         throw err;
       }
 
-      // Send tokens to your backend
       await sendTokensToBackend(userInfo, tokens);
     } catch (error) {
       handleGoogleSignInError(error);
@@ -241,7 +213,6 @@ export function EmailSendingConsent() {
       if (response.ok) {
         const data = await response.json();
 
-        // Update local state
         setStatus(prev => ({
           ...prev,
           connected: true,
@@ -251,7 +222,6 @@ export function EmailSendingConsent() {
 
         setReconnectNotice(false);
 
-        // Save to AsyncStorage for persistence
         await AsyncStorage.setItem('gmailLinkedEmail', userInfo.user.email);
         await AsyncStorage.setItem('gmailTermsAccepted', 'true');
 
@@ -265,21 +235,16 @@ export function EmailSendingConsent() {
         throw new Error(errorData.message || 'Failed to connect to backend');
       }
     } catch (error) {
-      console.error('Backend connection error:', error);
       Alert.alert('Error', error.message || 'Failed to connect to backend');
     }
   };
 
   const handleGoogleSignInError = error => {
-    console.error('Google Sign-In Error:', error);
-
     switch (error.code) {
       case statusCodes.SIGN_IN_CANCELLED:
-        console.log('User cancelled Google Sign-In');
         break;
 
       case statusCodes.IN_PROGRESS:
-        console.log('Google Sign-In already in progress');
         break;
 
       case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
@@ -359,7 +324,6 @@ export function EmailSendingConsent() {
                 [{ text: 'OK' }],
               );
             } catch (error) {
-              console.error('Disconnect error:', error);
               Alert.alert('Error', error.message || 'Failed to disconnect.');
             }
           },
@@ -398,7 +362,6 @@ export function EmailSendingConsent() {
 
       handleGoogleSignIn();
     } catch (error) {
-      console.error('Error accepting terms:', error);
       Alert.alert('Error', 'Failed to accept terms. Please try again.');
     }
   };
@@ -416,7 +379,6 @@ export function EmailSendingConsent() {
     <View style={styles.container}>
       <View style={styles.card}>
         <View style={styles.cardContent}>
-          {/* Top Section: Icon and Label */}
           <View style={styles.headerInfo}>
             <View style={styles.iconCircle}>
               <Icon name="mail" size={18} color="#64748b" />
@@ -433,7 +395,6 @@ export function EmailSendingConsent() {
             </View>
           </View>
 
-          {/* Bottom Section: Status and Buttons */}
           <View style={styles.footerActions}>
             {status.connected ? (
               <View style={styles.connectedRow}>
@@ -476,7 +437,6 @@ export function EmailSendingConsent() {
         </View>
       </View>
 
-      {/* Terms Modal */}
       <Modal
         visible={showTermsModal}
         transparent

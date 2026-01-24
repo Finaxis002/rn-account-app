@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
@@ -70,7 +69,6 @@ const getAmount = (type, row) => {
 };
 
 export default function UserDashboardScreen({ navigation, route }) {
-  
   const { selectedCompanyId, triggerCompaniesRefresh, refreshTrigger } =
     useCompany();
   const {
@@ -80,12 +78,8 @@ export default function UserDashboardScreen({ navigation, route }) {
   } = useUserPermissions();
   const { permissions, refetch: refetchPermissions } = usePermissions();
 
-  
   useFocusEffect(
     React.useCallback(() => {
-      console.log(
-        '🔄 UserDashboardScreen focused - triggering company refresh...',
-      );
       triggerCompaniesRefresh();
     }, [triggerCompaniesRefresh]),
   );
@@ -98,7 +92,6 @@ export default function UserDashboardScreen({ navigation, route }) {
   const [serviceNameById, setServiceNameById] = useState(new Map());
   const [refreshing, setRefreshing] = useState(false);
 
-  
   const [role, setRole] = useState('user');
 
   useEffect(() => {
@@ -118,7 +111,6 @@ export default function UserDashboardScreen({ navigation, route }) {
     [companies, selectedCompanyId],
   );
 
-  
   const safeGet = useCallback(async url => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -134,7 +126,6 @@ export default function UserDashboardScreen({ navigation, route }) {
     }
   }, []);
 
-  
   const fetchCompanyDashboard = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -151,12 +142,10 @@ export default function UserDashboardScreen({ navigation, route }) {
 
       const authHeaders = { Authorization: `Bearer ${token}` };
 
-      
       const queryParam = selectedCompanyId
         ? `?companyId=${selectedCompanyId}&isDashboard=true`
         : `?companyId=all&isDashboard=true`;
 
-      
       const safeFetch = async url => {
         try {
           const r = await fetch(url, { headers: authHeaders });
@@ -167,7 +156,6 @@ export default function UserDashboardScreen({ navigation, route }) {
         }
       };
 
-      
       const [
         rawSales,
         rawPurchases,
@@ -186,13 +174,6 @@ export default function UserDashboardScreen({ navigation, route }) {
         safeFetch(`${BASE_URL}/api/services`),
       ]);
 
-      console.log('📊 Dashboard API Responses:', {
-        sales: rawSales,
-        purchases: rawPurchases,
-        companies: companiesData,
-      });
-
-      
       let usersCount = 0;
       if (isAdmin) {
         const usersJson = await safeFetch(`${BASE_URL}/api/users`);
@@ -201,7 +182,6 @@ export default function UserDashboardScreen({ navigation, route }) {
           : usersJson?.length || 0;
       }
 
-      
       const servicesArr = Array.isArray(servicesJson)
         ? servicesJson
         : servicesJson?.services || [];
@@ -212,28 +192,17 @@ export default function UserDashboardScreen({ navigation, route }) {
       }
       setServiceNameById(sMap);
 
-      
       const comps = Array.isArray(companiesData)
         ? companiesData
         : companiesData?.data || [];
       setCompanies(comps);
 
-      
       const salesArr = toArray(rawSales);
       const purchasesArr = toArray(rawPurchases);
       const receiptsArr = toArray(rawReceipts);
       const paymentsArr = toArray(rawPayments);
       const journalsArr = toArray(rawJournals);
 
-      console.log('📈 Transaction Counts:', {
-        sales: salesArr.length,
-        purchases: purchasesArr.length,
-        receipts: receiptsArr.length,
-        payments: paymentsArr.length,
-        journals: journalsArr.length,
-      });
-
-      
       let allTransactions = [
         ...salesArr.map(s => ({ ...s, type: 'sales' })),
         ...purchasesArr.map(p => ({ ...p, type: 'purchases' })),
@@ -260,7 +229,6 @@ export default function UserDashboardScreen({ navigation, route }) {
 
       setRecentTransactions(allTransactions.slice(0, 5));
 
-      
       const totalSales = salesArr.reduce(
         (acc, row) => acc + getAmount('sales', row),
         0,
@@ -275,26 +243,17 @@ export default function UserDashboardScreen({ navigation, route }) {
         ? comps.length
         : 0;
 
-      console.log('💰 Calculated KPIs:', {
-        totalSales,
-        totalPurchases,
-        companiesCount,
-        usersCount,
-      });
-
       setCompanyData({
         totalSales,
         totalPurchases,
-        users: usersCount, 
+        users: usersCount,
         companies: companiesCount,
       });
     } catch (error) {
-      console.error('❌ Dashboard fetch error:', error);
       Toast.show({
         type: 'error',
         text1: 'Failed to load dashboard data',
-        text2:
-          error instanceof Error ? error.message : 'Something went wrong.',
+        text2: error instanceof Error ? error.message : 'Something went wrong.',
         position: 'bottom',
       });
       setCompanyData(null);
@@ -303,12 +262,10 @@ export default function UserDashboardScreen({ navigation, route }) {
     }
   }, [selectedCompanyId, isAdmin]);
 
-  
   useEffect(() => {
     fetchCompanyDashboard();
   }, [selectedCompanyId, fetchCompanyDashboard]);
 
-  
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     Promise.all([
@@ -326,7 +283,6 @@ export default function UserDashboardScreen({ navigation, route }) {
     refetchPermissions,
   ]);
 
- 
   const fetchCompaniesOnly = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -363,7 +319,6 @@ export default function UserDashboardScreen({ navigation, route }) {
     fetchCompanyDashboard();
   };
 
-  
   const kpis = [
     {
       key: 'sales',
@@ -402,7 +357,6 @@ export default function UserDashboardScreen({ navigation, route }) {
   const handleSettingsPress = () => navigation.navigate('ProfileScreen');
   const handleTransactionPress = () => setIsTransactionFormOpen(true);
 
-  
   const KPICard = ({ title, value, Icon, description }) => (
     <View style={[styles.kpiCard, { width: SCREEN_WIDTH * 0.6 }]}>
       <View style={styles.cardHeader}>
@@ -418,7 +372,6 @@ export default function UserDashboardScreen({ navigation, route }) {
     </View>
   );
 
-  
   const renderHeader = () => (
     <View>
       {/* Header */}
@@ -436,7 +389,6 @@ export default function UserDashboardScreen({ navigation, route }) {
           <View style={styles.headerActions}>
             <UpdateWalkthrough />
 
-            
             {/* <TouchableOpacity
               onPress={handleSettingsPress}
               style={[styles.btn, styles.btnOutline]}
@@ -504,7 +456,6 @@ export default function UserDashboardScreen({ navigation, route }) {
     );
   }
 
-  
   if (companies.length === 0) {
     return (
       <AppLayout>
@@ -529,7 +480,6 @@ export default function UserDashboardScreen({ navigation, route }) {
     );
   }
 
-  
   return (
     <AppLayout>
       <FlatList
@@ -549,7 +499,6 @@ export default function UserDashboardScreen({ navigation, route }) {
         showsVerticalScrollIndicator={false}
       />
 
-      
       <Modal
         visible={isTransactionFormOpen}
         animationType="fade"
