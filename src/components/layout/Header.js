@@ -75,7 +75,6 @@ export default function Header() {
   // Refresh companies whenever Header comes to focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔄 Header focused - triggering company refresh...');
       triggerCompaniesRefresh();
     }, [triggerCompaniesRefresh]),
   );
@@ -121,7 +120,6 @@ export default function Header() {
 
   const handleSearchSubmit = () => {
     if (searchText.trim()) {
-      console.log('Search:', searchText);
       handleSearchHighlight(searchText);
     }
     setShowSearch(false);
@@ -165,7 +163,6 @@ export default function Header() {
       return;
     }
 
-    console.log('Searching for:', term);
     setHighlightCount(5);
     setCurrentHighlightIndex(0);
   };

@@ -165,7 +165,6 @@ export default function DashboardPage() {
   // Trigger company refresh when screen gains focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔄 DashboardScreen focused - triggering company refresh...');
       triggerCompaniesRefresh();
     }, [triggerCompaniesRefresh]),
   );

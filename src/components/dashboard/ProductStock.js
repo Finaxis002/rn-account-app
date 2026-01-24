@@ -455,11 +455,9 @@ const ProductStock = ({
     
 
     if (!hasProductPermission && !hasUserInventoryPermission && maxInventories === 0) {
-      console.log('🚫 Hiding ProductStock component - No permissions');
       return false;
     }
     
-    console.log('✅ Showing ProductStock component');
     return true;
   };
 
