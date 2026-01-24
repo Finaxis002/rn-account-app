@@ -24,12 +24,7 @@ const enrichTransactionWithNames = (
   if (Array.isArray(enriched.products)) {
     enriched.products = enriched.products.map(productItem => {
       const product = products.find(p => p._id === productItem.product);
-      console.log(`📦 [enrichTransactionWithNames] Product Item:`, {
-        productItem_id: productItem._id,
-        product_id: productItem.product,
-        found_product: product?.name,
-        productName_set: product?.name || 'Unknown Product',
-      });
+
       return {
         ...productItem,
         productName: product?.name || 'Unknown Product',
@@ -44,12 +39,7 @@ const enrichTransactionWithNames = (
   if (Array.isArray(enriched.services)) {
     enriched.services = enriched.services.map(serviceItem => {
       const service = services.find(s => s._id === serviceItem.service);
-      console.log(`🔧 [enrichTransactionWithNames] Service Item:`, {
-        serviceItem_id: serviceItem._id,
-        service_id: serviceItem.service,
-        found_service: service?.serviceName,
-        serviceName_set: service?.serviceName || 'Unknown Service',
-      });
+ 
       return {
         ...serviceItem,
         serviceName: service?.serviceName || 'Unknown Service',
@@ -149,7 +139,7 @@ export const scrollToFirstError = (form, scrollViewRef) => {
         // You would typically use a map of fieldName to component ref
         // and then call ref.measure/ref.measureLayout to get the position,
         // and finally use scrollViewRef.current.scrollTo to scroll.
-        console.log(`Attempting to scroll to field: ${fieldName}`);
+     
       }
       break; // Stop after finding the first error
     }
