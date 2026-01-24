@@ -81,7 +81,6 @@ export default function InventoryScreen() {
         const userData = await AsyncStorage.getItem('user');
         if (userData) {
           setUser(JSON.parse(userData));
-          console.log('📱 InventoryScreen: User loaded from storage');
         }
       } catch (error) {
         console.error('❌ InventoryScreen: Failed to load user:', error);
@@ -93,7 +92,6 @@ export default function InventoryScreen() {
   // Trigger company refresh when screen gains focus
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🔄 InventoryScreen focused - triggering company refresh...');
       triggerCompaniesRefresh();
     }, [triggerCompaniesRefresh]),
   );
@@ -191,7 +189,6 @@ export default function InventoryScreen() {
         setProductCurrentPage(1);
 
         if (isSilent) {
-          console.log('✅ Products updated silently via socket');
         }
       } catch (error) {
         if (!isSilent) {
@@ -226,7 +223,6 @@ export default function InventoryScreen() {
         setServiceCurrentPage(1);
 
         if (isSilent) {
-          console.log('✅ Services updated silently via socket');
         }
       } catch (error) {
         if (!isSilent) {
@@ -630,16 +626,6 @@ export default function InventoryScreen() {
                       c.businessName.toLowerCase() ===
                       companyName?.toLowerCase(),
                   );
-
-                  // Log for debugging
-                  console.log('Mapping company:', {
-                    excelCompany: companyName,
-                    availableCompanies: companies.map(c => ({
-                      id: c._id,
-                      name: c.businessName,
-                    })),
-                    foundCompanyId: foundCompany?._id,
-                  });
 
                   return {
                     company: foundCompany?._id || companies[0]?._id || '',
