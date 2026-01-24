@@ -533,7 +533,6 @@ export function TransactionForm({
         const states = await getStatesOfCountry('IN');
         setIndiaStates(states);
       } catch (error) {
-        console.error('Failed to load states:', error);
         setIndiaStates([]);
       }
     };
@@ -900,7 +899,6 @@ export function TransactionForm({
           throw new Error('Failed to fetch banks.');
         }
       } catch (error) {
-        console.error('Error fetching banks:', error);
         setBanks([]);
         setSnackbar({
           visible: true,
@@ -948,7 +946,6 @@ export function TransactionForm({
           setShippingAddresses([]);
         }
       } catch (error) {
-        console.error('Error fetching shipping addresses:', error);
         setShippingAddresses([]);
       }
     },
@@ -1094,9 +1091,7 @@ export function TransactionForm({
           const units = await res.json();
           setExistingUnits(units);
         }
-      } catch (error) {
-        console.error('Failed to fetch units:', error);
-      }
+      } catch (error) {}
     };
     fetchUnits();
   }, [BASE_URL]);
@@ -1128,11 +1123,9 @@ export function TransactionForm({
           const data = await res.json();
           setPaymentExpenses(Array.isArray(data.data) ? data.data : []);
         } else {
-          console.error('Failed to fetch payment expenses');
           setPaymentExpenses([]);
         }
       } catch (error) {
-        console.error('Error fetching payment expenses:', error);
         setPaymentExpenses([]);
       }
     },
@@ -1184,7 +1177,6 @@ export function TransactionForm({
           .sort((a, b) => a.label.localeCompare(b.label));
         setShippingCityOptions(cityOptions);
       } catch (error) {
-        console.error('Failed to load cities:', error);
         setShippingCityOptions([]);
       }
     };
@@ -1853,6 +1845,7 @@ export function TransactionForm({
     if (Array.isArray(enriched.products)) {
       enriched.products = enriched.products.map(productItem => {
         const product = products.find(p => p._id === productItem.product);
+
         return {
           ...productItem,
           productName: product?.name || 'Unknown Product',
@@ -1866,6 +1859,7 @@ export function TransactionForm({
     if (Array.isArray(enriched.services)) {
       enriched.services = enriched.services.map(serviceItem => {
         const service = services.find(s => s._id === serviceItem.service);
+
         return {
           ...serviceItem,
           serviceName: service?.serviceName || 'Unknown Service',
@@ -1926,16 +1920,8 @@ export function TransactionForm({
     };
 
     try {
-      console.log(
-        '🔵 pdfInstanceToBase64: Type =',
-        typeof pdfInstance,
-        'Constructor =',
-        pdfInstance?.constructor?.name,
-      );
-
       // ✅ FIRST AND MOST IMPORTANT: Check if base64 already exists in the object
       if (pdfInstance?.base64 && typeof pdfInstance.base64 === 'string') {
-        console.log('✅ Found base64 in pdfInstance.base64');
         return pdfInstance.base64;
       }
 
@@ -1943,97 +1929,78 @@ export function TransactionForm({
       if (typeof pdfInstance === 'string') {
         if (pdfInstance.startsWith('data:')) {
           const base64Data = pdfInstance.split(',')[1];
-          console.log('✅ Found data: URI');
+
           return base64Data || pdfInstance;
         }
 
         // ✅ Check if string is a filePath (contains /) or base64
         if (pdfInstance.includes('/') || pdfInstance.includes('\\')) {
-          console.log(
-            '📋 String looks like a filePath, attempting to read as base64',
-          );
           // It's a filePath, try to read it
           try {
             const base64 = await RNFS.readFile(pdfInstance, 'base64');
             if (base64 && typeof base64 === 'string' && base64.length > 0) {
-              console.log(
-                '✅ Successfully read base64 from filePath string, length =',
-                base64.length,
-              );
               return base64;
             }
-          } catch (e) {
-            console.log('⚠️ Failed to read filePath as base64:', e.message);
-          }
+          } catch (e) {}
         }
 
         // Assume it's base64
-        console.log('✅ Assuming string is base64');
+
         return pdfInstance;
       }
 
       // ✅ THIRD: Try output('base64') directly
       if (pdfInstance && typeof pdfInstance.output === 'function') {
         try {
-          console.log('📋 Trying output("base64")');
           const base64 = pdfInstance.output('base64');
           if (base64 && typeof base64 === 'string' && base64.length > 0) {
-            console.log(
-              '✅ output("base64") succeeded, length =',
-              base64.length,
-            );
             return base64;
           }
-        } catch (e) {
-          console.log('⚠️ output("base64") failed:', e.message);
-        }
+        } catch (e) {}
       }
 
       // ✅ FOURTH: Traditional conversion methods (as fallback)
       if (typeof Blob !== 'undefined' && pdfInstance instanceof Blob) {
-        console.log('📋 Converting Blob to base64');
         const arrayBuffer = await pdfInstance.arrayBuffer();
         const u8 = new Uint8Array(arrayBuffer);
         const bin = uint8ToBinaryString(u8);
 
         if (typeof btoa === 'function') {
           const result = btoa(bin);
-          console.log('✅ Blob → btoa succeeded');
+
           return result;
         }
         if (typeof Buffer !== 'undefined') {
           const result = Buffer.from(u8).toString('base64');
-          console.log('✅ Blob → Buffer succeeded');
+
           return result;
         }
         const result = base64FromUint8(u8);
-        console.log('✅ Blob → base64FromUint8 succeeded');
+
         return result;
       }
 
       if (pdfInstance && typeof pdfInstance.save === 'function') {
-        console.log('📋 Trying pdfInstance.save()');
         const u8 = await pdfInstance.save();
         const bin = uint8ToBinaryString(u8);
 
         if (typeof btoa === 'function') {
           const result = btoa(bin);
-          console.log('✅ save() → btoa succeeded');
+
           return result;
         }
         if (typeof Buffer !== 'undefined') {
           const result = Buffer.from(u8).toString('base64');
-          console.log('✅ save() → Buffer succeeded');
+
           return result;
         }
         const result = base64FromUint8(u8);
-        console.log('✅ save() → base64FromUint8 succeeded');
+
         return result;
       }
 
       if (pdfInstance && typeof pdfInstance.output === 'function') {
         try {
-          console.log('📋 Trying output("arraybuffer")');
           const arr = pdfInstance.output('arraybuffer');
           if (arr && arr.byteLength > 0) {
             const u8 = new Uint8Array(arr);
@@ -2041,39 +2008,33 @@ export function TransactionForm({
 
             if (typeof btoa === 'function') {
               const result = btoa(bin);
-              console.log('✅ output("arraybuffer") → btoa succeeded');
+
               return result;
             }
             if (typeof Buffer !== 'undefined') {
               const result = Buffer.from(u8).toString('base64');
-              console.log('✅ output("arraybuffer") → Buffer succeeded');
+
               return result;
             }
             const result = base64FromUint8(u8);
-            console.log('✅ output("arraybuffer") → base64FromUint8 succeeded');
+
             return result;
           }
-        } catch (e) {
-          console.log('⚠️ output("arraybuffer") failed:', e.message);
-        }
+        } catch (e) {}
 
         try {
-          console.log('📋 Trying output() raw');
           const out = pdfInstance.output();
 
           if (typeof out === 'string') {
             if (out.startsWith('data:')) {
               const base64Data = out.split(',')[1];
-              console.log('✅ output() returned data: URI');
+
               return base64Data;
             } else {
-              console.log('✅ output() returned string');
               return out;
             }
           }
-        } catch (e) {
-          console.log('⚠️ output() raw failed:', e.message);
-        }
+        } catch (e) {}
       }
 
       const keys = Object.keys(pdfInstance || {});
@@ -2085,23 +2046,6 @@ export function TransactionForm({
         hasSave: typeof pdfInstance?.save === 'function',
       };
 
-      // Log diagnostics and attempt filePath fallback (not an immediate fatal error)
-      console.warn(
-        '⚠️ No immediate conversion method matched; attempting filePath fallback. Instance details:',
-        detailsObj,
-      );
-
-      // Log details of each key (warning-level)
-      keys.forEach(key => {
-        const value = pdfInstance[key];
-        console.warn(`   Key: "${key}"`, {
-          type: typeof value,
-          isString: typeof value === 'string',
-          length: typeof value === 'string' ? value.length : undefined,
-          sample: typeof value === 'string' ? value.substring(0, 50) : value,
-        });
-      });
-
       // SPECIAL CASE: React Native HTML to PDF often returns {success, filePath, fileName}
       // Try to read file from filePath and convert to base64 before failing
       if (
@@ -2111,27 +2055,15 @@ export function TransactionForm({
         typeof pdfInstance.filePath === 'string'
       ) {
         try {
-          console.log(
-            '📋 Attempting to read PDF from filePath:',
-            pdfInstance.filePath,
-          );
           const base64 = await RNFS.readFile(pdfInstance.filePath, 'base64');
           if (base64 && typeof base64 === 'string' && base64.length > 0) {
-            console.log(
-              '✅ Successfully read base64 from filePath, length =',
-              base64.length,
-            );
             return base64;
           }
-        } catch (e) {
-          console.log('⚠️ Failed to read from filePath:', e.message);
-        }
+        } catch (e) {}
       }
 
       throw new Error('Unable to convert PDF instance to base64');
     } catch (err) {
-      console.error('🔴 pdfInstanceToBase64 FAILED:', err);
-      console.error('🔴 Error stack:', err.stack);
       throw err;
     }
   };
@@ -2153,7 +2085,6 @@ export function TransactionForm({
         prev.map(p => (p._id === productId ? { ...p, hsn } : p)),
       );
     } catch (error) {
-      console.error('Failed to update product HSN in background:', error);
       // Optional: show a non-intrusive error
     }
   };
@@ -2176,7 +2107,6 @@ export function TransactionForm({
         prev.map(s => (s._id === serviceId ? { ...s, sac } : s)),
       );
     } catch (error) {
-      console.error('Failed to update service SAC in background:', error);
       // Optional: show a non-intrusive error
     }
   };
@@ -2369,7 +2299,6 @@ export function TransactionForm({
               throw new Error('Failed to create shipping address');
             }
           } catch (error) {
-            console.error('Error creating shipping address:', error);
             setSnackbar({
               visible: true,
               message:
@@ -2770,16 +2699,14 @@ export function TransactionForm({
 
   const handleEmailInvoice = async () => {
     if (!generatedInvoice) {
-      console.log('❌ handleEmailInvoice: generatedInvoice is null');
       return;
     }
 
     try {
       let transactionToUse = generatedInvoice;
       if (!isTransactionSaved) {
-        console.log('📧 Email: Transaction not saved yet, calling onSubmit...');
         const result = await onSubmit(form.getValues(), false);
-        console.log('📧 Email: onSubmit result:', result);
+
         if (result && result.entry) {
           const savedTransaction = result.entry;
           setSavedTransactionData(savedTransaction);
@@ -2802,7 +2729,6 @@ export function TransactionForm({
           setGeneratedInvoice(updatedPreview);
           transactionToUse = updatedPreview;
         } else {
-          console.log('❌ Email: onSubmit did not return expected result');
           return;
         }
       } else {
@@ -2912,10 +2838,6 @@ export function TransactionForm({
       setEmailDialogMessage(`Sent to ${partyDoc.email}`);
       setIsEmailDialogOpen(true);
     } catch (error) {
-      console.error('🔴 handleEmailInvoice error:', error);
-      console.error('🔴 Error message:', error.message);
-      console.error('🔴 Error stack:', error.stack);
-
       // Check if it's a Gmail connection error
       if (
         error.message?.includes('Gmail is not connected') ||
@@ -2963,7 +2885,6 @@ export function TransactionForm({
         );
         setIsEmailDialogOpen(true);
       } else {
-        console.error('Email send error:', error);
         setEmailDialogTitle('❌ Send Failed');
         setEmailDialogMessage(
           'Email failed: ' + (error.message || 'Failed to send invoice email'),
@@ -3104,7 +3025,6 @@ export function TransactionForm({
         ],
       );
     } catch (error) {
-      console.error('🔴 Download failed:', error);
       setSnackbar({
         visible: true,
         message: `Download failed: ${
@@ -3257,7 +3177,6 @@ export function TransactionForm({
         ],
       );
     } catch (error) {
-      console.error('Print failed:', error);
       setSnackbar({
         visible: true,
         message: `Print failed: ${
@@ -3322,9 +3241,7 @@ export function TransactionForm({
                   selectedTemplate = tplJson.defaultTemplate || null;
                 }
               }
-            } catch (e) {
-              console.log('⚠️ Could not fetch default template:', e.message);
-            }
+            } catch (e) {}
           }
           if (!selectedTemplate) selectedTemplate = 'template1';
 
@@ -3340,23 +3257,11 @@ export function TransactionForm({
             ),
           );
 
-          console.log('📦 pdfDoc received from generatePdfByTemplate:', {
-            type: typeof pdfDoc,
-            constructor: pdfDoc?.constructor?.name,
-            keys: Object.keys(pdfDoc || {}),
-            hasOutput: typeof pdfDoc?.output === 'function',
-            hasBase64: typeof pdfDoc?.base64,
-            base64Length: pdfDoc?.base64?.length || 0,
-          });
-
           // Prefer centralized conversion helper if available
           let base64 = null;
           try {
             base64 = await pdfInstanceToBase64(pdfDoc);
           } catch (e) {
-            console.log(
-              '⚠️ pdfInstanceToBase64 failed, trying fallback methods',
-            );
             // fallback to older heuristics
             if (pdfDoc && typeof pdfDoc.output === 'function')
               base64 = pdfDoc.output('base64');
@@ -3370,11 +3275,6 @@ export function TransactionForm({
 
           // ✅ VALIDATE base64 before using
           if (typeof base64 !== 'string' || base64.trim().length === 0) {
-            console.error('❌ Invalid base64 received:', {
-              type: typeof base64,
-              length: base64?.length || 0,
-              sample: base64?.substring(0, 50),
-            });
             throw new Error('PDF conversion returned empty or invalid base64');
           }
 
@@ -3384,10 +3284,7 @@ export function TransactionForm({
             !base64.startsWith('iVBORw') &&
             !base64.trim().length
           ) {
-            console.warn(
-              '⚠️ Base64 may not be valid PDF (unexpected start). Sample:',
-              base64.substring(0, 100),
-            );
+            // Base64 may not be valid PDF
           }
 
           const fileName = `invoice_preview_${Date.now()}.pdf`;
@@ -3404,7 +3301,6 @@ export function TransactionForm({
             Platform.OS === 'android' ? `file://${cachePath}` : cachePath;
           setSource({ uri, cache: true });
         } catch (err) {
-          console.error('❌ Error generating preview:', err);
           if (mounted) setError(err.message || 'Failed to generate preview');
         } finally {
           if (mounted) setLoading(false);
@@ -3461,7 +3357,6 @@ export function TransactionForm({
           style={styles.webview}
           onLoadComplete={(numberOfPages, filePath) => {}}
           onError={err => {
-            console.error('❌ Pdf render error:', err);
             setError(err?.message || 'PDF render failed');
           }}
           onPageChanged={(page, numberOfPages) => {}}
@@ -3542,11 +3437,16 @@ export function TransactionForm({
   const filteredProducts = useMemo(() => {
     if (!selectedCompanyIdWatch) return []; // List khali rakhein agar company select nahi hai
     return products.filter(p => {
-      const prodCompanies = Array.isArray(p.company) ? p.company : (p.company ? [p.company] : []);
+      const prodCompanies = Array.isArray(p.company)
+        ? p.company
+        : p.company
+        ? [p.company]
+        : [];
       if (prodCompanies.length === 0) return true; // Global products
       return prodCompanies.some(comp => {
-          const compId = typeof comp === 'object' && comp !== null ? comp._id : comp;
-          return String(compId) === String(selectedCompanyIdWatch);
+        const compId =
+          typeof comp === 'object' && comp !== null ? comp._id : comp;
+        return String(compId) === String(selectedCompanyIdWatch);
       });
     });
   }, [products, selectedCompanyIdWatch]);
@@ -3555,11 +3455,16 @@ export function TransactionForm({
   const filteredServices = useMemo(() => {
     if (!selectedCompanyIdWatch) return [];
     return services.filter(s => {
-      const serviceCompanies = Array.isArray(s.company) ? s.company : (s.company ? [s.company] : []);
+      const serviceCompanies = Array.isArray(s.company)
+        ? s.company
+        : s.company
+        ? [s.company]
+        : [];
       if (serviceCompanies.length === 0) return true; // Global services
       return serviceCompanies.some(comp => {
-          const compId = typeof comp === 'object' && comp !== null ? comp._id : comp;
-          return String(compId) === String(selectedCompanyIdWatch);
+        const compId =
+          typeof comp === 'object' && comp !== null ? comp._id : comp;
+        return String(compId) === String(selectedCompanyIdWatch);
       });
     });
   }, [services, selectedCompanyIdWatch]);
@@ -3569,7 +3474,11 @@ export function TransactionForm({
     if (!selectedCompanyIdWatch) return [];
 
     return parties.filter(p => {
-      const partyCompanies = Array.isArray(p.company) ? p.company : (p.company ? [p.company] : []);
+      const partyCompanies = Array.isArray(p.company)
+        ? p.company
+        : p.company
+        ? [p.company]
+        : [];
       if (partyCompanies.length === 0) return true;
 
       return partyCompanies.some(comp => {
@@ -3585,7 +3494,11 @@ export function TransactionForm({
     if (!selectedCompanyIdWatch) return [];
 
     return vendors.filter(v => {
-      const vendorCompanies = Array.isArray(v.company) ? v.company : (v.company ? [v.company] : []);
+      const vendorCompanies = Array.isArray(v.company)
+        ? v.company
+        : v.company
+        ? [v.company]
+        : [];
       if (vendorCompanies.length === 0) return true;
 
       return vendorCompanies.some(comp => {
@@ -3886,6 +3799,8 @@ export function TransactionForm({
                 banks,
                 shippingAddresses,
                 BASE_URL,
+                products,
+                services,
               });
             })}
             loading={isSubmitting}
@@ -4176,7 +4091,6 @@ export function TransactionForm({
                     throw new Error('Failed to update shipping address');
                   }
                 } catch (error) {
-                  console.error('Error updating shipping address:', error);
                   setSnackbar({
                     visible: true,
                     message: 'Failed to update shipping address.',

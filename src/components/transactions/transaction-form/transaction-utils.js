@@ -8,6 +8,62 @@ import { HSNCode } from '../../../lib/hsnProduct';
 import { SACCode } from '../../../lib/sacService';
 
 /**
+ * ✅ ENRICH TRANSACTION: Add product and service names to transaction items
+ * Maps product/service IDs to actual names from the available products/services arrays
+ */
+const enrichTransactionWithNames = (
+  transaction,
+  products = [],
+  services = [],
+) => {
+  if (!transaction) return transaction;
+
+  const enriched = { ...transaction };
+
+  // Enrich products with names
+  if (Array.isArray(enriched.products)) {
+    enriched.products = enriched.products.map(productItem => {
+      const product = products.find(p => p._id === productItem.product);
+      console.log(`📦 [enrichTransactionWithNames] Product Item:`, {
+        productItem_id: productItem._id,
+        product_id: productItem.product,
+        found_product: product?.name,
+        productName_set: product?.name || 'Unknown Product',
+      });
+      return {
+        ...productItem,
+        productName: product?.name || 'Unknown Product',
+        product: product
+          ? { ...product, name: product.name }
+          : productItem.product,
+      };
+    });
+  }
+
+  // Enrich services with names
+  if (Array.isArray(enriched.services)) {
+    enriched.services = enriched.services.map(serviceItem => {
+      const service = services.find(s => s._id === serviceItem.service);
+      console.log(`🔧 [enrichTransactionWithNames] Service Item:`, {
+        serviceItem_id: serviceItem._id,
+        service_id: serviceItem.service,
+        found_service: service?.serviceName,
+        serviceName_set: service?.serviceName || 'Unknown Service',
+      });
+      return {
+        ...serviceItem,
+        serviceName: service?.serviceName || 'Unknown Service',
+        service: service
+          ? { ...service, serviceName: service.serviceName }
+          : serviceItem.service,
+      };
+    });
+  }
+
+  return enriched;
+};
+
+/**
  * Scrolls the form to the first field with a validation error and sets focus.
  * NOTE: The scrolling part relies on correctly implemented form field refs
  * and passing the main ScrollView ref to this function.
@@ -217,6 +273,8 @@ export const handleCreateTransactionWithPreview = async ({
   banks,
   shippingAddresses,
   BASE_URL,
+  products = [],
+  services = [],
 }) => {
   const isValid = await form.trigger();
   if (!isValid) {
@@ -363,22 +421,30 @@ export const handleCreateTransactionWithPreview = async ({
           selectedTemplate = 'template1';
         }
 
+        // ✅ Enrich transaction with product and service names
+        const enrichedTransaction = enrichTransactionWithNames(
+          savedTransaction,
+          products,
+          services,
+        );
+
         // Create final preview data
         const previewData = {
-          ...savedTransaction,
+          ...enrichedTransaction,
           company:
             companyToUse ||
             companies.find(
               c =>
                 c._id ===
-                (savedTransaction.company?._id || savedTransaction.company),
+                (enrichedTransaction.company?._id ||
+                  enrichedTransaction.company),
             ),
           party:
             partyToUse ||
             parties.find(
               p =>
                 p._id ===
-                (savedTransaction.party?._id || savedTransaction.party),
+                (enrichedTransaction.party?._id || enrichedTransaction.party),
             ),
           bank: bankDetails?.data || bankDetails,
           shippingAddress: shippingAddressData,
