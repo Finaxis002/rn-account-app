@@ -1442,6 +1442,27 @@ export function TransactionForm({
       gstPercentage: s.gstPercentage ?? 18,
       lineTax: s.lineTax ?? 0,
       lineTotal: s.lineTotal ?? s.amount,
+
+      sac: (() => {
+    
+    if (s.sac) {
+      if (typeof s.sac === 'object') {
+        return String(s.sac.SAC_CD ?? s.sac.sac ?? s.sac.code ?? s.sac.value ?? '');
+      }
+      return String(s.sac);
+    }
+    
+    
+    const serviceObj = s.service || s.serviceName;
+    if (serviceObj && typeof serviceObj === 'object' && serviceObj.sac) {
+      if (typeof serviceObj.sac === 'object') {
+        return String(serviceObj.sac.SAC_CD ?? serviceObj.sac.sac ?? serviceObj.sac.code ?? serviceObj.sac.value ?? '');
+      }
+      return String(serviceObj.sac);
+    }
+    
+    return '';
+  })(),
     });
 
     const toUnifiedItem = i => ({
