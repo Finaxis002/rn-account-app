@@ -905,7 +905,18 @@ export default function PayablesScreen() {
           )}
 
           <View style={styles.filterInputContainer}>
-            <Text style={styles.filterLabel}>Date Range</Text>
+            <View style={styles.dateRangeLabelRow}>
+              <Text style={styles.filterLabel}>Date Range</Text>
+              {(dateRange.from || dateRange.to) && (
+                <TouchableOpacity
+                  style={styles.resetButton}
+                  onPress={() => setDateRange({ from: '', to: '' })}
+                >
+                  <Icon name="refresh" size={14} color="#64748b" />
+                  <Text style={styles.resetButtonText}>Reset</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <View style={styles.dateRangeContainer}>
               {/* From Date Picker */}
               <TouchableOpacity
@@ -923,6 +934,7 @@ export default function PayablesScreen() {
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={handleFromDatePickerChange}
+                  maximumDate={new Date()}
                 />
               )}
 
@@ -947,6 +959,7 @@ export default function PayablesScreen() {
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={handleToDatePickerChange}
+                  maximumDate={new Date()}
                 />
               )}
             </View>
@@ -1161,6 +1174,36 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: '#e2e8f0',
     borderRadius: 12,
+  },
+  dateRangeLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  resetButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748b',
   },
   header: {
     marginBottom: 8,

@@ -473,11 +473,9 @@ export default function InventoryScreen() {
     }
   };
 
-  // ==========================================
-  // PAGINATION
-  // ==========================================
 
-  // React Native Screen ke andar add karein
+
+ 
   const userAllowedCompanyIds = useMemo(() => {
     return companies.map(c => String(c._id));
   }, [companies]);
@@ -485,22 +483,22 @@ export default function InventoryScreen() {
   const filteredProducts = useMemo(() => {
     let data = products;
 
-    // STEP A: Purani companies ke products hatao (Web logic)
+   
     if (userAllowedCompanyIds.length > 0) {
       data = data.filter(p => {
         const cId = typeof p.company === 'object' ? p.company?._id : p.company;
-        // Sirf active company ke ya bina company wale (!cId) product dikhao
+        
         return userAllowedCompanyIds.includes(String(cId)) || !cId;
       });
     } else if (!isLoadingCompanies && companies.length === 0) {
       return [];
     }
 
-    // STEP B: Selected Company Dropdown filter
+    
     if (selectedCompanyId) {
       data = data.filter(p => {
         const cId = typeof p.company === 'object' ? p.company?._id : p.company;
-        return String(cId) === String(selectedCompanyId);
+        return String(cId) === String(selectedCompanyId) || !cId;
       });
     }
 
@@ -516,19 +514,18 @@ export default function InventoryScreen() {
   const filteredServices = useMemo(() => {
     let data = services;
 
-    // STEP A: Security Check (Taaki purani/unauthorized company ka data na aaye)
+    
     data = data.filter(s => {
       const cId = typeof s.company === 'object' ? s.company?._id : s.company;
-      // Agar service common hai (!cId) toh dikhao,
-      // agar kisi company ki hai toh check karo wo active list mein hai ya nahi
+      
       return !cId || userAllowedCompanyIds.includes(String(cId));
     });
 
-    // STEP B: Dropdown logic (Selected company ya All)
+    
     if (selectedCompanyId) {
       data = data.filter(s => {
         const cId = typeof s.company === 'object' ? s.company?._id : s.company;
-        // Selected company ki service dikhao YA common service (!cId) dikhao
+       
         return String(cId) === String(selectedCompanyId) || !cId;
       });
     }
@@ -567,9 +564,7 @@ export default function InventoryScreen() {
     setServiceCurrentPage(prev => Math.max(prev - 1, 1));
   };
 
-  // ==========================================
-  // ACTION BUTTONS (SIRF CREATE KE LIYE PERMISSION)
-  // ==========================================
+  
   const renderActionButtons = () => {
     if (!hasCreatePermission) {
       return null;
