@@ -1451,28 +1451,28 @@ const TransactionsScreen = ({ navigation }) => {
       );
     }
 
-    if (dataForTab.length === 0) {
-      return (
-        <View style={styles.emptyContainer}>
-          <Icon name="receipt" size={80} color="#d1d5db" />
-          <Text style={styles.emptyText}>No transactions found</Text>
-          <Text style={styles.emptySubtext}>
-            Create your first transaction to get started
-          </Text>
-          {canCreateAny && (
-            <TouchableOpacity
-              style={styles.createFirstButton}
-              onPress={() => handleOpenForm(null)}
-            >
-              <Icon name="add" size={20} color="white" />
-              <Text style={styles.createFirstButtonText}>
-                Create First Transaction
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      );
-    }
+    // if (dataForTab.length === 0) {
+    //   return (
+    //     <View style={styles.emptyContainer}>
+    //       <Icon name="receipt" size={80} color="#d1d5db" />
+    //       <Text style={styles.emptyText}>No transactions found</Text>
+    //       <Text style={styles.emptySubtext}>
+    //         Create your first transaction to get started
+    //       </Text>
+    //       {canCreateAny && (
+    //         <TouchableOpacity
+    //           style={styles.createFirstButton}
+    //           onPress={() => handleOpenForm(null)}
+    //         >
+    //           <Icon name="add" size={20} color="white" />
+    //           <Text style={styles.createFirstButtonText}>
+    //             Create First Transaction
+    //           </Text>
+    //         </TouchableOpacity>
+    //       )}
+    //     </View>
+    //   );
+    // }
 
     return (
       <View style={styles.tableContainer}>
