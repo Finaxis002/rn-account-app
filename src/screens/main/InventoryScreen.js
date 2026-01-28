@@ -645,11 +645,11 @@ export default function InventoryScreen() {
             companies={companies} // Add this prop
           />
           <TouchableOpacity
-            style={[styles.button, styles.outlineButton]}
+            style={[styles.button,]}
             onPress={openCreateProduct}
           >
-            <Icon name="add-circle" size={20} color="#007AFF" />
-            <Text style={[styles.buttonText, styles.outlineButtonText]}>
+            <Icon name="add-circle" size={20} color="white" />
+            <Text style={[styles.buttonText,]}>
               Add Product
             </Text>
           </TouchableOpacity>
@@ -1388,13 +1388,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#0f172a',
     // marginBottom: 4,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#64748b',
   },
 
@@ -1409,15 +1409,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#3b82f6',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    // paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
   },
-  outlineButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-  },
+ 
   destructiveButton: {
     backgroundColor: '#ef4444',
   },
@@ -1426,9 +1422,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  outlineButtonText: {
-    color: '#3b82f6',
-  },
+  
 
   // Tabs
   tabsContainer: {

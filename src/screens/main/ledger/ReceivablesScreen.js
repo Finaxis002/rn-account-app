@@ -1136,6 +1136,7 @@ const ReceivablesLedger = () => {
           mode="date"
           display="default"
           onChange={onStartDateChange}
+          maximumDate={new Date()}
         />
       )}
 
@@ -1145,6 +1146,7 @@ const ReceivablesLedger = () => {
           mode="date"
           display="default"
           onChange={onEndDateChange}
+          maximumDate={new Date()}
         />
       )}
 
@@ -1432,7 +1434,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#1f2937',
   },
@@ -1445,7 +1447,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#3b82f6',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 6,
     borderRadius: 6,
     elevation: 2,
     shadowColor: '#000',
@@ -1460,7 +1462,7 @@ const styles = StyleSheet.create({
   exportButtonText: {
     color: 'white',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
     marginLeft: 4,
   },
   backButtonContainer: {

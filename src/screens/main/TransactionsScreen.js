@@ -2366,7 +2366,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: '#6b7280',
-    marginTop: 6,
+    // marginTop: 6,
   },
   headerButtons: {
     flexDirection: 'row',
