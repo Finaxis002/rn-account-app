@@ -10,13 +10,10 @@ import {
   Modal,
   TouchableWithoutFeedback,
   ScrollView,
+  Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Feather';
-import {
-  GoogleSignin,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
 import { BASE_URL } from '../../config';
 
 export function EmailSendingConsent() {
@@ -33,6 +30,7 @@ export function EmailSendingConsent() {
   const [showTermsModal, setShowTermsModal] = useState(false);
 
   const prevConnectedRef = useRef(null);
+  const isInitialLoadRef = useRef(true);
   const POLL_MS = 120000;
 
   const getAuthToken = async () => {
@@ -48,31 +46,6 @@ export function EmailSendingConsent() {
     return { token: null, key: null };
   };
 
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId:
-        '627437378841-j3v3hhhos4db0mc7e1m7n2sfbddvgn3d.apps.googleusercontent.com',
-      offlineAccess: true,
-      scopes: [
-        'https://www.googleapis.com/auth/gmail.send',
-        'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/userinfo.profile',
-      ],
-    });
-
-    loadInitialStatus();
-  }, []);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (nextAppState === 'active') {
-        refreshStatus();
-      }
-    });
-
-    return () => subscription.remove();
-  }, [refreshStatus]);
-
   const refreshStatus = useCallback(async () => {
     try {
       const { token, key } = await getAuthToken();
@@ -86,13 +59,7 @@ export function EmailSendingConsent() {
       });
 
       if (!response.ok) {
-        let bodyText = '';
-        try {
-          bodyText = await response.text();
-        } catch (e) {
-          bodyText = '<unable to read body>';
-        }
-        throw new Error('Failed to load email status');
+        return;
       }
 
       const data = await response.json();
@@ -103,7 +70,7 @@ export function EmailSendingConsent() {
       setStatus(data);
       prevConnectedRef.current = nowConnected;
 
-      if (wasConnected && !nowConnected && data.email) {
+      if (wasConnected === true && !nowConnected && data.email) {
         setReconnectNotice(true);
         const message =
           data.reason === 'token_expired'
@@ -112,20 +79,48 @@ export function EmailSendingConsent() {
 
         Alert.alert('Gmail needs reconnect', message, [{ text: 'OK' }]);
       }
-    } catch (error) {
-      // Error handled silently
-    }
+    } catch (error) {}
   }, []);
 
-  const loadInitialStatus = async () => {
-    try {
-      await refreshStatus();
-    } catch (error) {
-      // Error handled silently
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const loadInitialStatus = async () => {
+      try {
+        await refreshStatus();
+      } catch (error) {
+        // Error handled silently
+      } finally {
+        isInitialLoadRef.current = false;
+        setLoading(false);
+      }
+    };
+
+    loadInitialStatus();
+
+    // Setup deep linking listener for OAuth callback
+    const unsubscribe = Linking.addEventListener('url', async event => {
+      const url = event.url;
+      if (url.includes('gmail=connected')) {
+        await refreshStatus();
+      } else if (url.includes('gmail=error')) {
+        Alert.alert(
+          'Connection Failed',
+          'Gmail connection failed. Please try again.',
+        );
+      }
+    });
+
+    return () => unsubscribe.remove();
+  }, [refreshStatus]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        refreshStatus();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [refreshStatus]);
 
   useEffect(() => {
     if (!status.termsAcceptedAt) return;
@@ -141,146 +136,31 @@ export function EmailSendingConsent() {
     try {
       setConnecting(true);
 
-      try {
-        await GoogleSignin.signOut();
-      } catch (signOutError) {
-        // Ignore if not signed in
-      }
-
-      try {
-        await GoogleSignin.hasPlayServices();
-      } catch (error) {
-        Alert.alert(
-          'Google Play Services Required',
-          'Please install Google Play Services to connect Gmail.',
-          [{ text: 'OK' }],
-        );
+      const { token } = await getAuthToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication token not found');
         return;
       }
 
-      const userInfo = await GoogleSignin.signIn();
+      const authStartUrl = `${BASE_URL}/api/integrations/gmail/connect?token=${token}&redirect=accountapp://auth-callback`;
 
-      if (!userInfo || !userInfo.user) {
-        setConnecting(false);
-        return;
-      }
-
-      let tokens;
       try {
-        tokens = await GoogleSignin.getTokens();
-      } catch (err) {
-        const msg = err && err.message ? err.message : String(err);
-        if (
-          msg.includes('getTokens requires a user to be signed in') ||
-          msg.includes('SIGN_IN_CANCELLED')
-        ) {
-          setConnecting(false);
-          return;
-        }
-        throw err;
-      }
-
-      await sendTokensToBackend(userInfo, tokens);
+        await Linking.openURL(authStartUrl);
+        setTimeout(() => {
+          refreshStatus();
+        }, 5000);
+      } catch (linkError) {}
     } catch (error) {
-      handleGoogleSignInError(error);
+      Alert.alert('Error', 'Failed to start Gmail connection');
     } finally {
       setConnecting(false);
     }
   };
 
-  const sendTokensToBackend = async (userInfo, tokens) => {
-    try {
-      const { token } = await getAuthToken();
-      const response = await fetch(
-        `${BASE_URL}/api/integrations/gmail/connect`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            accessToken: tokens.accessToken,
-            refreshToken: tokens.refreshToken,
-            idToken: userInfo.idToken,
-            email: userInfo.user.email,
-            name: userInfo.user.name,
-            photo: userInfo.user.photo,
-          }),
-        },
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-
-        setStatus(prev => ({
-          ...prev,
-          connected: true,
-          email: userInfo.user.email,
-          termsAcceptedAt: data.termsAcceptedAt || new Date().toISOString(),
-        }));
-
-        setReconnectNotice(false);
-
-        await AsyncStorage.setItem('gmailLinkedEmail', userInfo.user.email);
-        await AsyncStorage.setItem('gmailTermsAccepted', 'true');
-
-        Alert.alert(
-          'Success',
-          `Gmail connected successfully as ${userInfo.user.email}`,
-          [{ text: 'OK' }],
-        );
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to connect to backend');
-      }
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to connect to backend');
-    }
-  };
-
-  const handleGoogleSignInError = error => {
-    switch (error.code) {
-      case statusCodes.SIGN_IN_CANCELLED:
-        break;
-
-      case statusCodes.IN_PROGRESS:
-        break;
-
-      case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-        Alert.alert(
-          'Google Play Services',
-          'Google Play Services not available or outdated.',
-          [{ text: 'OK' }],
-        );
-        break;
-
-      default:
-        if (
-          error.code === 'DEVELOPER_ERROR' ||
-          error.message?.includes('DEVELOPER_ERROR')
-        ) {
-          Alert.alert(
-            'Gmail Setup Required',
-            'Please ensure your Firebase project is configured correctly:\n\n' +
-              "1. Add your app's SHA-1 fingerprint to Firebase Console\n" +
-              '2. Create an OAuth 2.0 credential (Android)\n' +
-              '3. Ensure the web client ID matches your Firebase setup\n\n' +
-              'See: https://react-native-google-signin.github.io/docs/troubleshooting',
-            [{ text: 'OK' }],
-          );
-        } else {
-          Alert.alert(
-            'Error',
-            'Failed to connect to Google. Please try again.',
-            [{ text: 'OK' }],
-          );
-        }
-    }
-  };
-
   const handleDisconnect = async () => {
-    if (!status.email) return;
+    if (!status.email) {
+      return;
+    }
 
     Alert.alert(
       'Disconnect Gmail',
@@ -292,8 +172,6 @@ export function EmailSendingConsent() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await GoogleSignin.signOut();
-
               const { token } = await getAuthToken();
               const response = await fetch(
                 `${BASE_URL}/api/integrations/gmail/disconnect`,
@@ -306,8 +184,9 @@ export function EmailSendingConsent() {
                 },
               );
 
-              if (!response.ok)
+              if (!response.ok) {
                 throw new Error('Failed to disconnect from backend');
+              }
 
               setStatus({
                 connected: false,
