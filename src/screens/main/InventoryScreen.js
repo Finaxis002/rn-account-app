@@ -11,6 +11,7 @@ import {
   Dimensions,
   Linking,
   ScrollView,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePermissions } from '../../contexts/permission-context';
@@ -30,6 +31,8 @@ import {
 
 // Icons
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import RNPrint from 'react-native-print';
+import { generatePDF } from 'react-native-html-to-pdf';
 
 // Custom components
 import ProductForm from '../../components/products/ProductForm';
@@ -38,6 +41,7 @@ import ExcelImportExport from '../../components/ui/ExcelImportExport';
 import AppLayout from '../../components/layout/AppLayout';
 import InventorySocketListener from '../../socketlisteners/InventorySocketListener';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BarcodeDisplay from '../../components/ui/BarcodeDisplay';
 
 const { width } = Dimensions.get('window');
 const ITEMS_PER_PAGE = 10;
@@ -95,7 +99,8 @@ export default function InventoryScreen() {
       triggerCompaniesRefresh();
     }, [triggerCompaniesRefresh]),
   );
-
+  const [isBulkPrintDialogOpen, setIsBulkPrintDialogOpen] = useState(false);
+  const [bulkPrintQuantities, setBulkPrintQuantities] = useState({});
   const [activeTab, setActiveTab] = useState('products');
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
@@ -398,6 +403,102 @@ export default function InventoryScreen() {
     }
   };
 
+  // Add this bulk print handler function
+  const handleBulkPrint = async () => {
+    if (selectedProducts.length === 0) return;
+
+    try {
+      const productsToPrint = products.filter(p =>
+        selectedProducts.includes(p._id),
+      );
+
+      let labelsHtml = '';
+      let totalLabels = 0;
+
+      productsToPrint.forEach(product => {
+        const qty =
+          bulkPrintQuantities[product._id] ||
+          Math.min(product.stocks || 1, 100);
+        totalLabels += qty;
+
+        for (let i = 0; i < qty; i++) {
+          const isLastLabel =
+            productsToPrint.indexOf(product) === productsToPrint.length - 1 &&
+            i === qty - 1;
+
+          labelsHtml += `
+          <div style="
+            width: 220px; 
+            padding: 10px; 
+            text-align: center; 
+            font-family: sans-serif; 
+            ${!isLastLabel ? 'border-bottom: 1px dashed #999;' : ''}
+            page-break-inside: avoid;
+            margin-bottom: ${!isLastLabel ? '8px' : '0'};
+          ">
+            <h2 style="font-size: 14px; margin: 0 0 5px 0; font-weight: bold;">${
+              product.name
+            }</h2>
+            <img id="barcode_${
+              product._id
+            }_${i}" style="width: 200px; height: 50px; margin: 5px 0;" />
+            <p style="font-size: 10px; margin: 5px 0 0 0; color: #555;">ID: ${
+              product._id
+            }</p>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+            <script>
+              JsBarcode("#barcode_${product._id}_${i}", "${product._id}", {
+                format: "CODE128", width: 2, height: 50, displayValue: false,
+                margin: 0, background: "#ffffff", lineColor: "#000000"
+              });
+            </script>
+          </div>
+        `;
+        }
+      });
+
+      const labelHeight = 80;
+      const pageHeight = Math.max(280, labelHeight * totalLabels + 20);
+
+      const html = `
+      <html>
+        <head>
+          <meta name="viewport" content="width=220, initial-scale=1.0">
+          <style>
+            @page { size: 220px ${pageHeight}px; margin: 0; }
+            body { margin: 0; padding: 8px; width: 220px; }
+          </style>
+        </head>
+        <body>${labelsHtml}</body>
+      </html>
+    `;
+
+      // Use generatePDF from react-native-html-to-pdf
+      const results = await generatePDF({
+        html: html,
+        fileName: `Bulk_Barcodes_${Date.now()}`,
+        directory: 'Documents',
+        base64: true,
+        width: 220,
+        height: pageHeight,
+      });
+
+      await RNPrint.print({ filePath: results.filePath });
+
+      Alert.alert(
+        'Bulk Print Started',
+        `Printing ${totalLabels} labels for ${selectedProducts.length} products on single page`,
+      );
+
+      setIsBulkPrintDialogOpen(false);
+      setSelectedProducts([]);
+      setBulkPrintQuantities({});
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to generate bulk labels');
+    }
+  };
+
   // ==========================================
   // SELECTION HANDLING - EDIT/DELETE PERMISSION CHECK HATAYA
   // ==========================================
@@ -473,9 +574,6 @@ export default function InventoryScreen() {
     }
   };
 
-
-
- 
   const userAllowedCompanyIds = useMemo(() => {
     return companies.map(c => String(c._id));
   }, [companies]);
@@ -483,18 +581,16 @@ export default function InventoryScreen() {
   const filteredProducts = useMemo(() => {
     let data = products;
 
-   
     if (userAllowedCompanyIds.length > 0) {
       data = data.filter(p => {
         const cId = typeof p.company === 'object' ? p.company?._id : p.company;
-        
+
         return userAllowedCompanyIds.includes(String(cId)) || !cId;
       });
     } else if (!isLoadingCompanies && companies.length === 0) {
       return [];
     }
 
-    
     if (selectedCompanyId) {
       data = data.filter(p => {
         const cId = typeof p.company === 'object' ? p.company?._id : p.company;
@@ -514,18 +610,16 @@ export default function InventoryScreen() {
   const filteredServices = useMemo(() => {
     let data = services;
 
-    
     data = data.filter(s => {
       const cId = typeof s.company === 'object' ? s.company?._id : s.company;
-      
+
       return !cId || userAllowedCompanyIds.includes(String(cId));
     });
 
-    
     if (selectedCompanyId) {
       data = data.filter(s => {
         const cId = typeof s.company === 'object' ? s.company?._id : s.company;
-       
+
         return String(cId) === String(selectedCompanyId) || !cId;
       });
     }
@@ -564,7 +658,6 @@ export default function InventoryScreen() {
     setServiceCurrentPage(prev => Math.max(prev - 1, 1));
   };
 
-  
   const renderActionButtons = () => {
     if (!hasCreatePermission) {
       return null;
@@ -644,14 +737,9 @@ export default function InventoryScreen() {
             activeTab={activeTab}
             companies={companies} // Add this prop
           />
-          <TouchableOpacity
-            style={[styles.button,]}
-            onPress={openCreateProduct}
-          >
+          <TouchableOpacity style={[styles.button]} onPress={openCreateProduct}>
             <Icon name="add-circle" size={20} color="white" />
-            <Text style={[styles.buttonText,]}>
-              Add Product
-            </Text>
+            <Text style={[styles.buttonText]}>Add Product</Text>
           </TouchableOpacity>
         </View>
       );
@@ -694,12 +782,27 @@ export default function InventoryScreen() {
   // ==========================================
   const renderProductCard = (item, index) => {
     const isLowStock = (item.stocks ?? 0) <= 10;
+    const isSelected = selectedProducts.includes(item._id);
 
     return (
-      <View style={styles.card} key={item._id}>
+      <View
+        style={[styles.card, isSelected && styles.selectedCard]}
+        key={item._id}
+      >
         {/* Header - Product Info */}
         <View style={styles.cardHeader}>
           <View style={styles.productInfo}>
+            {/* Checkbox Icon */}
+            <TouchableOpacity
+              onPress={() => handleSelectProduct(item._id, !isSelected, index)}
+              style={styles.checkboxContainer}
+            >
+              <Icon
+                name={isSelected ? 'check-box' : 'check-box-outline-blank'}
+                size={24}
+                color={isSelected ? '#3b82f6' : '#64748b'}
+              />
+            </TouchableOpacity>
             <View style={styles.iconCircle}>
               <Icon name="inventory-2" size={20} color="#3b82f6" />
             </View>
@@ -774,15 +877,23 @@ export default function InventoryScreen() {
 
         {/* Footer - Date & Edit */}
         <View style={styles.cardFooter}>
-          <Text style={styles.dateText}>
-            {item.createdAt
-              ? new Date(item.createdAt).toLocaleDateString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                })
-              : '—'}
-          </Text>
+          <View style={styles.footerLeft}>
+            <Text style={styles.dateText}>
+              {item.createdAt
+                ? new Date(item.createdAt).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : '—'}
+            </Text>
+            <BarcodeDisplay
+              value={item._id}
+              productId={item._id}
+              productName={item.name}
+              stockQuantity={item.stocks}
+            />
+          </View>
           <TouchableOpacity
             style={styles.editButton}
             onPress={() => openEditProduct(item)}
@@ -875,12 +986,31 @@ export default function InventoryScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Inventory Management</Text>
-          <Text style={styles.subtitle}>
-            Track and manage your products and services.
-          </Text>
+          {selectedProducts.length > 0 ? (
+            <Text style={styles.selectionCount}>
+              {selectedProducts.length} selected
+            </Text>
+          ) : (
+            <Text style={styles.subtitle}>
+              Track and manage your products and services.
+            </Text>
+          )}
         </View>
 
-        {renderActionButtons()}
+        <View style={styles.headerActions}>
+          {selectedProducts.length > 0 && (
+            <TouchableOpacity
+              style={styles.bulkPrintBtn}
+              onPress={handleBulkPrint}
+            >
+              <Icon name="print" size={20} color="white" />
+              <Text style={styles.buttonText}>
+                Print ({selectedProducts.length})
+              </Text>
+            </TouchableOpacity>
+          )}
+          {renderActionButtons()}
+        </View>
       </View>
 
       <View style={styles.tabsContainer}>
@@ -1398,11 +1528,19 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
 
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+  },
+
   // Action Buttons
   actionButtons: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 12,
+    // marginTop: 12, // Moved to headerActions
   },
   button: {
     flexDirection: 'row',
@@ -1413,7 +1551,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 8,
   },
- 
+  bulkPrintBtn: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
   destructiveButton: {
     backgroundColor: '#ef4444',
   },
@@ -1422,7 +1569,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  
 
   // Tabs
   tabsContainer: {
@@ -1483,6 +1629,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
+  selectedCard: {
+    borderColor: '#3b82f6',
+    backgroundColor: '#f0f7ff',
+  },
+  checkboxContainer: {
+    marginRight: 10,
+  },
+  selectionCount: {
+    fontSize: 13,
+    color: '#3b82f6',
+    fontWeight: '600',
+  },
 
   // Card Header (Shared)
   cardHeader: {
@@ -1517,6 +1675,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
+  },
+  footerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   dateText: {
     fontSize: 12,
