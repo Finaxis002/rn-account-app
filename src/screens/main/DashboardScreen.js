@@ -702,11 +702,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 2,
+    // marginBottom: 2,
     letterSpacing: -0.5,
   },
   headerSubtitle: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#64748b',
     fontWeight: '400',
   },
