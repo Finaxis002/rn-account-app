@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 0,
-    backgroundColor: '#ffffff',
+    // backgroundColor: '#ffffff',
   },
   card: {
     backgroundColor: '#fff',
