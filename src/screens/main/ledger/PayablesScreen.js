@@ -932,7 +932,7 @@ export default function PayablesScreen() {
                 <Icon
                   name="calendar-blank"
                   size={16}
-                  color={dateRange.from ? '#3B82F6' : '#94A3B8'}
+                  color={dateRange.from ? '#3B82F6' : '#2564bd'}
                 />
                 <Text
                   style={[
@@ -959,7 +959,7 @@ export default function PayablesScreen() {
                 <Icon
                   name="calendar-blank"
                   size={16}
-                  color={dateRange.to ? '#3B82F6' : '#94A3B8'}
+                  color={dateRange.to ? '#3B82F6' : '#2564bd'}
                 />
                 <Text
                   style={[
@@ -1458,7 +1458,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   dateInputPlaceholder: {
-    color: '#94A3B8',
+    color: '#252627',
     fontWeight: '400',
   },
   dateSeparator: {
@@ -1468,7 +1468,7 @@ const styles = StyleSheet.create({
   dateSeparatorLine: {
     width: 8,
     height: 1.5,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#3e3e3f',
   },
   modalOverlay: {
     flex: 1,
