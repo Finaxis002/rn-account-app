@@ -494,8 +494,8 @@ const TransactionsScreen = ({ navigation }) => {
   }, [servicesList]);
 
   const customFilterFn = useMemo(
-    () => makeCustomFilterFn(serviceNameById),
-    [serviceNameById],
+    () => makeCustomFilterFn(serviceNameById, productsList, servicesList),
+    [serviceNameById, productsList, servicesList],
   );
 
   // Date filtering helper
@@ -1350,6 +1350,9 @@ const TransactionsScreen = ({ navigation }) => {
       onViewInvoice: handleViewInvoice,
       companyMap: companyMap,
       serviceNameById: serviceNameById,
+      // pass master lists for HSN/SAC lookup inside getUnifiedLines
+      productsList: productsList,
+      servicesList: servicesList,
       userRole: role,
       onConvertToSales: transaction => {
         setTransactionToEdit(null);
@@ -1385,6 +1388,9 @@ const TransactionsScreen = ({ navigation }) => {
     onDelete: handleOpenDeleteDialog,
     companyMap,
     serviceNameById,
+    // pass master lists here too so any internal helpers can use them
+    productsList: productsList,
+    servicesList: servicesList,
     onSendInvoice: handleSendInvoice,
     userRole: role || undefined,
     onConvertToSales: transaction => {
