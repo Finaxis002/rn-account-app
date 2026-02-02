@@ -382,15 +382,26 @@ export default function PayablesScreen() {
     loadInitialData();
   }, []);
 
-  // Reload vendors and expenses only when company changes
-  useEffect(() => {
-    if (selectedCompanyId) {
-      dataLoadedRef.current.vendors = false;
-      dataLoadedRef.current.expenses = false;
-      fetchVendors(true);
-      fetchExpenses(true);
-    }
-  }, [selectedCompanyId]);
+useEffect(() => {
+  const resetAndFetch = async () => {
+    
+    dataLoadedRef.current.vendors = false;
+    dataLoadedRef.current.expenses = false;
+    
+    
+    setVendors([]);
+    setExpenses([]);
+    setVendorBalances({});
+    setTransactionTotals({ totalCredit: 0, totalDebit: 0 });
+    
+    await Promise.all([
+      fetchVendors(true),
+      fetchExpenses(true)
+    ]);
+  };
+
+  resetAndFetch();
+}, [selectedCompanyId]);
 
   // Fetch ledger data based on current view
   const fetchLedgerData = useCallback(async () => {

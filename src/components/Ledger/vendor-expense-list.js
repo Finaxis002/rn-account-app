@@ -394,7 +394,7 @@ export function VendorExpenseList({
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchLastTransactionDates();
-    }, 300); // Small delay to prevent rapid re-fetches
+    }, 300); 
     
     return () => clearTimeout(timer);
   }, [fetchLastTransactionDates]);

@@ -18,10 +18,10 @@ export default function Ledger() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-   // Call the function - it doesn't return a Promise
+   
   triggerCompaniesRefresh();
   
-  // Set refreshing to false after a short delay
+  
   setTimeout(() => {
     setRefreshing(false);
   }, 1000);
