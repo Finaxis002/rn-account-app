@@ -59,12 +59,17 @@ import { generatePdfForTemplateA5_2 } from '../../lib/pdf-templateA3-2';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { getUnifiedLines, capitalizeWords } from '../../lib/utils';
 import { PaymentMethodCell } from './PaymentMethodCell';
+import { TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/Tooltip';
 import WhatsAppComposerDialog from './WhatsAppComposerDialog';
 import { whatsappConnectionService } from '../../lib/whatsapp-connection';
 import { BASE_URL } from '../../config';
 
 /** Build a filter function that can match party/vendor, description and line names */
-export const makeCustomFilterFn = serviceNameById => {
+export const makeCustomFilterFn = (
+  serviceNameById,
+  productsList = [],
+  servicesList = [],
+) => {
   return (transaction, filterValue) => {
     if (!filterValue) return true;
 
@@ -80,8 +85,13 @@ export const makeCustomFilterFn = serviceNameById => {
 
     const desc = (tx.description || tx.narration || '').toLowerCase();
 
-    // lines (products/services)
-    const lines = getUnifiedLines(tx, serviceNameById);
+    // lines (products/services) - pass master lists for HSN/SAC resolution
+    const lines = getUnifiedLines(
+      tx,
+      serviceNameById,
+      productsList,
+      servicesList,
+    );
     const matchLine = lines.some(l => (l.name || '').toLowerCase().includes(q));
 
     return partyName.toLowerCase().includes(q) || desc.includes(q) || matchLine;
@@ -741,69 +751,7 @@ const DropdownMenuLabel = ({ children }) => (
 
 const DropdownMenuSeparator = () => <View style={styles.menuSeparator} />;
 
-// Items Tooltip Component
-const ItemsTooltip = ({ isVisible, onClose, lines }) => {
-  if (!isVisible) return null;
-
-  return (
-    <Modal
-      transparent
-      visible={isVisible}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <Pressable style={styles.tooltipOverlay} onPress={onClose}>
-        <Pressable style={styles.tooltipContent}>
-          <View style={styles.tooltipHeader}>
-            <Text style={styles.tooltipTitle}>Items & Services</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Feather name="x" size={20} color="#374151" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.tooltipList}>
-            {lines.map((line, index) => (
-              <View key={index} style={styles.tooltipItem}>
-                <View
-                  style={[
-                    styles.itemIcon,
-                    line.type === 'product'
-                      ? styles.productIcon
-                      : styles.serviceIcon,
-                  ]}
-                >
-                  {line.type === 'product' ? (
-                    <Feather name="package" size={14} color="#0369a1" />
-                  ) : (
-                    <Feather name="tool" size={14} color="#92400e" />
-                  )}
-                </View>
-                <View style={styles.tooltipItemDetails}>
-                  <Text style={styles.tooltipItemName}>{line.name}</Text>
-                  {line.type === 'product' && (
-                    <Text style={styles.tooltipItemMeta}>
-                      {line.quantity}
-                      {line.unitType ? ` ${line.unitType}` : ''}
-                      {line.pricePerUnit
-                        ? ` @ ${new Intl.NumberFormat('en-IN').format(
-                            Number(line.pricePerUnit),
-                          )}`
-                        : ''}
-                    </Text>
-                  )}
-                  {line.type === 'service' && line.description && (
-                    <Text style={styles.tooltipItemDesc}>
-                      {line.description}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-};
+// Items tooltip migrated to `src/components/ui/Tooltip.js` and we now use <TooltipContent /> inline inside `LinesCell` to show a scrollable details view with totals.
 
 // ✅ SortableHeader Component (alag component)
 const SortableHeader = ({ title, onSort }) => {
@@ -837,11 +785,93 @@ const SortableHeader = ({ title, onSort }) => {
 };
 
 // ✅ LinesCell Component (alag component)
-const LinesCell = ({ transaction, serviceNameById, onViewItems }) => {
+const LinesCell = ({
+  transaction,
+  serviceNameById,
+  onViewItems,
+  productsList = [],
+  servicesList = [],
+}) => {
   const [showCopied, setShowCopied] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const lines = getUnifiedLines(transaction, serviceNameById);
+  const lines = getUnifiedLines(
+    transaction,
+    serviceNameById,
+    productsList,
+    servicesList,
+  );
+
+  // Determine whether tax TOTAL should be shown (if any line has meaningful tax)
+  const showTaxTotal = lines.some(l => {
+    const qty = Number(l.quantity || 0);
+    const unitPrice = Number(l.pricePerUnit || 0);
+    const amount = Number(l.amount) || (qty && unitPrice ? qty * unitPrice : 0);
+    if (l.taxAmount != null && l.taxAmount !== '' && Number(l.taxAmount) !== 0)
+      return true;
+    if (l.lineTax != null && l.lineTax !== '' && Number(l.lineTax) !== 0)
+      return true;
+    const pctFields = [l.gstPercentage, l.gstRate, l.gst, l.tax];
+    for (const fld of pctFields) {
+      if (fld != null && fld !== '') {
+        const maybe = Number(fld);
+        if (!isNaN(maybe) && maybe > 0) return true;
+      }
+    }
+    return false;
+  });
+
+  // Totals calculations for tooltip
+  const subtotal = lines.reduce((s, l) => {
+    const qty = Number(l.quantity || 0);
+    const price = Number(l.pricePerUnit || 0);
+    // Prefer explicit amount when provided (even if 0). Fallback to qty*price only when amount is absent.
+    const hasAmt =
+      l.amount !== undefined && l.amount !== null && l.amount !== '';
+    const amt = hasAmt ? Number(l.amount) : NaN;
+    if (hasAmt && !isNaN(amt)) return s + amt;
+    if (qty && price) return s + qty * price;
+    return s;
+  }, 0);
+
+  const taxTotal = lines.reduce((s, l) => {
+    const qty = Number(l.quantity || 0);
+    const unitPrice = Number(l.pricePerUnit || 0);
+    // Use explicit amount if present (even 0); otherwise use qty*unitPrice fallback
+    const amount =
+      l.amount !== undefined && l.amount !== null && l.amount !== ''
+        ? Number(l.amount)
+        : qty && unitPrice
+        ? qty * unitPrice
+        : 0;
+
+    let tax = 0;
+    // Absolute tax fields take precedence
+    if (l.taxAmount != null && l.taxAmount !== '') {
+      tax = Number(l.taxAmount) || 0;
+    } else if (l.lineTax != null && l.lineTax !== '') {
+      tax = Number(l.lineTax) || 0;
+    } else {
+      // Percentage-style fields (gstRate, gstPercentage, gst, tax)
+      const pctFields = [l.gstPercentage, l.gstRate, l.gst, l.tax];
+      for (const field of pctFields) {
+        if (field != null && field !== '') {
+          const maybe = Number(field);
+          if (!isNaN(maybe)) {
+            if (maybe > 0 && maybe <= 100) {
+              tax = (amount * maybe) / 100;
+            } else {
+              tax = maybe || 0;
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    return s + (tax || 0);
+  }, 0);
+  const grandTotal = subtotal + taxTotal;
 
   if (!lines.length) return <Text style={styles.noItems}>-</Text>;
 
@@ -930,12 +960,6 @@ const LinesCell = ({ transaction, serviceNameById, onViewItems }) => {
         <TouchableOpacity style={styles.copyButton} onPress={handleCopy}>
           <Feather name="copy" size={16} color="#666" />
         </TouchableOpacity>
-
-        {/* {showCopied && (
-          <View style={styles.copiedMessage}>
-            <Text style={styles.copiedText}>✓ Copied!</Text>
-          </View>
-        )} */}
       </View>
 
       <TouchableOpacity
@@ -982,11 +1006,193 @@ const LinesCell = ({ transaction, serviceNameById, onViewItems }) => {
         </View>
       </TouchableOpacity>
 
-      <ItemsTooltip
-        isVisible={showTooltip}
-        onClose={() => setShowTooltip(false)}
-        lines={lines}
-      />
+      <TooltipProvider>
+        <TooltipContent
+          visible={showTooltip}
+          onClose={() => setShowTooltip(false)}
+          title="Items & Services"
+        >
+          {/* Header row */}
+          <View style={styles.tooltipTableHeader}>
+            <Text style={[styles.tooltipHeaderCell, { flex: 2 }]}>Item</Text>
+            <Text
+              style={[
+                styles.tooltipHeaderCell,
+                { flex: 1, textAlign: 'center' },
+              ]}
+            >
+              Type
+            </Text>
+            <Text
+              style={[
+                styles.tooltipHeaderCell,
+                { flex: 1, textAlign: 'center' },
+              ]}
+            >
+              Qty
+            </Text>
+            <Text
+              style={[
+                styles.tooltipHeaderCell,
+                { flex: 1, textAlign: 'center' },
+              ]}
+            >
+              HSN/SAC
+            </Text>
+            <Text
+              style={[
+                styles.tooltipHeaderCell,
+                { flex: 1, textAlign: 'right' },
+              ]}
+            >
+              Price/Unit
+            </Text>
+            <Text
+              style={[
+                styles.tooltipHeaderCell,
+                { flex: 1, textAlign: 'right' },
+              ]}
+            >
+              Total
+            </Text>
+          </View>
+
+          {lines.map((line, index) => {
+            const isService = line.type === 'service';
+            // Show quantity like web: display the actual quantity (even 0) with unit for products; services show '-'
+            const qtyDisplay =
+              !isService &&
+              line.quantity !== undefined &&
+              line.quantity !== null &&
+              line.quantity !== '' &&
+              !isNaN(Number(line.quantity))
+                ? `${line.quantity}${line.unitType ? ` ${line.unitType}` : ''}`
+                : '-';
+            const qty = Number(line.quantity || 0);
+            const unitPrice = Number(line.pricePerUnit || 0);
+            // Use explicit amount if present (even 0); otherwise compute qty*unitPrice
+            const amount =
+              line.amount !== undefined &&
+              line.amount !== null &&
+              line.amount !== ''
+                ? Number(line.amount)
+                : qty && unitPrice
+                ? qty * unitPrice
+                : 0;
+
+            // Per-line tax detection: prefer explicit absolute amounts, then known percent fields
+            let tax = 0;
+            if (line.taxAmount != null && line.taxAmount !== '') {
+              tax = Number(line.taxAmount) || 0;
+            } else if (line.lineTax != null && line.lineTax !== '') {
+              tax = Number(line.lineTax) || 0;
+            } else {
+              const pctFields = [
+                line.gstPercentage,
+                line.gstRate,
+                line.gst,
+                line.tax,
+              ];
+              for (const field of pctFields) {
+                if (field != null && field !== '') {
+                  const maybe = Number(field);
+                  if (!isNaN(maybe)) {
+                    if (maybe > 0 && maybe <= 100) {
+                      tax = (amount * maybe) / 100;
+                    } else {
+                      tax = maybe || 0;
+                    }
+                  }
+                  break;
+                }
+              }
+            }
+
+            const lineTotal = amount + tax;
+
+            // Fallback for unit price when pricePerUnit missing: amount/qty (if meaningful)
+            const displayUnitPrice =
+              unitPrice || (qty && amount ? amount / qty : 0);
+            // Use robust HSN/SAC fallbacks
+            const hsnOrSac =
+              line.hsn ||
+              line.hsnCode ||
+              line.sac ||
+              line.sacCode ||
+              line.hsn_sac ||
+              '-';
+
+            return (
+              <View key={index} style={styles.tooltipRow}>
+                <View style={{ flex: 2 }}>
+                  <Text style={styles.tooltipItemName} numberOfLines={1}>
+                    {line.name}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={styles.tooltipItemMeta}>{line.type ?? '-'}</Text>
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={styles.tooltipItemMeta}>{qtyDisplay}</Text>
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={styles.tooltipItemMeta}>{hsnOrSac}</Text>
+                </View>
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Text style={styles.tooltipItemMeta}>
+                    {displayUnitPrice
+                      ? `₹${new Intl.NumberFormat('en-IN', {
+                          maximumFractionDigits: 2,
+                        }).format(displayUnitPrice)}`
+                      : '-'}
+                  </Text>
+                </View>
+
+                <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                  <Text style={[styles.tooltipItemMeta, { fontWeight: '600' }]}>
+                    {new Intl.NumberFormat('en-IN', {
+                      style: 'currency',
+                      currency: 'INR',
+                    }).format(amount)}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+
+          <View style={styles.tooltipTotals}>
+            <View style={styles.tooltipTotalRow}>
+              <Text style={styles.tooltipTotalLabel}>Subtotal</Text>
+              <Text style={styles.tooltipTotalValue}>
+                {new Intl.NumberFormat('en-IN', {
+                  style: 'currency',
+                  currency: 'INR',
+                }).format(subtotal)}
+              </Text>
+            </View>
+            {showTaxTotal && (
+              <View style={styles.tooltipTotalRow}>
+                <Text style={styles.tooltipTotalLabel}>Tax Total</Text>
+                <Text style={styles.tooltipTotalValue}>
+                  {new Intl.NumberFormat('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                  }).format(taxTotal)}
+                </Text>
+              </View>
+            )}
+            <View style={styles.tooltipTotalRow}>
+              <Text style={styles.tooltipTotalLabel}>Grand Total</Text>
+              <Text style={styles.tooltipTotalValue}>
+                {new Intl.NumberFormat('en-IN', {
+                  style: 'currency',
+                  currency: 'INR',
+                }).format(grandTotal)}
+              </Text>
+            </View>
+          </View>
+        </TooltipContent>
+      </TooltipProvider>
     </View>
   );
 };
@@ -1007,7 +1213,6 @@ const TransactionActions = ({
   serviceNameById,
   parties = [],
 }) => {
-
   const { permissions } = useUserPermissions();
   const canEmail = !!permissions?.canSendInvoiceEmail;
   const canWhatsApp = !!permissions?.canSendInvoiceWhatsapp;
@@ -1274,7 +1479,7 @@ const TransactionActions = ({
           disabled={!isWhatsAppAllowed || !canWhatsApp}
         >
           Send on WhatsApp
-          {!canWhatsApp && " (No permission)"}
+          {!canWhatsApp && ' (No permission)'}
         </DropdownMenuItem>
 
         {/* 2) Send via Email */}
@@ -1453,6 +1658,9 @@ export const columns = ({
   onDelete,
   companyMap,
   serviceNameById,
+  // master lists for HSN/SAC lookup
+  productsList = [],
+  servicesList = [],
   onSendInvoice,
   onSendWhatsApp,
   hideActions = false,
@@ -1467,8 +1675,12 @@ export const columns = ({
   onViewInvoicePDF,
   onDownloadInvoicePDF,
   parties = [],
-}) => {
-  const customFilterFn = makeCustomFilterFn(serviceNameById);
+} = {}) => {
+  const customFilterFn = makeCustomFilterFn(
+    serviceNameById,
+    productsList,
+    servicesList,
+  );
 
   // Badge Component (simple function component, no hooks)
   const Badge = ({ children, variant, style }) => {
@@ -1720,6 +1932,8 @@ export const columns = ({
         transaction={transaction}
         serviceNameById={serviceNameById}
         onViewItems={onViewItems}
+        productsList={productsList}
+        servicesList={servicesList}
       />
     ),
     render: transaction => (
@@ -1727,6 +1941,8 @@ export const columns = ({
         transaction={transaction}
         serviceNameById={serviceNameById}
         onViewItems={onViewItems}
+        productsList={productsList}
+        servicesList={servicesList}
       />
     ),
     meta: {
@@ -2017,8 +2233,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-end',
     // gap: 4,
-    marginTop: -6
-    
+    marginTop: -6,
   },
   partyMainContent: {
     flexDirection: 'row',
@@ -2160,6 +2375,51 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     fontStyle: 'italic',
+  },
+
+  // Tooltip table header and rows
+  tooltipTableHeader: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#f8fafc',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  tooltipHeaderCell: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '600',
+  },
+  tooltipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+
+  // Tooltip totals
+  tooltipTotals: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    marginTop: 8,
+  },
+  tooltipTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  tooltipTotalLabel: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  tooltipTotalValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
   },
 
   // Amount
