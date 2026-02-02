@@ -43,17 +43,21 @@ const Tab = createBottomTabNavigator();
 
 function MainTabNavigator({ route }) {
   // 1. Role extract karein jo navigation.reset se pass kiya gaya hai
-  const role = route.params?.role?.toLowerCase() || '';
+  const role = (route.params?.role || '').toLowerCase() || '';
+  const explicitScreen = route.params?.screen || null;
 
   // 2. Role ke basis par decide karein ki "Home" screen kaunsi hogi
-  let initialRoute = 'UserDashboard'; // Default fallback
+  // If an explicit `screen` param is passed (navigateByRole), prefer it.
+  let initialRoute = explicitScreen || 'UserDashboard'; // Default fallback
 
-  if (role === 'master') {
-    initialRoute = 'AdminDashboard';
-  } else if (['admin', 'customer', 'client'].includes(role)) {
-    initialRoute = 'CustomerDashboard';
-  } else if (role === 'user') {
-    initialRoute = 'UserDashboard';
+  if (!explicitScreen) {
+    if (role === 'master') {
+      initialRoute = 'AdminDashboard';
+    } else if (['admin', 'customer', 'client'].includes(role)) {
+      initialRoute = 'CustomerDashboard';
+    } else if (role === 'user') {
+      initialRoute = 'UserDashboard';
+    }
   }
 
   return (
@@ -144,9 +148,15 @@ function MainTabNavigator({ route }) {
   );
 }
 
-export default function AppNavigator() {
+export default function AppNavigator({
+  role = null,
+  initialRouteName = 'GettingStarted',
+}) {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={initialRouteName}
+    >
       <Stack.Screen name="GettingStarted" component={GettingStartedScreen} />
       <Stack.Screen name="SendOtpScreen" component={SendOtpScreen} />
       <Stack.Screen
@@ -158,7 +168,12 @@ export default function AppNavigator() {
       <Stack.Screen name="ClientLoginScreen" component={ClientLoginScreen} />
 
       {/* 2. Main Tab Area (Jahan Header dikhega) */}
-      <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+      <Stack.Screen
+        name="MainTabs"
+        component={MainTabNavigator}
+        // Pass persisted role (if any) as initial params so nested Tab navigator can pick correct tab
+        initialParams={{ role }}
+      />
 
       <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />

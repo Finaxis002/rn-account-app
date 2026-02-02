@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, ActivityIndicator, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import {
@@ -26,6 +27,8 @@ const theme = {
 
 export default function App() {
   const [role, setRole] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+  const [initialRouteName, setInitialRouteName] = useState('GettingStarted');
 
   useEffect(() => {
     const pingServer = async () => {
@@ -49,6 +52,50 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
+  // Check for persisted session before rendering navigation so user doesn't land on GettingStarted after closing app
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const savedRole = await AsyncStorage.getItem('role');
+        console.log('Startup session check:', {
+          tokenExists: !!token,
+          savedRole,
+        });
+        if (!mounted) return;
+        if (token) {
+          setRole(savedRole || null);
+          setInitialRouteName('MainTabs');
+        } else {
+          setInitialRouteName('GettingStarted');
+        }
+      } catch (err) {
+        console.warn('Failed to read session on startup', err);
+      } finally {
+        if (mounted) setIsReady(true);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (!isReady) {
+    // Simple splash while we determine session state
+    return (
+      <PaperProvider theme={theme}>
+        <SafeAreaProvider>
+          <View
+            style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+          >
+            <ActivityIndicator size="large" />
+          </View>
+        </SafeAreaProvider>
+      </PaperProvider>
+    );
+  }
+
   return (
     <PaperProvider theme={theme}>
       <SafeAreaProvider>
@@ -60,7 +107,11 @@ export default function App() {
                 <AppSocketWrapper>
                   <NavigationContainer ref={navigationRef}>
                     <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-                    <AppNavigator role={role} setRole={setRole} />
+                    <AppNavigator
+                      role={role}
+                      setRole={setRole}
+                      initialRouteName={initialRouteName}
+                    />
                   </NavigationContainer>
                 </AppSocketWrapper>
               </SupportProvider>
