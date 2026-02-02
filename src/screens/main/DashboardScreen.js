@@ -43,6 +43,7 @@ import ProductStock from '../../components/dashboard/ProductStock';
 import ProformaForm from '../../components/transactions/ProformaForm';
 import { TransactionForm } from '../../components/transactions/TransactionForm';
 import { AccountValidityNotice } from '../../components/dashboard/AccountValidityNotice';
+import DashboardSkeleton from '../../components/ui/DashboardSkeleton';
 const UpdateWalkthrough = React.lazy(() =>
   import('../../components/notifications/UpdateWalkthrough'),
 );
@@ -59,17 +60,6 @@ const toArray = data => {
   if (Array.isArray(data?.data)) return data.data;
   return [];
 };
-
-// --- Skeleton Components ---
-const KpiSkeleton = () => (
-  <View style={styles.kpiContainer}>
-    {[...Array(3)].map((_, i) => (
-      <View key={i} style={styles.kpiCardSkeleton}>
-        <ActivityIndicator size="small" />
-      </View>
-    ))}
-  </View>
-);
 
 const ProductStockSkeleton = () => (
   <View style={styles.productStockSkeleton}>
@@ -552,7 +542,7 @@ export default function DashboardPage() {
         </Suspense>
 
         {isLoading ? (
-          <KpiSkeleton />
+          <DashboardSkeleton />
         ) : companies.length === 0 ? (
           <Card style={styles.noCompanyCard}>
             <Package size={48} color="#666" />
@@ -834,6 +824,42 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#eee',
   },
+
+
+
+
+  kpiSkeletonContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  minHeight: 400,
+  paddingHorizontal: 16,
+},
+kpiSkeletonCard: {
+  backgroundColor: '#f8fafc',
+  borderRadius: 12,
+  padding: 48,
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  ...Platform.select({
+    ios: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+    },
+    android: {
+      elevation: 1,
+    },
+  }),
+},
+kpiSkeletonText: {
+  marginTop: 16,
+  fontSize: 15,
+  color: '#64748b',
+  fontWeight: '500',
+},
   noCompanyCard: {
     padding: 48,
     alignItems: 'center',
