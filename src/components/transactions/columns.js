@@ -59,17 +59,13 @@ import { generatePdfForTemplateA5_2 } from '../../lib/pdf-templateA3-2';
 import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { getUnifiedLines, capitalizeWords } from '../../lib/utils';
 import { PaymentMethodCell } from './PaymentMethodCell';
-import { TooltipProvider, TooltipTrigger, TooltipContent } from '../ui/Tooltip';
 import WhatsAppComposerDialog from './WhatsAppComposerDialog';
 import { whatsappConnectionService } from '../../lib/whatsapp-connection';
 import { BASE_URL } from '../../config';
+import { TooltipContent } from '../ui/Tooltip';
 
 /** Build a filter function that can match party/vendor, description and line names */
-export const makeCustomFilterFn = (
-  serviceNameById,
-  productsList = [],
-  servicesList = [],
-) => {
+export const makeCustomFilterFn = serviceNameById => {
   return (transaction, filterValue) => {
     if (!filterValue) return true;
 
@@ -80,21 +76,24 @@ export const makeCustomFilterFn = (
     let partyName = '';
     const pv = tx.party || tx.vendor;
     if (pv && typeof pv === 'object') {
-      partyName = pv.name || pv.vendorName || '';
+      partyName = String(pv.name || pv.vendorName || '');
     }
 
-    const desc = (tx.description || tx.narration || '').toLowerCase();
+    const desc = String(tx.description || tx.narration || '').toLowerCase();
 
-    // lines (products/services) - pass master lists for HSN/SAC resolution
-    const lines = getUnifiedLines(
-      tx,
-      serviceNameById,
-      productsList,
-      servicesList,
+    // lines (products/services)
+    const lines = getUnifiedLines(tx, serviceNameById);
+    const matchLine = lines.some(l =>
+      String(l.name || '')
+        .toLowerCase()
+        .includes(q),
     );
-    const matchLine = lines.some(l => (l.name || '').toLowerCase().includes(q));
 
-    return partyName.toLowerCase().includes(q) || desc.includes(q) || matchLine;
+    return (
+      String(partyName).toLowerCase().includes(q) ||
+      desc.includes(q) ||
+      matchLine
+    );
   };
 };
 
@@ -751,7 +750,7 @@ const DropdownMenuLabel = ({ children }) => (
 
 const DropdownMenuSeparator = () => <View style={styles.menuSeparator} />;
 
-// Items tooltip migrated to `src/components/ui/Tooltip.js` and we now use <TooltipContent /> inline inside `LinesCell` to show a scrollable details view with totals.
+// Legacy ItemsTooltip removed — use `TooltipContent` (from ../ui/Tooltip) inside `LinesCell` for a richer, consistent UI.
 
 // ✅ SortableHeader Component (alag component)
 const SortableHeader = ({ title, onSort }) => {
@@ -785,93 +784,11 @@ const SortableHeader = ({ title, onSort }) => {
 };
 
 // ✅ LinesCell Component (alag component)
-const LinesCell = ({
-  transaction,
-  serviceNameById,
-  onViewItems,
-  productsList = [],
-  servicesList = [],
-}) => {
+const LinesCell = ({ transaction, serviceNameById, onViewItems }) => {
   const [showCopied, setShowCopied] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const lines = getUnifiedLines(
-    transaction,
-    serviceNameById,
-    productsList,
-    servicesList,
-  );
-
-  // Determine whether tax TOTAL should be shown (if any line has meaningful tax)
-  const showTaxTotal = lines.some(l => {
-    const qty = Number(l.quantity || 0);
-    const unitPrice = Number(l.pricePerUnit || 0);
-    const amount = Number(l.amount) || (qty && unitPrice ? qty * unitPrice : 0);
-    if (l.taxAmount != null && l.taxAmount !== '' && Number(l.taxAmount) !== 0)
-      return true;
-    if (l.lineTax != null && l.lineTax !== '' && Number(l.lineTax) !== 0)
-      return true;
-    const pctFields = [l.gstPercentage, l.gstRate, l.gst, l.tax];
-    for (const fld of pctFields) {
-      if (fld != null && fld !== '') {
-        const maybe = Number(fld);
-        if (!isNaN(maybe) && maybe > 0) return true;
-      }
-    }
-    return false;
-  });
-
-  // Totals calculations for tooltip
-  const subtotal = lines.reduce((s, l) => {
-    const qty = Number(l.quantity || 0);
-    const price = Number(l.pricePerUnit || 0);
-    // Prefer explicit amount when provided (even if 0). Fallback to qty*price only when amount is absent.
-    const hasAmt =
-      l.amount !== undefined && l.amount !== null && l.amount !== '';
-    const amt = hasAmt ? Number(l.amount) : NaN;
-    if (hasAmt && !isNaN(amt)) return s + amt;
-    if (qty && price) return s + qty * price;
-    return s;
-  }, 0);
-
-  const taxTotal = lines.reduce((s, l) => {
-    const qty = Number(l.quantity || 0);
-    const unitPrice = Number(l.pricePerUnit || 0);
-    // Use explicit amount if present (even 0); otherwise use qty*unitPrice fallback
-    const amount =
-      l.amount !== undefined && l.amount !== null && l.amount !== ''
-        ? Number(l.amount)
-        : qty && unitPrice
-        ? qty * unitPrice
-        : 0;
-
-    let tax = 0;
-    // Absolute tax fields take precedence
-    if (l.taxAmount != null && l.taxAmount !== '') {
-      tax = Number(l.taxAmount) || 0;
-    } else if (l.lineTax != null && l.lineTax !== '') {
-      tax = Number(l.lineTax) || 0;
-    } else {
-      // Percentage-style fields (gstRate, gstPercentage, gst, tax)
-      const pctFields = [l.gstPercentage, l.gstRate, l.gst, l.tax];
-      for (const field of pctFields) {
-        if (field != null && field !== '') {
-          const maybe = Number(field);
-          if (!isNaN(maybe)) {
-            if (maybe > 0 && maybe <= 100) {
-              tax = (amount * maybe) / 100;
-            } else {
-              tax = maybe || 0;
-            }
-            break;
-          }
-        }
-      }
-    }
-
-    return s + (tax || 0);
-  }, 0);
-  const grandTotal = subtotal + taxTotal;
+  const lines = getUnifiedLines(transaction, serviceNameById);
 
   if (!lines.length) return <Text style={styles.noItems}>-</Text>;
 
@@ -883,12 +800,12 @@ const LinesCell = ({
     let contactName = 'N/A';
     if (transaction.type === 'purchases') {
       contactName =
-        typeof transaction.vendor === 'object'
+        transaction.vendor && typeof transaction.vendor === 'object'
           ? transaction.vendor.vendorName
           : transaction.vendor || 'N/A';
     } else {
       contactName =
-        typeof transaction.party === 'object'
+        transaction.party && typeof transaction.party === 'object'
           ? transaction.party.name
           : transaction.party || 'N/A';
     }
@@ -960,6 +877,12 @@ const LinesCell = ({
         <TouchableOpacity style={styles.copyButton} onPress={handleCopy}>
           <Feather name="copy" size={16} color="#666" />
         </TouchableOpacity>
+
+        {/* {showCopied && (
+          <View style={styles.copiedMessage}>
+            <Text style={styles.copiedText}>✓ Copied!</Text>
+          </View>
+        )} */}
       </View>
 
       <TouchableOpacity
@@ -974,13 +897,13 @@ const LinesCell = ({
               key={idx}
               style={[
                 styles.itemIcon,
-                line.type === 'product'
+                line.itemType === 'product'
                   ? styles.productIcon
                   : styles.serviceIcon,
                 { marginLeft: idx > 0 ? -8 : 0 },
               ]}
             >
-              {line.type === 'product' ? (
+              {line.itemType === 'product' ? (
                 <Feather name="package" size={12} color="#0369a1" />
               ) : (
                 <Feather name="tool" size={12} color="#92400e" />
@@ -1006,193 +929,114 @@ const LinesCell = ({
         </View>
       </TouchableOpacity>
 
-      <TooltipProvider>
-        <TooltipContent
-          visible={showTooltip}
-          onClose={() => setShowTooltip(false)}
-          title="Items & Services"
-        >
-          {/* Header row */}
-          <View style={styles.tooltipTableHeader}>
-            <Text style={[styles.tooltipHeaderCell, { flex: 2 }]}>Item</Text>
-            <Text
-              style={[
-                styles.tooltipHeaderCell,
-                { flex: 1, textAlign: 'center' },
-              ]}
-            >
-              Type
-            </Text>
-            <Text
-              style={[
-                styles.tooltipHeaderCell,
-                { flex: 1, textAlign: 'center' },
-              ]}
-            >
-              Qty
-            </Text>
-            <Text
-              style={[
-                styles.tooltipHeaderCell,
-                { flex: 1, textAlign: 'center' },
-              ]}
-            >
-              HSN/SAC
-            </Text>
-            <Text
-              style={[
-                styles.tooltipHeaderCell,
-                { flex: 1, textAlign: 'right' },
-              ]}
-            >
-              Price/Unit
-            </Text>
-            <Text
-              style={[
-                styles.tooltipHeaderCell,
-                { flex: 1, textAlign: 'right' },
-              ]}
-            >
-              Total
+      <TooltipContent
+        visible={showTooltip}
+        onClose={() => setShowTooltip(false)}
+        title="Item Details"
+      >
+        {/* Header Totals Section - Matches Screenshot Top Bar */}
+        <View style={styles.screenshotTotalsContainer}>
+          <View style={styles.screenshotTotalColumn}>
+            <Text style={styles.screenshotLabel}>Subtotal</Text>
+            <Text style={styles.screenshotValue}>
+              {new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+              }).format(lines.reduce((s, l) => s + Number(l.amount || 0), 0))}
             </Text>
           </View>
 
-          {lines.map((line, index) => {
-            const isService = line.type === 'service';
-            // Show quantity like web: display the actual quantity (even 0) with unit for products; services show '-'
-            const qtyDisplay =
-              !isService &&
-              line.quantity !== undefined &&
-              line.quantity !== null &&
-              line.quantity !== '' &&
-              !isNaN(Number(line.quantity))
-                ? `${line.quantity}${line.unitType ? ` ${line.unitType}` : ''}`
-                : '-';
-            const qty = Number(line.quantity || 0);
-            const unitPrice = Number(line.pricePerUnit || 0);
-            // Use explicit amount if present (even 0); otherwise compute qty*unitPrice
-            const amount =
-              line.amount !== undefined &&
-              line.amount !== null &&
-              line.amount !== ''
-                ? Number(line.amount)
-                : qty && unitPrice
-                ? qty * unitPrice
-                : 0;
+          <View style={styles.screenshotTotalColumn}>
+            <Text style={styles.screenshotLabel}>Tax Total</Text>
+            <Text style={styles.screenshotValue}>
+              {new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+              }).format(lines.reduce((s, l) => s + Number(l.lineTax || 0), 0))}
+            </Text>
+          </View>
 
-            // Per-line tax detection: prefer explicit absolute amounts, then known percent fields
-            let tax = 0;
-            if (line.taxAmount != null && line.taxAmount !== '') {
-              tax = Number(line.taxAmount) || 0;
-            } else if (line.lineTax != null && line.lineTax !== '') {
-              tax = Number(line.lineTax) || 0;
-            } else {
-              const pctFields = [
-                line.gstPercentage,
-                line.gstRate,
-                line.gst,
-                line.tax,
-              ];
-              for (const field of pctFields) {
-                if (field != null && field !== '') {
-                  const maybe = Number(field);
-                  if (!isNaN(maybe)) {
-                    if (maybe > 0 && maybe <= 100) {
-                      tax = (amount * maybe) / 100;
-                    } else {
-                      tax = maybe || 0;
-                    }
-                  }
-                  break;
-                }
-              }
-            }
+          <View style={styles.screenshotTotalColumn}>
+            <Text style={styles.screenshotLabel}>Grand Total</Text>
+            <Text style={[styles.screenshotValue, { color: '#10b981' }]}>
+              {new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+              }).format(
+                lines.reduce(
+                  (s, l) => s + Number(l.lineTotal || l.amount || 0),
+                  0,
+                ),
+              )}
+            </Text>
+          </View>
+        </View>
 
-            const lineTotal = amount + tax;
+        {/* Items List - Matches the Rounded Card in Screenshot */}
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {lines.map((line, idx) => (
+            <View key={idx} style={styles.screenshotItemCard}>
+              {/* Item Header (Icon + Name + Badges) */}
+              <View style={styles.screenshotItemHeader}>
+                <View style={styles.screenshotIconCircle}>
+                  <Feather
+                    name={line.itemType === 'service' ? 'tool' : 'package'}
+                    size={18}
+                    color="#64748b"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.screenshotItemName}>{line.name}</Text>
+                  <View style={styles.screenshotBadgeRow}>
+                    <View style={styles.screenshotBadge}>
+                      <Text style={styles.screenshotBadgeText}>
+                        {line.itemType || 'Product'}
+                      </Text>
+                    </View>
+                    {line.code && (
+                      <View style={styles.screenshotBadge}>
+                        <Text style={styles.screenshotBadgeText}>
+                          HSN: {line.code}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
 
-            // Fallback for unit price when pricePerUnit missing: amount/qty (if meaningful)
-            const displayUnitPrice =
-              unitPrice || (qty && amount ? amount / qty : 0);
-            // Use robust HSN/SAC fallbacks
-            const hsnOrSac =
-              line.hsn ||
-              line.hsnCode ||
-              line.sac ||
-              line.sacCode ||
-              line.hsn_sac ||
-              '-';
-
-            return (
-              <View key={index} style={styles.tooltipRow}>
-                <View style={{ flex: 2 }}>
-                  <Text style={styles.tooltipItemName} numberOfLines={1}>
-                    {line.name}
+              {/* Quantity & Price Grid */}
+              <View style={styles.screenshotGrid}>
+                <View>
+                  <Text style={styles.screenshotLabelSmall}>Quantity</Text>
+                  <Text style={styles.screenshotDataText}>
+                    {line.quantity || '0'} {line.unitType || 'Piece'}
                   </Text>
                 </View>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={styles.tooltipItemMeta}>{line.type ?? '-'}</Text>
-                </View>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={styles.tooltipItemMeta}>{qtyDisplay}</Text>
-                </View>
-                <View style={{ flex: 1, alignItems: 'center' }}>
-                  <Text style={styles.tooltipItemMeta}>{hsnOrSac}</Text>
-                </View>
-                <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                  <Text style={styles.tooltipItemMeta}>
-                    {displayUnitPrice
-                      ? `₹${new Intl.NumberFormat('en-IN', {
-                          maximumFractionDigits: 2,
-                        }).format(displayUnitPrice)}`
-                      : '-'}
-                  </Text>
-                </View>
-
-                <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                  <Text style={[styles.tooltipItemMeta, { fontWeight: '600' }]}>
+                <View>
+                  <Text style={styles.screenshotLabelSmall}>Price/Unit</Text>
+                  <Text style={styles.screenshotDataText}>
                     {new Intl.NumberFormat('en-IN', {
                       style: 'currency',
                       currency: 'INR',
-                    }).format(amount)}
+                    }).format(line.pricePerUnit || 0)}
                   </Text>
                 </View>
               </View>
-            );
-          })}
 
-          <View style={styles.tooltipTotals}>
-            <View style={styles.tooltipTotalRow}>
-              <Text style={styles.tooltipTotalLabel}>Subtotal</Text>
-              <Text style={styles.tooltipTotalValue}>
-                {new Intl.NumberFormat('en-IN', {
-                  style: 'currency',
-                  currency: 'INR',
-                }).format(subtotal)}
-              </Text>
-            </View>
-            {showTaxTotal && (
-              <View style={styles.tooltipTotalRow}>
-                <Text style={styles.tooltipTotalLabel}>Tax Total</Text>
-                <Text style={styles.tooltipTotalValue}>
+              {/* Item Total Line */}
+              <View style={styles.screenshotItemFooter}>
+                <Text style={styles.screenshotFooterLabel}>Item Total</Text>
+                <Text style={styles.screenshotFooterValue}>
                   {new Intl.NumberFormat('en-IN', {
                     style: 'currency',
                     currency: 'INR',
-                  }).format(taxTotal)}
+                  }).format(line.amount || 0)}
                 </Text>
               </View>
-            )}
-            <View style={styles.tooltipTotalRow}>
-              <Text style={styles.tooltipTotalLabel}>Grand Total</Text>
-              <Text style={styles.tooltipTotalValue}>
-                {new Intl.NumberFormat('en-IN', {
-                  style: 'currency',
-                  currency: 'INR',
-                }).format(grandTotal)}
-              </Text>
             </View>
-          </View>
-        </TooltipContent>
-      </TooltipProvider>
+          ))}
+        </ScrollView>
+      </TooltipContent>
     </View>
   );
 };
@@ -1658,9 +1502,6 @@ export const columns = ({
   onDelete,
   companyMap,
   serviceNameById,
-  // master lists for HSN/SAC lookup
-  productsList = [],
-  servicesList = [],
   onSendInvoice,
   onSendWhatsApp,
   hideActions = false,
@@ -1675,12 +1516,8 @@ export const columns = ({
   onViewInvoicePDF,
   onDownloadInvoicePDF,
   parties = [],
-} = {}) => {
-  const customFilterFn = makeCustomFilterFn(
-    serviceNameById,
-    productsList,
-    servicesList,
-  );
+}) => {
+  const customFilterFn = makeCustomFilterFn(serviceNameById);
 
   // Badge Component (simple function component, no hooks)
   const Badge = ({ children, variant, style }) => {
@@ -1932,8 +1769,6 @@ export const columns = ({
         transaction={transaction}
         serviceNameById={serviceNameById}
         onViewItems={onViewItems}
-        productsList={productsList}
-        servicesList={servicesList}
       />
     ),
     render: transaction => (
@@ -1941,8 +1776,6 @@ export const columns = ({
         transaction={transaction}
         serviceNameById={serviceNameById}
         onViewItems={onViewItems}
-        productsList={productsList}
-        servicesList={servicesList}
       />
     ),
     meta: {
@@ -2377,49 +2210,170 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  // Tooltip table header and rows
-  tooltipTableHeader: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+  tooltipTotalsTop: {
+    padding: 12,
     backgroundColor: '#f8fafc',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
-  tooltipHeaderCell: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-  tooltipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+
+  tooltipItemsList: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    paddingBottom: 12,
   },
 
-  // Tooltip totals
-  tooltipTotals: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    marginTop: 8,
+  tooltipLineCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#eef2ff',
   },
-  tooltipTotalRow: {
+  tooltipLineContent: {
+    flexDirection: 'column',
+  },
+  tooltipLineHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
+    alignItems: 'center',
   },
-  tooltipTotalLabel: {
-    fontSize: 14,
-    color: '#374151',
+  tooltipLineInfo: {
+    marginLeft: 12,
+    flex: 1,
   },
-  tooltipTotalValue: {
+  tooltipLineName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
+    color: '#0f172a',
+  },
+  tooltipItemMeta: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  tooltipServiceDescription: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 6,
+  },
+  itemTypeBadgeSmall: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  itemTypeBadgeTextSmall: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  tooltipLineDetails: {
+    marginTop: 10,
+  },
+
+  // Screenshot-style totals + cards
+  screenshotTotalsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+    marginBottom: 10,
+  },
+  screenshotTotalColumn: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  screenshotLabel: {
+    fontSize: 11,
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  screenshotValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  screenshotItemCard: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    backgroundColor: '#fff',
+  },
+  screenshotItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  screenshotIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  screenshotItemName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  screenshotBadgeRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
+  },
+  screenshotBadge: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  screenshotBadgeText: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  screenshotGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  screenshotLabelSmall: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginBottom: 2,
+  },
+  screenshotDataText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
+  },
+  screenshotItemFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    pt: 12,
+    paddingTop: 12,
+  },
+  screenshotFooterLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e293b',
+  },
+  screenshotFooterValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#10b981', // Emerald green from screenshot
   },
 
   // Amount

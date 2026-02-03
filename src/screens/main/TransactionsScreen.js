@@ -494,8 +494,8 @@ const TransactionsScreen = ({ navigation }) => {
   }, [servicesList]);
 
   const customFilterFn = useMemo(
-    () => makeCustomFilterFn(serviceNameById, productsList, servicesList),
-    [serviceNameById, productsList, servicesList],
+    () => makeCustomFilterFn(serviceNameById),
+    [serviceNameById],
   );
 
   // Date filtering helper
@@ -974,7 +974,7 @@ const TransactionsScreen = ({ navigation }) => {
       const productName =
         productNameById.get(p.product) || p.product?.name || '(product)';
       const productId =
-        typeof p.product === 'object' ? p.product._id : p.product;
+        p.product && typeof p.product === 'object' ? p.product._id : p.product;
       const productObj = productsList.find(prod => prod._id === productId);
       const hsnCode = productObj?.hsn || '';
 
@@ -1003,17 +1003,19 @@ const TransactionsScreen = ({ navigation }) => {
 
     const svcs = svcArr.map(s => {
       const id =
-        typeof s.service === 'object'
+        s.service && typeof s.service === 'object'
           ? s.service._id
           : s.service ??
-            (typeof s.serviceName === 'object'
+            (s.serviceName && typeof s.serviceName === 'object'
               ? s.serviceName._id
               : s.serviceName);
 
       const name =
         (id && serviceNameById.get(String(id))) ||
-        (typeof s.service === 'object' && s.service.serviceName) ||
-        (typeof s.serviceName === 'object' && s.serviceName.serviceName) ||
+        (s.service && typeof s.service === 'object' && s.service.serviceName) ||
+        (s.serviceName &&
+          typeof s.serviceName === 'object' &&
+          s.serviceName.serviceName) ||
         '(service)';
 
       const serviceObj = servicesList.find(svc => svc._id === id);
@@ -1156,7 +1158,9 @@ const TransactionsScreen = ({ navigation }) => {
 
       // Get company ID
       const companyId =
-        typeof tx.company === 'object' ? tx.company._id : tx.company || '';
+        tx.company && typeof tx.company === 'object'
+          ? tx.company._id
+          : tx.company || '';
 
       if (!companyId) {
         throw new Error('Company not found');
@@ -1350,9 +1354,6 @@ const TransactionsScreen = ({ navigation }) => {
       onViewInvoice: handleViewInvoice,
       companyMap: companyMap,
       serviceNameById: serviceNameById,
-      // pass master lists for HSN/SAC lookup inside getUnifiedLines
-      productsList: productsList,
-      servicesList: servicesList,
       userRole: role,
       onConvertToSales: transaction => {
         setTransactionToEdit(null);
@@ -1388,9 +1389,6 @@ const TransactionsScreen = ({ navigation }) => {
     onDelete: handleOpenDeleteDialog,
     companyMap,
     serviceNameById,
-    // pass master lists here too so any internal helpers can use them
-    productsList: productsList,
-    servicesList: servicesList,
     onSendInvoice: handleSendInvoice,
     userRole: role || undefined,
     onConvertToSales: transaction => {
