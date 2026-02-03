@@ -13,6 +13,7 @@ import {
   Alert,
   Platform,
   Animated,
+  Keyboard,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import smartFetch from '../../lib/smartFetch';
@@ -204,6 +205,9 @@ const SearchBar = ({ placeholder, value, onChangeText, style }) => {
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor="#9ca3af"
+        returnKeyType="search"
+        blurOnSubmit={false}
+        autoCorrect={false}
       />
       {value.length > 0 && (
         <TouchableOpacity onPress={() => onChangeText('')}>
@@ -669,6 +673,8 @@ const ProductStock = ({
                       maxToRenderPerBatch={8}
                       windowSize={5}
                       removeClippedSubviews
+                      keyboardShouldPersistTaps="always"
+                      keyboardDismissMode="none"
                     />
                   </View>
                 ) : (
@@ -685,6 +691,8 @@ const ProductStock = ({
                     maxToRenderPerBatch={8}
                     windowSize={5}
                     removeClippedSubviews
+                    keyboardShouldPersistTaps="always"
+                    keyboardDismissMode="none"
                   />
                 )}
               </View>

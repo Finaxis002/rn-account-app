@@ -18,6 +18,8 @@ import {
   RefreshControl,
   Animated,
   Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FileText, PlusCircle, Package, X } from 'lucide-react-native';
@@ -44,6 +46,7 @@ const UpdateWalkthrough = React.lazy(() =>
 );
 import { BASE_URL } from '../../config';
 import AppLayout from '../../components/layout/AppLayout';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const CACHE_KEY = 'company_dashboard_data';
 const baseURL = BASE_URL;
@@ -521,13 +524,19 @@ export default function DashboardPage() {
         </View>
       </Animated.View>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
         bounces={true}
         scrollEventThrottle={16}
         decelerationRate="normal"
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="none"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={100}
+        keyboardOpeningTime={0}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -559,32 +568,36 @@ export default function DashboardPage() {
             </Text>
           </Card>
         ) : (
-          <>
-            <KpiCards
-              data={dashboardData}
-              selectedCompanyId={selectedCompanyId}
-            />
+          <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+            <View>
+              <KpiCards
+                data={dashboardData}
+                selectedCompanyId={selectedCompanyId}
+              />
 
-            <View style={styles.dataContainer}>
-              <Suspense fallback={<ProductStockSkeleton />}>
-                <ProductStock
-                  navigation={navigation}
-                  refetchPermissions={refetchPermissions}
-                  refetchUserPermissions={refetchUserPermissions}
-                />
-              </Suspense>
+              <View style={styles.dataContainer}>
+                <Suspense fallback={<ProductStockSkeleton />}>
+                  <ProductStock
+                    navigation={navigation}
+                    refetchPermissions={refetchPermissions}
+                    refetchUserPermissions={refetchUserPermissions}
+                  />
+                </Suspense>
 
-              <Suspense fallback={<RecentTransactionsSkeleton />}>
-                <RecentTransactions
-                  navigation={navigation}
-                  transactions={dashboardData?.recentTransactions || []}
-                  serviceNameById={dashboardData?.serviceNameById || new Map()}
-                />
-              </Suspense>
+                <Suspense fallback={<RecentTransactionsSkeleton />}>
+                  <RecentTransactions
+                    navigation={navigation}
+                    transactions={dashboardData?.recentTransactions || []}
+                    serviceNameById={
+                      dashboardData?.serviceNameById || new Map()
+                    }
+                  />
+                </Suspense>
+              </View>
             </View>
-          </>
+          </TouchableWithoutFeedback>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Proforma Modal with Slide Animation */}
       <Modal
