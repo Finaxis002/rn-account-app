@@ -68,11 +68,11 @@ const styles = StyleSheet.create({
   },
   centered: {
     position: 'absolute',
-    top: Platform.OS === 'android' ? 44 : 80,
+    top: Platform.OS === 'android' ? 80 : 80,
     left: 16,
     right: 16,
     bottom: 16,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   container: {
