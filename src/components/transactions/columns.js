@@ -1009,16 +1009,20 @@ const LinesCell = ({ transaction, serviceNameById, onViewItems }) => {
                 <View>
                   <Text style={styles.screenshotLabelSmall}>Quantity</Text>
                   <Text style={styles.screenshotDataText}>
-                    {line.quantity || '0'} {line.unitType || 'Piece'}
+                    {line.itemType === 'service'
+                      ? '-'
+                      : `${line.quantity || '0'} ${line.unitType || 'Piece'}`}
                   </Text>
                 </View>
                 <View>
                   <Text style={styles.screenshotLabelSmall}>Price/Unit</Text>
                   <Text style={styles.screenshotDataText}>
-                    {new Intl.NumberFormat('en-IN', {
-                      style: 'currency',
-                      currency: 'INR',
-                    }).format(line.pricePerUnit || 0)}
+                    {line.itemType === 'service'
+                      ? '-'
+                      : new Intl.NumberFormat('en-IN', {
+                          style: 'currency',
+                          currency: 'INR',
+                        }).format(line.pricePerUnit || 0)}
                   </Text>
                 </View>
               </View>
