@@ -480,6 +480,19 @@ const ProductStock = ({
     fetchProducts();
   }, [selectedCompanyId]);
 
+  // Load stored role from AsyncStorage so role-driven UI (eg. Edit button) works correctly
+  useEffect(() => {
+    const getRole = async () => {
+      try {
+        const storedRole = await AsyncStorage.getItem('role');
+        if (storedRole) setRole(storedRole);
+      } catch (error) {
+        // ignore - role is optional
+      }
+    };
+    getRole();
+  }, []);
+
   const onRefresh = () => {
     setRefreshing(true);
     Promise.all([
@@ -566,14 +579,19 @@ const ProductStock = ({
   );
 
   const shouldShowComponent = () => {
-    const hasProductPermission = permissions?.canCreateProducts;
-    const hasUserInventoryPermission = userCaps?.canCreateInventory;
-    const maxInventories = permissions?.maxInventories ?? 0;
+    // Web logic ke hisab se exact flags
+    const canCreateProducts = permissions?.canCreateProducts; // Context-level product creation flag
+    const userInventoryCap = userCaps?.canCreateInventory; // User-specific capability (New Architecture)
+    const maxInventoriesAllowed = permissions?.maxInventories ?? 0;
 
+    // Agar user ke paas product banane ki permission NAHI hai
+    // AND inventory manage karne ki capability NAHI hai
+    // AND unke plan mein max inventory 0 hai
+    // TOH component hide kar do.
     if (
-      !hasProductPermission &&
-      !hasUserInventoryPermission &&
-      maxInventories === 0
+      !canCreateProducts &&
+      !userInventoryCap &&
+      maxInventoriesAllowed === 0
     ) {
       return false;
     }
