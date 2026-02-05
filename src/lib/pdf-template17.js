@@ -404,7 +404,10 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
             font-size: 8px; 
             font-weight: bold; 
             margin-bottom: 3px; 
-            color: ${PRIMARY_BLUE}; 
+        
+              padding: 4px 6px;
+             border-bottom: 1px solid ${PRIMARY_BLUE};
+             margin: -8px -10px 8px -10px; 
           }
           
           .party-name { 
