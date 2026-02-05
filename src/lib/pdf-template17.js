@@ -299,7 +299,8 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
           .header-title { 
             text-align: center; 
             padding: 8px 0; 
-            font-size: 14px; 
+            font-size: 20px; 
+            color: ${PRIMARY_BLUE}; 
             font-weight: bold; 
             letter-spacing: 1px; 
             margin: 0 0 5px 0;
@@ -342,7 +343,7 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
           .invoice-col { 
             display: table-cell;
             width: 40%; 
-            padding: 0; 
+            padding: 8px; 
             vertical-align: top; 
           }
           
@@ -378,6 +379,7 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
           
           .invoice-value { 
             font-size: 8px; 
+             color: ${PRIMARY_BLUE}; 
           }
           
           .party-section {
@@ -795,7 +797,9 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
                               ? '-'
                               : formatQuantity(item.quantity || 0)
                           }</td>
-                  <td>${item.itemType === 'service' ? '-' : (item.unit || 'Piece')}</td>
+                  <td>${
+                    item.itemType === 'service' ? '-' : item.unit || 'Piece'
+                  }</td>
                           <td class="center">${formatCurrency(
                             item.pricePerUnit || 0,
                           )}</td>
