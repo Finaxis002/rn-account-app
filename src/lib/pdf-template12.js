@@ -1,4 +1,4 @@
-// pdf-template12.js - Dynamic Space Filling with GST Table
+// pdf-template12.js - Complete Code with Pagination
 import { generatePDF } from 'react-native-html-to-pdf';
 import {
   prepareTemplate8Data,
@@ -14,89 +14,9 @@ import { BASE_URL } from '../config';
 import { capitalizeWords } from './utils';
 
 // Constants
-const ITEMS_PER_PAGE = 40;
-const A4_WIDTH = 595;
-const A4_HEIGHT = 842;
-
-// IMPROVED: More accurate height measurements
-const HEIGHTS = {
-  header: 200,
-  itemRow: 18,
-  itemTableHeader: 25,
-  totalItemsLine: 20,
-  totalsSection: 140,
-  totalWordsLine: 25,
-  gstTableHeader: 30,
-  gstRow: 18,
-  gstTotalRow: 22,
-  bottomSection: 180,
-  pageFooter: 30,
-  minBuffer: 20, // Minimum safety margin
-};
-
-// Calculate space used by items section
-const getItemsSectionHeight = (itemCount, includeHeader = true) => {
-  let height = 0;
-  if (includeHeader) {
-    height += HEIGHTS.itemTableHeader;
-  }
-  height += itemCount * HEIGHTS.itemRow;
-  return height;
-};
-
-// Calculate space used by totals section (shown only on last item page)
-const getTotalsSectionHeight = () => {
-  return (
-    HEIGHTS.totalItemsLine + HEIGHTS.totalsSection + HEIGHTS.totalWordsLine
-  );
-};
-
-// Calculate how many GST rows can fit in remaining space
-const calculateGSTRowsForSpace = remainingSpace => {
-  // Need space for: header + at least 1 row + total row
-  const minRequired =
-    HEIGHTS.gstTableHeader + HEIGHTS.gstRow + HEIGHTS.gstTotalRow;
-
-  if (remainingSpace < minRequired) {
-    return 0; // Can't fit any
-  }
-
-  // Calculate available space for data rows
-  const spaceForRows =
-    remainingSpace - HEIGHTS.gstTableHeader - HEIGHTS.gstTotalRow;
-  const maxRows = Math.floor(spaceForRows / HEIGHTS.gstRow);
-
-  return Math.max(0, maxRows);
-};
-
-// Calculate available space on a page
-const getAvailableSpace = (
-  hasHeader,
-  hasItems,
-  itemCount,
-  hasTotals,
-  hasBottom,
-) => {
-  let usedSpace = HEIGHTS.pageFooter + HEIGHTS.minBuffer;
-
-  if (hasHeader) {
-    usedSpace += HEIGHTS.header;
-  }
-
-  if (hasItems) {
-    usedSpace += getItemsSectionHeight(itemCount, true);
-  }
-
-  if (hasTotals) {
-    usedSpace += getTotalsSectionHeight();
-  }
-
-  if (hasBottom) {
-    usedSpace += HEIGHTS.bottomSection;
-  }
-
-  return A4_HEIGHT - usedSpace;
-};
+const ITEMS_PER_PAGE = 40; // Adjust based on your needs
+const A4_WIDTH = 595; // A4 width in points
+const A4_HEIGHT = 842; // A4 height in points
 
 // Split items into pages
 const splitItemsIntoPages = (items, itemsPerPage = ITEMS_PER_PAGE) => {
@@ -170,82 +90,20 @@ const Template12 = ({
     bankData?.accountNo ||
     bankData?.upiDetails?.upiId;
 
-  // IMPROVED: Dynamic pagination with space filling
+  // Split items into pages
   const itemPages = splitItemsIntoPages(itemsWithGST, ITEMS_PER_PAGE);
 
-  // Plan GST table distribution
-  const gstDistribution = [];
+  // Check if GST summary needs pagination
+  const GST_ROWS_PER_PAGE = 15; // Rows that fit with header on a page
+  const gstNeedsPagination = itemsWithGST.length > GST_ROWS_PER_PAGE;
 
-  if (isGSTApplicable && itemsWithGST.length > 0) {
-    const lastPageItemCount = itemPages[itemPages.length - 1].length;
-
-    // Calculate space on last item page (includes header, items, totals)
-    const spaceOnLastItemPage = getAvailableSpace(
-      true, // has header
-      true, // has items
-      lastPageItemCount,
-      true, // has totals section
-      false, // no bottom yet
-    );
-
-    // How many GST rows can fit on last item page?
-    const gstRowsOnLastItemPage = calculateGSTRowsForSpace(spaceOnLastItemPage);
-
-    let remainingGSTRows = [...itemsWithGST];
-
-    if (gstRowsOnLastItemPage > 0) {
-      // Add GST rows to last item page
-      gstDistribution.push({
-        pageType: 'lastItemPage',
-        gstRows: remainingGSTRows.slice(0, gstRowsOnLastItemPage),
-        showTotal: gstRowsOnLastItemPage >= itemsWithGST.length,
-      });
-
-      remainingGSTRows = remainingGSTRows.slice(gstRowsOnLastItemPage);
-    }
-
-    // Distribute remaining GST rows across continuation pages
-    while (remainingGSTRows.length > 0) {
-      // Calculate space on a GST-only page (with header but no items)
-      const spaceOnGSTPage = getAvailableSpace(
-        true, // has header
-        false, // no items
-        0,
-        false, // no totals section
-        false, // no bottom yet
-      );
-
-      const gstRowsOnThisPage = calculateGSTRowsForSpace(spaceOnGSTPage);
-
-      if (gstRowsOnThisPage === 0) {
-        // Fallback: use a reasonable default if calculation fails
-        const defaultRowsPerPage = 20;
-        gstDistribution.push({
-          pageType: 'gstContinuation',
-          gstRows: remainingGSTRows.slice(0, defaultRowsPerPage),
-          showTotal: defaultRowsPerPage >= remainingGSTRows.length,
-        });
-        remainingGSTRows = remainingGSTRows.slice(defaultRowsPerPage);
-      } else {
-        const rowsToAdd = Math.min(gstRowsOnThisPage, remainingGSTRows.length);
-        gstDistribution.push({
-          pageType: 'gstContinuation',
-          gstRows: remainingGSTRows.slice(0, rowsToAdd),
-          showTotal: rowsToAdd >= remainingGSTRows.length,
-        });
-        remainingGSTRows = remainingGSTRows.slice(rowsToAdd);
-      }
-    }
-  }
-
-  // Calculate total pages
+  // Calculate total pages including GST overflow
   let totalPages = itemPages.length;
-  if (isGSTApplicable) {
-    // Count GST continuation pages (exclude lastItemPage as it's already counted)
-    const gstContinuationPages = gstDistribution.filter(
-      d => d.pageType === 'gstContinuation',
-    ).length;
-    totalPages += gstContinuationPages;
+  if (gstNeedsPagination && isGSTApplicable) {
+    const gstPages = Math.ceil(itemsWithGST.length / GST_ROWS_PER_PAGE);
+    if (gstPages > 1) {
+      totalPages += gstPages - 1; // Add extra pages for GST summary
+    }
   }
 
   // Safe phone number formatting
@@ -335,9 +193,9 @@ const Template12 = ({
       <!-- Blue Divider -->
       <div class="divider-blue"></div>
       
-      <!-- Three Column Section -->
+      <!-- Three Column Section with proper alignment -->
       <div class="three-columns">
-        <!-- Bill To -->
+        <!-- Bill To - Left aligned -->
         <div class="column-left">
           <div class="column-title">Details of Buyer | Billed to :</div>
           
@@ -388,7 +246,7 @@ const Template12 = ({
           </div>
         </div>
         
-        <!-- Ship To -->
+        <!-- Ship To - Center aligned -->
         <div class="column-center">
           <div class="column-center-details">
           <div class="column-title">Details of Consigned | Shipped to :</div>
@@ -414,7 +272,7 @@ const Template12 = ({
           
           <div class="detail-row">
             <div class="detail-label">Country:</div>
-            <div class="detail-value">${company?.Country || '-'}</div>
+            <div class="detail-value">${company?.Country}</div>
           </div>
           
           <div class="detail-row">
@@ -451,7 +309,7 @@ const Template12 = ({
           </div>
         </div>
         
-        <!-- Invoice Details -->
+        <!-- Invoice Details - Right aligned -->
         <div class="column-right">
           <div class="column-title" style="visibility: hidden;">Placeholder</div>
           
@@ -494,24 +352,30 @@ const Template12 = ({
     `;
   };
 
-  // Generate item rows
+  // Generate table rows for a specific page
   const generateItemRows = (pageItems, startIndex) => {
     return pageItems
       .map((item, index) => {
         return `
         <tr>
-          <td style="text-align: center;">${startIndex + index + 1}</td>
-          <td style="text-align: left;">${capitalizeWords(item.name)}</td>
-          <td style="text-align: center;">${item.code || '-'}</td>
-          <td style="text-align: center;">${
+          <td style="text-align: center; padding: 3px; font-size: 9px; border-right: 1px solid #bfbfbf;">${
+            startIndex + index + 1
+          }</td>
+          <td style="padding: 3px; font-size: 9px; border-right: 1px solid #bfbfbf; text-align: left;">${capitalizeWords(
+            item.name,
+          )}</td>
+          <td style="text-align: center; padding: 3px; font-size: 9px; border-right: 1px solid #bfbfbf;">${
+            item.code || '-'
+          }</td>
+          <td style="text-align: center; padding: 3px; font-size: 9px; border-right: 1px solid #bfbfbf;">${
             item.itemType === 'service'
               ? '-'
               : formatQuantity(item.quantity || 0, item.unit)
           }</td>
-          <td style="text-align: center;">${formatCurrency(
+          <td style="text-align: center; padding: 3px; font-size: 9px; border-right: 1px solid #bfbfbf;">${formatCurrency(
             item.pricePerUnit || 0,
           )}</td>
-          <td style="text-align: center;">${formatCurrency(
+          <td style="text-align: center; padding: 3px; font-size: 9px;">${formatCurrency(
             item.taxableValue,
           )}</td>
         </tr>
@@ -520,38 +384,72 @@ const Template12 = ({
       .join('');
   };
 
-  // Generate GST summary table rows
-  const generateGSTSummaryRows = gstItems => {
-    return gstItems
-      .map(item => {
+  // Generate GST summary table rows with pagination support
+  const generateGSTSummaryRows = (
+    startIdx = 0,
+    endIdx = itemsWithGST.length,
+  ) => {
+    return itemsWithGST
+      .slice(startIdx, endIdx)
+      .map((item, index) => {
         if (showIGST) {
           return `
           <tr>
-            <td>${item.code || '-'}</td>
-            <td>${formatCurrency(item.taxableValue)}</td>
-            <td>${item.gstRate.toFixed(2)}</td>
-            <td>${formatCurrency(item.igst)}</td>
-            <td>${formatCurrency(item.total)}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${
+              item.code || '-'
+            }</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.taxableValue,
+            )}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${item.gstRate.toFixed(
+              2,
+            )}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.igst,
+            )}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.total,
+            )}</td>
           </tr>
         `;
         } else if (showCGSTSGST) {
           return `
           <tr>
-            <td>${item.code || '-'}</td>
-            <td>${formatCurrency(item.taxableValue)}</td>
-            <td>${(item.gstRate / 2).toFixed(2)}</td>
-            <td>${formatCurrency(item.cgst)}</td>
-            <td>${(item.gstRate / 2).toFixed(2)}</td>
-            <td>${formatCurrency(item.sgst)}</td>
-            <td>${formatCurrency(item.total)}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${
+              item.code || '-'
+            }</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.taxableValue,
+            )}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${(
+              item.gstRate / 2
+            ).toFixed(2)}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.cgst,
+            )}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${(
+              item.gstRate / 2
+            ).toFixed(2)}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.sgst,
+            )}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.total,
+            )}</td>
           </tr>
         `;
         } else {
           return `
           <tr>
-            <td>${item.code || '-'}</td>
-            <td>${formatCurrency(item.taxableValue)}</td>
-            <td>${formatCurrency(item.total)}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${
+              item.code || '-'
+            }</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.taxableValue,
+            )}</td>
+            <td style="text-align: center; padding: 5px; font-size: 10px; border-bottom: 1px solid #bfbfbf;">${formatCurrency(
+              item.total,
+            )}</td>
           </tr>
         `;
         }
@@ -588,313 +486,508 @@ const Template12 = ({
     }
   };
 
-  // Generate GST total row
+  // Generate GST continuation page
+  const generateGSTContinuationPage = (
+    startIdx,
+    endIdx,
+    pageIndex,
+    isLastGSTPage,
+  ) => {
+    return `
+      <div class="page">
+        ${generateHeaderHTML()}
+        
+        <!-- GST Summary Table Continuation -->
+       
+        
+        <table class="gst-summary-table">
+          <thead>
+            <tr>
+              ${generateGSTTableHeader()}
+            </tr>
+          </thead>
+          <tbody>
+            ${generateGSTSummaryRows(startIdx, endIdx)}
+            ${isLastGSTPage ? generateGSTTotalRow() : ''}
+          </tbody>
+        </table>
+        
+        ${
+          isLastGSTPage
+            ? `
+        <!-- Bank Details, QR Code, and Signature -->
+        <div class="bottom-section">
+          <div class="bank-details-column">
+            ${
+              !shouldHideBankDetails && isBankDetailAvailable
+                ? `
+              <div class="bank-section">
+                <div class="bold">Bank Details:</div>
+                ${
+                  bankData.bankName
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">Name:</div>
+                    <div class="bank-value">${capitalizeWords(
+                      bankData.bankName,
+                    )}</div>
+                  </div>
+                `
+                    : ''
+                }
+                ${
+                  bankData.branchAddress
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">Branch:</div>
+                    <div class="bank-value">${capitalizeWords(
+                      bankData.branchAddress,
+                    )}</div>
+                  </div>
+                `
+                    : ''
+                }
+                ${
+                  bankData.ifscCode
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">IFSC:</div>
+                    <div class="bank-value">${bankData.ifscCode}</div>
+                  </div>
+                `
+                    : ''
+                }
+                ${
+                  bankData.accountNo
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">Acc. No:</div>
+                    <div class="bank-value">${bankData.accountNo}</div>
+                  </div>
+                `
+                    : ''
+                }
+                ${
+                  bankData.upiDetails?.upiId
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">UPI ID:</div>
+                    <div class="bank-value">${bankData.upiDetails.upiId}</div>
+                  </div>
+                `
+                    : ''
+                }
+                ${
+                  bankData.upiDetails?.upiName
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">UPI Name:</div>
+                    <div class="bank-value">${bankData.upiDetails.upiName}</div>
+                  </div>
+                `
+                    : ''
+                }
+                ${
+                  bankData.upiDetails?.upiMobile
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">UPI Mobile:</div>
+                    <div class="bank-value">${bankData.upiDetails.upiMobile}</div>
+                  </div>
+                `
+                    : ''
+                }
+              </div>
+            `
+                : ''
+            }
+          </div>
+          
+          ${
+            bankData?.qrCode
+              ? `
+            <div class="qr-column">
+              <div class="bold">QR Code</div>
+              <img src="${BASE_URL}${bankData.qrCode}" class="qr-image" />
+            </div>
+          `
+              : '<div class="qr-column"></div>'
+          }
+          
+          <div class="signature-column">
+            <div class="bold">For ${capitalizeWords(
+              company?.businessName || 'Company',
+            )}</div>
+            <div class="signature-line"></div>
+            <div class="Authorised">Authorised Signatory</div>
+          </div>
+        </div>
+        
+        ${
+          transaction?.notes
+            ? `
+          <div class="notes-section">
+            ${transaction.notes.replace(/\n/g, '<br>')}
+          </div>
+        `
+            : ''
+        }
+        `
+            : ''
+        }
+        
+        <div class="page-number-container">
+          Page ${pageIndex + 1} of ${totalPages}
+        </div>
+      </div>
+    `;
+  };
   const generateGSTTotalRow = () => {
     if (showIGST) {
       return `
-      <tr class="gst-total-row">
-        <td style="font-weight: bold;">Total</td>
-        <td style="font-weight: bold;">${formatCurrency(totalTaxable)}</td>
-        <td style="font-weight: bold;">-</td>
-        <td style="font-weight: bold;">${formatCurrency(totalIGST)}</td>
-        <td style="font-weight: bold;">${formatCurrency(totalAmount)}</td>
+      <tr>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">Total</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">${formatCurrency(
+          totalTaxable,
+        )}</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">-</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">${formatCurrency(
+          totalIGST,
+        )}</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; font-weight: bold;">${formatCurrency(
+          totalAmount,
+        )}</td>
       </tr>
     `;
     } else if (showCGSTSGST) {
       return `
-      <tr class="gst-total-row">
-        <td style="font-weight: bold;">Total</td>
-        <td style="font-weight: bold;">${formatCurrency(totalTaxable)}</td>
-        <td style="font-weight: bold;">-</td>
-        <td style="font-weight: bold;">${formatCurrency(totalCGST)}</td>
-        <td style="font-weight: bold;">-</td>
-        <td style="font-weight: bold;">${formatCurrency(totalSGST)}</td>
-        <td style="font-weight: bold;">${formatCurrency(totalAmount)}</td>
+      <tr>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">Total</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">${formatCurrency(
+          totalTaxable,
+        )}</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">-</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">${formatCurrency(
+          totalCGST,
+        )}</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">-</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">${formatCurrency(
+          totalSGST,
+        )}</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; font-weight: bold;">${formatCurrency(
+          totalAmount,
+        )}</td>
       </tr>
     `;
     } else {
       return `
-      <tr class="gst-total-row">
-        <td style="font-weight: bold;">Total</td>
-        <td style="font-weight: bold;">${formatCurrency(totalTaxable)}</td>
-        <td style="font-weight: bold;">${formatCurrency(totalAmount)}</td>
+      <tr>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">Total</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; border-right: 1px solid #bfbfbf; font-weight: bold;">${formatCurrency(
+          totalTaxable,
+        )}</td>
+        <td style="text-align: center; padding: 5px; font-size: 10px; font-weight: bold;">${formatCurrency(
+          totalAmount,
+        )}</td>
       </tr>
     `;
     }
   };
 
-  // Generate bottom section (bank + QR + signature)
-  const generateBottomSection = () => {
+  // Generate page HTML
+  const generatePageHTML = (pageItems, pageIndex, startIndex, isLastPage) => {
     return `
-      <div class="bottom-section">
-        <div class="bank-details-column">
-          ${
-            !shouldHideBankDetails && isBankDetailAvailable
-              ? `
-            <div class="bank-section">
-              <div class="bold">Bank Details:</div>
-              ${
-                bankData.bankName
-                  ? `<div class="bank-row"><div class="bank-label">Name:</div><div class="bank-value">${capitalizeWords(
-                      bankData.bankName,
-                    )}</div></div>`
-                  : ''
-              }
-              ${
-                bankData.branchAddress
-                  ? `<div class="bank-row"><div class="bank-label">Branch:</div><div class="bank-value">${capitalizeWords(
-                      bankData.branchAddress,
-                    )}</div></div>`
-                  : ''
-              }
-              ${
-                bankData.ifscCode
-                  ? `<div class="bank-row"><div class="bank-label">IFSC:</div><div class="bank-value">${bankData.ifscCode}</div></div>`
-                  : ''
-              }
-              ${
-                bankData.accountNo
-                  ? `<div class="bank-row"><div class="bank-label">Acc. No:</div><div class="bank-value">${bankData.accountNo}</div></div>`
-                  : ''
-              }
-              ${
-                bankData.upiDetails?.upiId
-                  ? `<div class="bank-row"><div class="bank-label">UPI ID:</div><div class="bank-value">${bankData.upiDetails.upiId}</div></div>`
-                  : ''
-              }
-              ${
-                bankData.upiDetails?.upiName
-                  ? `<div class="bank-row"><div class="bank-label">UPI Name:</div><div class="bank-value">${bankData.upiDetails.upiName}</div></div>`
-                  : ''
-              }
-              ${
-                bankData.upiDetails?.upiMobile
-                  ? `<div class="bank-row"><div class="bank-label">UPI Mobile:</div><div class="bank-value">${bankData.upiDetails.upiMobile}</div></div>`
-                  : ''
-              }
-            </div>
-          `
-              : ''
-          }
-        </div>
+      <div class="page">
+        ${generateHeaderHTML()}
+        
+        <!-- Items Table -->
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Sr. No</th>
+              <th>Name of Product / Service</th>
+              <th>HSN/SAC</th>
+              <th>Qty</th>
+              <th>Rate (Rs.)</th>
+              <th>Taxable Value(Rs.)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${generateItemRows(pageItems, startIndex)}
+          </tbody>
+        </table>
         
         ${
-          bankData?.qrCode
+          isLastPage
             ? `
-          <div class="qr-column">
-            <div class="bold">QR Code</div>
-            <img src="${BASE_URL}${bankData.qrCode}" class="qr-image" />
+        <!-- Total Items/Qty -->
+        <div class="total-items">
+          <span class="bold">Total Items / Qty :</span> ${totalItems} / ${totalQty}
+        </div>
+        
+        <!-- Totals Section -->
+        <div class="totals-section">
+          <div class="totals-box">
+            <div class="total-row">
+              <div class="total-label">Taxable Amount:</div>
+              <div class="total-value">Rs. ${formatCurrency(totalTaxable)}</div>
+            </div>
+            
+            ${
+              showIGST
+                ? `
+              <div class="total-row">
+                <div class="total-label">IGST:</div>
+                <div class="total-value">Rs. ${formatCurrency(totalIGST)}</div>
+              </div>
+            `
+                : ''
+            }
+            
+            ${
+              showCGSTSGST
+                ? `
+              <div class="total-row">
+                <div class="total-label">CGST:</div>
+                <div class="total-value">Rs. ${formatCurrency(totalCGST)}</div>
+              </div>
+              <div class="total-row">
+                <div class="total-label">SGST:</div>
+                <div class="total-value">Rs. ${formatCurrency(totalSGST)}</div>
+              </div>
+            `
+                : ''
+            }
+            
+            <div class="total-row total-final">
+              <div class="total-label">
+                ${isGSTApplicable ? 'Total Amount After Tax' : 'Total Amount'}:
+              </div>
+              <div class="total-value">Rs. ${formatCurrency(totalAmount)}</div>
+            </div>
           </div>
+        </div>
+        
+        <!-- Total in Words -->
+        <div class="total-words">
+          <span class="total-words-label">Total (in words):</span> ${safeNumberToWords(
+            totalAmount,
+          )}
+        </div>
+        
+        <!-- GST Summary Table - ONLY ON LAST PAGE -->
+        ${
+          isGSTApplicable
+            ? `
+        <table class="gst-summary-table">
+          <thead>
+            <tr>
+              ${generateGSTTableHeader()}
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              gstNeedsPagination
+                ? generateGSTSummaryRows(0, 15)
+                : generateGSTSummaryRows()
+            }
+            ${!gstNeedsPagination ? generateGSTTotalRow() : ''}
+          </tbody>
+        </table>
         `
-            : '<div class="qr-column"></div>'
+            : ''
         }
         
-        <div class="signature-column">
-          <div class="bold">For ${capitalizeWords(
-            company?.businessName || 'Company',
-          )}</div>
-          <div class="signature-line"></div>
-          <div class="Authorised">Authorised Signatory</div>
+        <!-- Bank Details, QR Code, and Signature -->
+        <div class="bottom-section">
+          <!-- Bank Details -->
+          <div class="bank-details-column">
+            ${
+              !shouldHideBankDetails && isBankDetailAvailable
+                ? `
+              <div class="bank-section">
+                <div class="bold">Bank Details:</div>
+                
+                ${
+                  bankData.bankName
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">Name:</div>
+                    <div class="bank-value">${capitalizeWords(
+                      bankData.bankName,
+                    )}</div>
+                  </div>
+                `
+                    : ''
+                }
+                
+                ${
+                  bankData.branchAddress
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">Branch:</div>
+                    <div class="bank-value">${capitalizeWords(
+                      bankData.branchAddress,
+                    )}</div>
+                  </div>
+                `
+                    : ''
+                }
+                
+                ${
+                  bankData.ifscCode
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">IFSC:</div>
+                    <div class="bank-value">${bankData.ifscCode}</div>
+                  </div>
+                `
+                    : ''
+                }
+                
+                ${
+                  bankData.accountNo
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">Acc. No:</div>
+                    <div class="bank-value">${bankData.accountNo}</div>
+                  </div>
+                `
+                    : ''
+                }
+                
+                ${
+                  bankData.upiDetails?.upiId
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">UPI ID:</div>
+                    <div class="bank-value">${bankData.upiDetails.upiId}</div>
+                  </div>
+                `
+                    : ''
+                }
+                
+                ${
+                  bankData.upiDetails?.upiName
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">UPI Name:</div>
+                    <div class="bank-value">${bankData.upiDetails.upiName}</div>
+                  </div>
+                `
+                    : ''
+                }
+                
+                ${
+                  bankData.upiDetails?.upiMobile
+                    ? `
+                  <div class="bank-row">
+                    <div class="bank-label">UPI Mobile:</div>
+                    <div class="bank-value">${bankData.upiDetails.upiMobile}</div>
+                  </div>
+                `
+                    : ''
+                }
+              </div>
+            `
+                : ''
+            }
+          </div>
+          
+          <!-- QR Code -->
+          ${
+            bankData?.qrCode
+              ? `
+            <div class="qr-column">
+              <div class="bold">QR Code</div>
+              <img src="${BASE_URL}${bankData.qrCode}" class="qr-image" />
+            </div>
+          `
+              : '<div class="qr-column"></div>'
+          }
+          
+          <!-- Signature -->
+          <div class="signature-column">
+            <div class="bold">For ${capitalizeWords(
+              company?.businessName || 'Company',
+            )}</div>
+            <div class="signature-line"></div>
+            <div class="Authorised">Authorised Signatory</div>
+          </div>
+        </div>
+        
+        <!-- Notes Section -->
+        ${
+          transaction?.notes
+            ? `
+          <div class="notes-section">
+            ${renderNotesHTML(transaction.notes)}
+          </div>
+        `
+            : ''
+        }
+        `
+            : ''
+        }
+        
+        <!-- Page Number - Dynamic -->
+        <div class="page-number-container">
+          Page ${pageIndex + 1} of ${totalPages}
         </div>
       </div>
-      
-      ${
-        transaction?.notes
-          ? `
-        <div class="notes-section">
-          ${renderNotesHTML(transaction.notes)}
-        </div>
-      `
-          : ''
-      }
     `;
   };
 
-  // Generate all pages HTML
+  // Generate HTML
   const generateHTML = () => {
+    const GST_ROWS_PER_PAGE = 15;
     const allPages = [];
     let currentPageIndex = 0;
-    let gstDistIndex = 0;
 
     // Generate item pages
     let startIndex = 0;
     itemPages.forEach((pageItems, idx) => {
       const isLastItemPage = idx === itemPages.length - 1;
 
-      // Check if this page has GST rows
-      const hasGSTOnThisPage =
-        isLastItemPage &&
-        gstDistribution.length > 0 &&
-        gstDistribution[0].pageType === 'lastItemPage';
-
-      const gstData = hasGSTOnThisPage ? gstDistribution[0] : null;
-      const isVeryLastPage =
-        isLastItemPage && (!isGSTApplicable || (gstData && gstData.showTotal));
-
-      allPages.push(`
-        <div class="page">
-          ${generateHeaderHTML()}
-          
-          <!-- Items Table -->
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>Sr. No</th>
-                <th>Name of Product / Service</th>
-                <th>HSN/SAC</th>
-                <th>Qty</th>
-                <th>Rate (Rs.)</th>
-                <th>Taxable Value(Rs.)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${generateItemRows(pageItems, startIndex)}
-            </tbody>
-          </table>
-          
-          ${
-            isLastItemPage
-              ? `
-          <!-- Total Items/Qty -->
-          <div class="total-items">
-            <span class="bold">Total Items / Qty :</span> ${totalItems} / ${totalQty}
-          </div>
-          
-          <!-- Totals Section -->
-          <div class="totals-section">
-            <div class="totals-box">
-              <div class="total-row">
-                <div class="total-label">Taxable Amount:</div>
-                <div class="total-value">Rs. ${formatCurrency(
-                  totalTaxable,
-                )}</div>
-              </div>
-              
-              ${
-                showIGST
-                  ? `
-                <div class="total-row">
-                  <div class="total-label">IGST:</div>
-                  <div class="total-value">Rs. ${formatCurrency(
-                    totalIGST,
-                  )}</div>
-                </div>
-              `
-                  : ''
-              }
-              
-              ${
-                showCGSTSGST
-                  ? `
-                <div class="total-row">
-                  <div class="total-label">CGST:</div>
-                  <div class="total-value">Rs. ${formatCurrency(
-                    totalCGST,
-                  )}</div>
-                </div>
-                <div class="total-row">
-                  <div class="total-label">SGST:</div>
-                  <div class="total-value">Rs. ${formatCurrency(
-                    totalSGST,
-                  )}</div>
-                </div>
-              `
-                  : ''
-              }
-              
-              <div class="total-row total-final">
-                <div class="total-label">
-                  ${
-                    isGSTApplicable ? 'Total Amount After Tax' : 'Total Amount'
-                  }:
-                </div>
-                <div class="total-value">Rs. ${formatCurrency(
-                  totalAmount,
-                )}</div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Total in Words -->
-          <div class="total-words">
-            <span class="total-words-label">Total (in words):</span> ${safeNumberToWords(
-              totalAmount,
-            )}
-          </div>
-          `
-              : ''
-          }
-          
-          ${
-            hasGSTOnThisPage
-              ? `
-          <!-- GST Summary Table -->
-          <table class="gst-summary-table">
-            <thead>
-              <tr>
-                ${generateGSTTableHeader()}
-              </tr>
-            </thead>
-            <tbody>
-              ${generateGSTSummaryRows(gstData.gstRows)}
-              ${gstData.showTotal ? generateGSTTotalRow() : ''}
-            </tbody>
-          </table>
-          
-          `
-              : ''
-          }
-          
-          ${isVeryLastPage ? generateBottomSection() : ''}
-          
-          <div class="page-number-container">
-            Page ${currentPageIndex + 1} of ${totalPages}
-          </div>
-        </div>
-      `);
-
-      if (hasGSTOnThisPage) {
-        gstDistIndex++;
-      }
+      allPages.push(
+        generatePageHTML(
+          pageItems,
+          currentPageIndex,
+          startIndex,
+          isLastItemPage && !gstNeedsPagination,
+        ),
+      );
 
       startIndex += pageItems.length;
       currentPageIndex++;
     });
 
-    // Generate GST continuation pages
-    while (gstDistIndex < gstDistribution.length) {
-      const gstData = gstDistribution[gstDistIndex];
-      const isLastGSTPage = gstDistIndex === gstDistribution.length - 1;
+    // Generate GST continuation pages if needed
+    if (
+      gstNeedsPagination &&
+      isGSTApplicable &&
+      itemsWithGST.length > GST_ROWS_PER_PAGE
+    ) {
+      const gstStartIdx = GST_ROWS_PER_PAGE;
+      const gstRemaining = itemsWithGST.length - GST_ROWS_PER_PAGE;
+      const gstExtraPages = Math.ceil(gstRemaining / 32); // 20 rows per continuation page
 
-      allPages.push(`
-        <div class="page">
-          ${generateHeaderHTML()}
-          
-          <!-- GST Summary Table (Continued) -->
-          <table class="gst-summary-table" style="margin-top: 20px;">
-            <thead>
-              <tr>
-                ${generateGSTTableHeader()}
-              </tr>
-            </thead>
-            <tbody>
-              ${generateGSTSummaryRows(gstData.gstRows)}
-              ${gstData.showTotal ? generateGSTTotalRow() : ''}
-            </tbody>
-          </table>
-          
-          
-          
-          ${isLastGSTPage ? generateBottomSection() : ''}
-          
-          <div class="page-number-container">
-            Page ${currentPageIndex + 1} of ${totalPages}
-          </div>
-        </div>
-      `);
+      for (let i = 0; i < gstExtraPages; i++) {
+        const start = gstStartIdx + i * 32;
+        const end = Math.min(start + 32, itemsWithGST.length);
+        const isLastGSTPage = i === gstExtraPages - 1;
 
-      gstDistIndex++;
-      currentPageIndex++;
+        allPages.push(
+          generateGSTContinuationPage(
+            start,
+            end,
+            currentPageIndex,
+            isLastGSTPage,
+          ),
+        );
+
+        currentPageIndex++;
+      }
     }
 
     return `
@@ -911,15 +1004,21 @@ const Template12 = ({
           
           html, body {
             height: auto !important;
+            min-height: 100vh !important;
             width: 100%;
             overflow: visible !important;
           }
           
           body {
             font-family: Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
             color: #000;
             font-size: 12px;
             line-height: 1.2;
+            min-height: 100vh;
+            width: 100%;
+            overflow: visible;
             background: white;
           }
           
@@ -928,20 +1027,22 @@ const Template12 = ({
             position: relative;
             min-height: ${A4_HEIGHT}pt;
             width: ${A4_WIDTH}pt;
-            padding: 20pt;
+            padding: 20pt 20pt 50pt 20pt;
             margin: 0 auto 15pt auto;
+            box-sizing: border-box;
+            overflow: visible;
             border: 1px solid #ddd;
-            padding-top: 40pt;
           }
           
           .page:last-child {
             page-break-after: auto;
           }
           
-          /* Header */
+          /* Header Section - Updated with logo on left, details on right */
           .header-section {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 8px;
           }
           
@@ -963,16 +1064,20 @@ const Template12 = ({
           .company-name {
             font-size: 14px;
             font-weight: bold;
+            color: #000;
             margin-bottom: 2px;
+            line-height: 1.3;
           }
           
           .gstin {
             font-size: 9px;
             margin-bottom: 2px;
+            line-height: 1.3;
           }
           
           .company-address {
             font-size: 9px;
+            color: #000;
             line-height: 1.3;
           }
           
@@ -988,13 +1093,14 @@ const Template12 = ({
             color: #2583C6;
           }
           
+          /* Blue divider line */
           .divider-blue {
             height: 1px;
             background-color: #2583C6;
             margin: 4px 0 8px 0;
           }
           
-          /* Three columns */
+          /* Three column layout with proper alignment */
           .three-columns {
             display: flex;
             justify-content: space-between;
@@ -1011,12 +1117,11 @@ const Template12 = ({
             flex: 1;
             text-align: center;
             padding: 0 8px;
-            margin-left: 40px;
+            margin-left:40px;
           }
-          
-          .column-center-details {
+            .column-center-details{
             text-align: left;
-          }
+            }
           
           .column-right {
             flex: 1;
@@ -1027,18 +1132,29 @@ const Template12 = ({
             font-size: 10px;
             font-weight: bold;
             margin-bottom: 4px;
+            color: #000;
           }
           
-          .detail-row,
-          .detail-row-left,
-          .detail-row-right {
+          .detail-row {
             display: flex;
             margin-bottom: 2px;
             font-size: 8px;
             line-height: 1.2;
           }
           
+          .detail-row-left {
+            display: flex;
+            margin-bottom: 2px;
+            font-size: 8px;
+            line-height: 1.2;
+            text-align: left;
+          }
+          
           .detail-row-right {
+            display: flex;
+            margin-bottom: 2px;
+            font-size: 8px;
+            line-height: 1.2;
             justify-content: flex-end;
           }
           
@@ -1085,13 +1201,18 @@ const Template12 = ({
             border-right: none;
           }
           
-          /* Total items */
+          .items-table tr:last-child td {
+            border-bottom: 1px solid #bfbfbf;
+          }
+          
+          /* Total items/qty */
           .total-items {
             font-size: 9px;
             margin-bottom: 10px;
+            line-height: 1.3;
           }
           
-          /* Totals */
+          /* Totals section */
           .totals-section {
             display: flex;
             justify-content: flex-end;
@@ -1107,10 +1228,15 @@ const Template12 = ({
             justify-content: space-between;
             margin-bottom: 3px;
             font-size: 10px;
+            line-height: 1.3;
           }
           
           .total-label {
             font-weight: bold;
+          }
+          
+          .total-value {
+            font-weight: normal;
           }
           
           .total-final {
@@ -1124,13 +1250,14 @@ const Template12 = ({
           .total-words {
             font-size: 10px;
             margin-bottom: 15px;
+            line-height: 1.3;
           }
           
           .total-words-label {
             font-weight: bold;
           }
           
-          /* GST Table */
+          /* GST Summary Table */
           .gst-summary-table {
             width: 100%;
             border: 1px solid #bfbfbf;
@@ -1153,8 +1280,8 @@ const Template12 = ({
           }
           
           .gst-summary-table td {
-            padding: 5px;
-            font-size: 10px;
+            padding: 4px;
+            font-size: 9px;
             border-right: 1px solid #bfbfbf;
             border-bottom: 1px solid #bfbfbf;
             text-align: center;
@@ -1164,34 +1291,7 @@ const Template12 = ({
             border-right: none;
           }
           
-          .gst-total-row td {
-            background-color: #e8f4f8;
-            font-weight: bold;
-          }
-          
-          .gst-continued-note {
-            padding: 8px;
-            background-color: #fff3cd;
-            border: 1px dashed #856404;
-            text-align: center;
-            font-size: 10px;
-            color: #856404;
-            margin: 10px 0;
-          }
-          
-          /* Bottom section */
-          .bottom-section {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-            border-top: 1px solid #2583C6;
-            padding-top: 10px;
-          }
-          
-          .bank-details-column {
-            flex: 2;
-          }
-          
+          /* Bank details section */
           .bank-section {
             margin-bottom: 10px;
           }
@@ -1200,6 +1300,7 @@ const Template12 = ({
             display: flex;
             font-size: 9px;
             margin-bottom: 2px;
+            line-height: 1.3;
           }
           
           .bank-label {
@@ -1212,27 +1313,39 @@ const Template12 = ({
             flex: 1;
           }
           
+          /* Bank + QR + Signature row */
+          .bottom-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            border-top: 1px solid #2583C6;
+            padding-top: 10px;
+          }
+          
+          .bank-details-column {
+            flex: 2;
+          }
+          
           .qr-column {
             flex: 1;
             text-align: center;
-            margin-right: 50px;
-          }
-          
-          .qr-image {
-            width: 80px;
-            height: 80px;
-            margin-top: 5px;
+            margin-right:50px;
           }
           
           .signature-column {
             flex: 1;
             text-align: center;
-            margin-left: 80px;
-            margin-top: 20px;
+            margin-left:80px;
+            margin-top:20px;
           }
+            .Authorised{
+            text-align:center;
+            }
           
-          .Authorised {
-            text-align: center;
+          .qr-image {
+            width: 80px;
+            height: 80px;
+            margin-top: 5px;
           }
           
           .signature-line {
@@ -1242,15 +1355,17 @@ const Template12 = ({
             display: inline-block;
           }
           
-          /* Notes */
+          /* Notes section */
           .notes-section {
+            // margin-top: 8px;
+            border-top: 1px solid #2583C6;
             padding-top: 10px;
             font-size: 9px;
             line-height: 1.4;
-            padding-left: 10px;
+            padding-left:10px;
           }
           
-          /* Page number */
+          /* Page number - Dynamic */
           .page-number-container {
             position: absolute;
             bottom: 20pt;
@@ -1260,9 +1375,22 @@ const Template12 = ({
             font-weight: bold;
           }
           
+          /* Utility */
           .bold {
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom:5px;
+          }
+          
+          .text-center {
+            text-align: center;
+          }
+          
+          .text-right {
+            text-align: right;
+          }
+          
+          .text-left {
+            text-align: left;
           }
         </style>
       </head>

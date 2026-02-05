@@ -45,7 +45,6 @@ import { UserForm } from '../../components/users/UserForm';
 import { UserCard } from '../../components/users/UserCard';
 
 import { useToast } from '../../components/hooks/useToast';
-import AppLayout from '../../components/layout/AppLayout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
 import { usePermissions } from '../../contexts/permission-context';
@@ -570,49 +569,44 @@ export default function UsersPage() {
   // Loading state
   if (isLoading && companies.length === 0) {
     return (
-      <AppLayout>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.fullscreenLoader}>
-            <ActivityIndicator size="large" color="#2563eb" />
-            <Text style={styles.loadingText}>Loading Users...</Text>
-          </View>
-        </SafeAreaView>
-      </AppLayout>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.fullscreenLoader}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Loading Users...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   // No company state
   if (companies.length === 0) {
     return (
-      <AppLayout>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContainer}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={['#2563eb']}
-                tintColor="#2563eb"
-              />
-            }
-          >
-            <NoCompanyState />
-          </ScrollView>
-        </SafeAreaView>
-      </AppLayout>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#2563eb']}
+              tintColor="#2563eb"
+            />
+          }
+        >
+          <NoCompanyState />
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <AppLayout>
-      <ScrollView
-        style={styles.container}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={['#2563eb']}
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={['#2563eb']}
             tintColor="#2563eb"
           />
         }
@@ -694,7 +688,6 @@ export default function UsersPage() {
           </AlertDialog>
         </View>
       </ScrollView>
-    </AppLayout>
   );
 }
 

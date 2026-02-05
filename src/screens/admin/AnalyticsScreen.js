@@ -44,7 +44,6 @@ import CompaniesTab from '../../components/analytics/CompaniesTab';
 import UsersTab from '../../components/analytics/UsersTab';
 import ProfitAndLossTab from '../../components/analytics/ProfitAndLoss';
 import BalanceSheetTab from '../../components/analytics/BalanceSheet';
-import AppLayout from '../../components/layout/AppLayout';
 
 import { BASE_URL } from '../../config';
 
@@ -809,7 +808,7 @@ export default function AnalyticsScreen() {
   }
 
   return (
-    <AppLayout>
+    <>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       
       <FlatList
@@ -847,7 +846,7 @@ export default function AnalyticsScreen() {
         showsVerticalScrollIndicator={true}
         style={styles.container}
       />
-    </AppLayout>
+    </>
   );
 }
 

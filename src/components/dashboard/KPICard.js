@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   cardInner: {
-    padding: 12,
+    padding: 16,
     borderRadius: 12,
     backgroundColor: '#ffffff',
   },
