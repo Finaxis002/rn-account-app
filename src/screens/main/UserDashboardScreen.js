@@ -25,7 +25,7 @@ import {
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import AppLayout from '../../components/layout/AppLayout';
+
 import RecentTransactions from '../../components/dashboard/RecentTransactions';
 import ProductStock from '../../components/dashboard/ProductStock';
 import { TransactionForm } from '../../components/transactions/TransactionForm';
@@ -471,19 +471,16 @@ export default function UserDashboardScreen({ navigation, route }) {
   // --- Render Loading
   if (isLoading) {
     return (
-      <AppLayout>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0f62fe" />
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
-        </View>
-      </AppLayout>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0f62fe" />
+        <Text style={styles.loadingText}>Loading dashboard...</Text>
+      </View>
     );
   }
 
   if (companies.length === 0) {
     return (
-      <AppLayout>
-        <ScrollView
+      <ScrollView
           contentContainerStyle={styles.emptyContainer}
           refreshControl={
             <RefreshControl
@@ -500,14 +497,13 @@ export default function UserDashboardScreen({ navigation, route }) {
             You don't have access to any company yet. Please contact your admin.
           </Text>
         </ScrollView>
-      </AppLayout>
     );
   }
 
   return (
-    <AppLayout>
-      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-        <KeyboardAwareFlatList
+    <>
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+      <KeyboardAwareFlatList
           data={[]}
           renderItem={null}
           ListHeaderComponent={renderHeader}
@@ -563,7 +559,7 @@ export default function UserDashboardScreen({ navigation, route }) {
       </Modal>
 
       <Toast />
-    </AppLayout>
+    </>
   );
 }
 

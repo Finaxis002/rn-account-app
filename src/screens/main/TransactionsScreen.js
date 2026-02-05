@@ -56,7 +56,6 @@ import {
   MobileTableSkeleton,
 } from '../../components/transactions/transaction-form/table-skeleton';
 import { BASE_URL } from '../../config';
-import AppLayout from '../../components/layout/AppLayout';
 
 const { width, height } = Dimensions.get('window');
 
@@ -1702,8 +1701,7 @@ const TransactionsScreen = ({ navigation }) => {
   };
 
   return (
-    <AppLayout>
-      <View style={styles.container}>
+    <View style={styles.container}>
         {/* 1. Jab tak initial loading hai, sirf Skeleton dikhao */}
         {isLoading ? (
           <View style={styles.skeletonContainer}>
@@ -2271,7 +2269,6 @@ const TransactionsScreen = ({ navigation }) => {
           </View>
         </Modal>
       </View>
-    </AppLayout>
   );
 };
 

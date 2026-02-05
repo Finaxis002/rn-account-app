@@ -1,4 +1,4 @@
-// Template11InvoicePDF.js - Updated with Improved Dynamic Pagination
+// Template11InvoicePDF.js - Updated with Pagination
 import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import { generatePDF } from 'react-native-html-to-pdf';
 import RNFS from 'react-native-fs';
@@ -17,16 +17,9 @@ import { capitalizeWords } from './utils';
 import { BASE_URL } from '../config';
 
 // Constants
+const ITEMS_PER_PAGE = 28; // Adjust based on layout
 const A4_WIDTH = 595; // A4 width in points
 const A4_HEIGHT = 842; // A4 height in points
-
-// Estimated heights in points
-const ESTIMATED_HEIGHTS = {
-  HEADER: 180, // Header height including company info and address blocks
-  FOOTER: 180, // Footer height including bank details, notes, signature
-  TABLE_ROW: 20, // Height of one table row
-  TABLE_HEADER: 25, // Height of table header
-};
 
 const COLOR = {
   PRIMARY: '#2583C6',
@@ -39,7 +32,7 @@ const COLOR = {
   LIGHT_GRAY: 'rgba(3, 113, 193, 0.2)',
 };
 
-// Helper functions (same as before)
+// Helper functions
 const detectGSTIN = x => {
   if (!x) return null;
   const gstin =
@@ -66,7 +59,24 @@ const money = n =>
 const rupeesInWords = n =>
   `${numberToWords(Math.floor(Number(n) || 0)).toUpperCase()} RUPEES ONLY`;
 
-const renderNotesHTML = notes => {
+const handleUndefined = (value, fallback = '-') => {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value === 'string' && value.trim() === '') return fallback;
+  if (value === 'N/A') return fallback;
+  return value.toString();
+};
+
+const getBankDetailsFallback = () => ({
+  name: 'Bank Details Not Available',
+  branch: 'N/A',
+  accNumber: 'N/A',
+  ifsc: 'N/A',
+  upiId: 'N/A',
+  contactNumber: 'N/A',
+  city: 'N/A',
+});
+
+ const renderNotesHTML = notes => {
   if (!notes) return '';
   try {
     return notes
@@ -84,6 +94,7 @@ const renderNotesHTML = notes => {
   }
 };
 
+
 const getImageBase64 = async imageUrl => {
   if (!imageUrl) return null;
   try {
@@ -98,77 +109,13 @@ const getImageBase64 = async imageUrl => {
   }
 };
 
-// IMPROVED: Split items based on available space
-const splitItemsByPageHeight = (items, estimatedFooterHeight = ESTIMATED_HEIGHTS.FOOTER) => {
+// Split items into pages
+const splitItemsIntoPages = (items, itemsPerPage = ITEMS_PER_PAGE) => {
   const pages = [];
-  const headerHeight = ESTIMATED_HEIGHTS.HEADER;
-  const tableHeaderHeight = ESTIMATED_HEIGHTS.TABLE_HEADER;
-  const rowHeight = ESTIMATED_HEIGHTS.TABLE_ROW;
-  
-  // Available content height per page (excluding margins)
-  const pageContentHeight = A4_HEIGHT - 45; // 15pt top padding + 30pt bottom padding
-  
-  let currentPageItems = [];
-  let currentHeight = headerHeight + tableHeaderHeight;
-  let currentPageIndex = 0;
-  
-  items.forEach((item, index) => {
-    const isLastItem = index === items.length - 1;
-    
-    // Calculate potential height: header + table header + items so far + current item
-    let potentialHeight = currentHeight + rowHeight;
-    
-    // Only add footer height if this is the last item on what would be the last page
-    if (isLastItem) {
-      // Check if this would be the last page
-      const wouldBeLastPage = pages.length === 0 && currentPageItems.length === 0;
-      if (wouldBeLastPage) {
-        potentialHeight += estimatedFooterHeight;
-      }
-    }
-    
-    if (potentialHeight > pageContentHeight) {
-      // Start new page with current item
-      if (currentPageItems.length > 0) {
-        pages.push([...currentPageItems]);
-      }
-      currentPageItems = [item];
-      currentHeight = headerHeight + tableHeaderHeight + rowHeight;
-      currentPageIndex++;
-    } else {
-      // Add to current page
-      currentPageItems.push(item);
-      currentHeight += rowHeight;
-    }
-  });
-  
-  // Add the last page if it has items
-  if (currentPageItems.length > 0) {
-    pages.push(currentPageItems);
+  for (let i = 0; i < items.length; i += itemsPerPage) {
+    pages.push(items.slice(i, i + itemsPerPage));
   }
-  
   return pages;
-};
-
-// Alternative: Calculate max items per page based on remaining space
-const calculateMaxItemsPerPage = (estimatedFooterHeight = ESTIMATED_HEIGHTS.FOOTER) => {
-  const headerHeight = ESTIMATED_HEIGHTS.HEADER;
-  const tableHeaderHeight = ESTIMATED_HEIGHTS.TABLE_HEADER;
-  const rowHeight = ESTIMATED_HEIGHTS.TABLE_ROW;
-  const pageContentHeight = A4_HEIGHT - 45;
-  
-  // For intermediate pages (no footer)
-  const spaceForItems = pageContentHeight - headerHeight - tableHeaderHeight;
-  const maxItemsIntermediate = Math.floor(spaceForItems / rowHeight);
-  
-  // For last page (with footer)
-  const spaceForItemsWithFooter = pageContentHeight - headerHeight - tableHeaderHeight - estimatedFooterHeight;
-  const maxItemsLastPage = Math.floor(spaceForItemsWithFooter / rowHeight);
-  
-  return {
-    maxItemsIntermediate,
-    maxItemsLastPage
-  };
 };
 
 export const generatePdfForTemplate11 = async (
@@ -180,8 +127,6 @@ export const generatePdfForTemplate11 = async (
   opts,
   bank,
 ) => {
-  // ... (keep all setup code the same until after calcRows calculation)
-  
   const shouldHideBankDetails = transaction.type === 'proforma';
 
   const bankData = bank || transaction?.bank || {};
@@ -193,6 +138,8 @@ export const generatePdfForTemplate11 = async (
     bankData?.branchAddress ||
     bankData?.accountNo ||
     bankData?.upiDetails?.upiId;
+
+
 
   const {
     totalTaxable,
@@ -320,50 +267,24 @@ export const generatePdfForTemplate11 = async (
     ? await getImageBase64(invoiceData.company.stampDataUrl)
     : null;
 
-  // Calculate estimated footer height based on content
-  let estimatedFooterHeight = ESTIMATED_HEIGHTS.FOOTER;
-  if (invoiceData.notes && invoiceData.notes.length > 200) {
-    estimatedFooterHeight += 50; // Extra space for long notes
-  }
-  if (!shouldHideBankDetails && isBankDetailAvailable) {
-    estimatedFooterHeight += 30; // Extra space for bank details
+  // Split items into pages
+  const itemPages = splitItemsIntoPages(calcRows, ITEMS_PER_PAGE);
+  
+  // Calculate actual total pages (items pages + potential overflow page)
+  let totalPages = itemPages.length;
+  
+  // Check if footer content will fit on last page, if not add extra page
+  const hasLargeFooter = 
+    (!shouldHideBankDetails) || 
+    (invoiceData.notes && invoiceData.notes.length > 200);
+  
+  // If last page has many items AND large footer, we need an extra page
+  const lastPageItemCount = itemPages[itemPages.length - 1]?.length || 0;
+  if (lastPageItemCount > 15 && hasLargeFooter) {
+    totalPages += 1;
   }
 
-  // NEW IMPROVED APPROACH: Calculate exact number of items that can fit
-  const { maxItemsIntermediate, maxItemsLastPage } = calculateMaxItemsPerPage(estimatedFooterHeight);
-  
-  // Split items intelligently
-  const itemPages = [];
-  let remainingItems = [...calcRows];
-  let pageIndex = 0;
-  
-  while (remainingItems.length > 0) {
-    const isLastPage = remainingItems.length <= maxItemsLastPage;
-    const maxItemsThisPage = isLastPage ? maxItemsLastPage : maxItemsIntermediate;
-    
-    const itemsForThisPage = remainingItems.slice(0, maxItemsThisPage);
-    itemPages.push(itemsForThisPage);
-    
-    remainingItems = remainingItems.slice(maxItemsThisPage);
-    pageIndex++;
-    
-    // If we have items left but they won't fit on a last page with footer,
-    // we need to create an intermediate page first
-    if (remainingItems.length > 0 && remainingItems.length <= maxItemsLastPage) {
-      // Check if we should move some items from previous page to make room
-      const totalItems = calcRows.length;
-      const itemsSoFar = itemPages.flat().length;
-      
-      if (itemsSoFar < totalItems) {
-        // We still have items, but they need to fit on a page with footer
-        // Let the algorithm continue to create another page
-      }
-    }
-  }
-  
-  const totalPages = itemPages.length;
-
-  // Generate header HTML (same as before)
+  // Generate header HTML (reusable)
   const generateHeaderHTML = () => {
     return `
       <div class="page-header">
@@ -443,7 +364,12 @@ export const generatePdfForTemplate11 = async (
           </div>
           
           <div class="info-col">
-            <div  style="height: 10%; padding: 10.5px 6px; font-weight: bold; font-size: 9pt; border-bottom: 1px solid ${COLOR.BORDER};"></div>
+            <div  style="height: 10%;
+                //  background: ${COLOR.LIGHT_GRAY};
+      padding: 10.5px 6px;
+      font-weight: bold;
+      font-size: 9pt;
+      border-bottom: 1px solid ${COLOR.BORDER};"></div>
             <div class="col-content">
               <div class="meta-row"><span class="label">Invoice No:</span> <span>${
                 invoiceData.invoiceNumber
@@ -478,7 +404,7 @@ export const generatePdfForTemplate11 = async (
     `;
   };
 
-  // Generate table headers (same as before)
+  // Generate table headers
   const generateTableHeaders = () => {
     if (shouldShowIGSTColumns) {
       return `<tr style="background:${COLOR.BG}">
@@ -518,17 +444,15 @@ export const generatePdfForTemplate11 = async (
     </tr>`;
   };
 
-  // Generate table rows (same as before)
-  const generateTableRows = (pageRows, startingSerial = 1) =>
+  // Generate table rows for a specific page
+  const generateTableRows = (pageRows) =>
     pageRows
-      .map((r, i) => {
+      .map(r => {
         const qtyDisplay =
           typeof r.qty === 'string' ? r.qty : formatQuantity(r.qty, r.unit);
-        const srNo = startingSerial + i;
-        
         if (shouldShowIGSTColumns) {
           return `<tr>
-            <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${srNo}</td>
+            <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${r.sr}</td>
             <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:left;font-size:8pt;">${r.desc}</td>
             <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${r.hsn}</td>
             <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${qtyDisplay}</td>
@@ -541,7 +465,7 @@ export const generatePdfForTemplate11 = async (
         } else if (shouldShowCGSTSGSTColumns) {
           const halfPct = ((r.gstPct || 0) / 2).toFixed(2);
           return `<tr>
-            <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${srNo}</td>
+            <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${r.sr}</td>
             <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:left;font-size:8pt;">${r.desc}</td>
             <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${r.hsn}</td>
             <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${qtyDisplay}</td>
@@ -555,7 +479,7 @@ export const generatePdfForTemplate11 = async (
           </tr>`;
         }
         return `<tr>
-          <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${srNo}</td>
+          <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${r.sr}</td>
           <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:left;font-size:8pt;">${r.desc}</td>
           <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${r.hsn}</td>
           <td style="border:1px solid ${COLOR.BORDER};padding:2px 3px;text-align:center;font-size:8pt;">${qtyDisplay}</td>
@@ -566,7 +490,7 @@ export const generatePdfForTemplate11 = async (
       })
       .join('');
 
-  // Generate table footer (same as before)
+  // Generate table footer (only on last page)
   const generateTableFooter = () => {
     if (shouldShowIGSTColumns) {
       return `<tr style="font-weight:bold;background:#f8f9fa;">
@@ -594,7 +518,7 @@ export const generatePdfForTemplate11 = async (
     </tr>`;
   };
 
-  // Tax summary (same as before)
+  // Tax summary
   const taxSummaryRows = shouldShowIGSTColumns
     ? `<tr><td style="padding:3px 0;">Taxable Amount</td><td style="text-align:right;padding:3px 0;">Rs ${money(totalTaxableValue)}</td></tr>
        <tr><td style="padding:3px 0;">Add: IGST</td><td style="text-align:right;padding:3px 0;">Rs ${money(sumIGST)}</td></tr>
@@ -607,8 +531,8 @@ export const generatePdfForTemplate11 = async (
     : `<tr><td style="padding:3px 0;">Taxable Amount</td><td style="text-align:right;padding:3px 0;">Rs ${money(totalTaxableValue)}</td></tr>
        <tr><td style="padding:3px 0;font-weight:bold;">Total Tax</td><td style="text-align:right;padding:3px 0;font-weight:bold;">Rs ${money(0)}</td></tr>`;
 
-  // Generate page HTML with improved logic
-  const generatePageHTML = (pageRows, pageIndex, isLastPage, startingSerial = 1) => {
+  // Generate page HTML
+  const generatePageHTML = (pageRows, pageIndex, isLastPage) => {
     return `
       <div class="page">
         ${generateHeaderHTML()}
@@ -616,7 +540,7 @@ export const generatePdfForTemplate11 = async (
         <!-- Items Table -->
         <table class="items">
           <thead>${generateTableHeaders()}</thead>
-          <tbody>${generateTableRows(pageRows, startingSerial)}</tbody>
+          <tbody>${generateTableRows(pageRows)}</tbody>
           ${isLastPage ? `<tfoot>${generateTableFooter()}</tfoot>` : ''}
         </table>
         
@@ -689,6 +613,7 @@ export const generatePdfForTemplate11 = async (
               invoiceData.notes
                 ? `<div class="section-header">Terms & Conditions</div>
                    <div class="section-content terms-section">
+                     
                      ${renderNotesHTML(invoiceData.notes)}
                    </div>`
                 : ''
@@ -730,6 +655,8 @@ export const generatePdfForTemplate11 = async (
             </div>
           </div>
         </div>
+        
+      
         `
             : ''
         }
@@ -740,25 +667,14 @@ export const generatePdfForTemplate11 = async (
     `;
   };
 
-  // Build all pages with correct serial numbers
+  // Build all pages
   const allPagesHTML = itemPages
-    .map((pageRows, pageIndex) => {
-      // Calculate starting serial number for this page
-      let startingSerial = 1;
-      for (let i = 0; i < pageIndex; i++) {
-        startingSerial += itemPages[i].length;
-      }
-      
-      return generatePageHTML(
-        pageRows, 
-        pageIndex, 
-        pageIndex === totalPages - 1,
-        startingSerial
-      );
-    })
+    .map((pageRows, pageIndex) =>
+      generatePageHTML(pageRows, pageIndex, pageIndex === totalPages - 1)
+    )
     .join('');
 
-  // Complete HTML (same as before)
+  // Complete HTML
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -846,6 +762,7 @@ export const generatePdfForTemplate11 = async (
       margin-top: 4px;
       padding: 4px 6px;
       border: 1px solid ${COLOR.BORDER};
+      
       margin-bottom: 8px;
     }
     
@@ -869,6 +786,7 @@ export const generatePdfForTemplate11 = async (
     }
     
     .col-header {
+      // background: ${COLOR.LIGHT_GRAY};
       padding: 3px 6px;
       font-weight: bold;
       font-size: 9pt;
@@ -918,6 +836,7 @@ export const generatePdfForTemplate11 = async (
     }
     
     table.items th {
+      // background: #e9ecef;
       font-weight: bold;
       font-size: 8pt;
     }

@@ -709,11 +709,11 @@ export function VendorExpenseList({
             />
             
             <StatCard
-              title={stats.netBalance < 0 ? 'Net Advance' : 'Net Payable'}
+              title={stats.netBalance > 0 ? 'Net Advance' : 'Net Payable'}
               value={formatCurrency(Math.abs(stats.netBalance))}
-              subtitle={stats.netBalance < 0 ? 'Total advance with vendors' : 'You owe to vendors'}
-              icon={stats.netBalance < 0 ? TrendingDown : TrendingUp}
-              textColor={stats.netBalance < 0 ? '#10B981' : '#EF4444'}
+              subtitle={stats.netBalance > 0 ? 'Total advance with vendors' : 'You owe to vendors'}
+              icon={stats.netBalance > 0 ? TrendingDown : TrendingUp}
+              textColor={stats.netBalance > 0 ? '#10B981' : '#EF4444'}
               loading={loadingTotals}
             />
             

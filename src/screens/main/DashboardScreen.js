@@ -45,7 +45,6 @@ const UpdateWalkthrough = React.lazy(() =>
   import('../../components/notifications/UpdateWalkthrough'),
 );
 import { BASE_URL } from '../../config';
-import AppLayout from '../../components/layout/AppLayout';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const CACHE_KEY = 'company_dashboard_data';
@@ -450,8 +449,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <AppLayout>
-      {/* Animated Header */}
+    <>
       <Animated.View
         style={[
           styles.header,
@@ -462,6 +460,7 @@ export default function DashboardPage() {
           },
         ]}
       >
+        {/* Animated Header */}
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <Text
@@ -662,7 +661,7 @@ export default function DashboardPage() {
           </ScrollView>
         </View>
       </Modal>
-    </AppLayout>
+    </>
   );
 }
 

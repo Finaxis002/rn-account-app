@@ -92,8 +92,8 @@ const AnimatedMenuButton = ({ icon, title, isActive, onPress }) => {
   );
 };
 
-export default function UserSidebar() {
-  const navigation = useNavigation();
+export default function UserSidebar(props) {
+  const navigation = props.navigation; // Use props.navigation instead of useNavigation
   const route = useRoute();
   const [currentUser, setCurrentUser] = useState(null);
   const {
@@ -139,7 +139,18 @@ export default function UserSidebar() {
     });
   };
 
-  const isActive = screenName => route.name === screenName;
+  // Get active screen from tab navigator state passed in props
+  const getActiveScreen = () => {
+    if (props.state && props.state.routes) {
+      return props.state.routes[props.state.index]?.name;
+    }
+    return null;
+  };
+
+  const activeScreen = getActiveScreen();
+
+  // Check if screen is active
+  const isActive = screenName => activeScreen === screenName;
 
   // Enhanced Menu Button for Desktop - keeping original functionality
   const MenuButton = ({
