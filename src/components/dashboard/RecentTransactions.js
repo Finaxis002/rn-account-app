@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   cardHeader: {
-    padding: 24,
+    padding: 14,
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
@@ -614,9 +614,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#64748b',
-    marginTop: 4,
+    // marginTop: 4,
   },
   scrollArea: {
     flex: 1,
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   mobileContainer: {
-    padding: 16,
+    padding: 10,
   },
   mobileCard: {
     backgroundColor: '#ffffff',
@@ -753,13 +753,13 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   mobileCardContent: {
-    padding: 16,
+    padding: 10,
   },
   mobileHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    // marginBottom: 12,
   },
   mobilePartyInfo: {
     flex: 1,

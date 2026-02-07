@@ -218,7 +218,7 @@ export const TradingAccountSection = ({ profitLossData }) => {
       </View>
       
       {/* Balance Status */}
-      <View style={[
+      {/* <View style={[
         styles.balanceContainer,
         Math.abs(lhsTotal - rhsTotal) < 0.01 ? styles.balanced : styles.unbalanced
       ]}>
@@ -227,7 +227,7 @@ export const TradingAccountSection = ({ profitLossData }) => {
             ? "✓ Balanced" 
             : `Unbalanced: ${formatCurrency(Math.abs(lhsTotal - rhsTotal))}`}
         </Text>
-      </View>
+      </View> */}
     </View>
   );
 };
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
     color: "#111827",
   },
   totalAmount: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#111827",
   },

@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     maxWidth: 640,
     width: '100%',
-    maxHeight: '100%',
+    maxHeight: '90%',
     // minHeight: '90%',
     position: 'relative',
   },

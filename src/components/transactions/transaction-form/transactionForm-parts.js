@@ -1647,9 +1647,9 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#d1d5db',
-    padding: 12,
+    padding: 8,
     borderRadius: 6,
-    fontSize: 14,
+    fontSize: 12,
     backgroundColor: 'white',
     color: '#111827',
   },
@@ -1680,7 +1680,7 @@ const styles = StyleSheet.create({
   dateInput: {
     borderWidth: 1,
     borderColor: '#d1d5db',
-    padding: 12,
+    padding: 8,
     borderRadius: 6,
     backgroundColor: 'white',
     flexDirection: 'row',
