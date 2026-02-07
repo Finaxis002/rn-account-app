@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#007AFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     // paddingVertical: 12,
     borderRadius: 8,
     gap: 8,

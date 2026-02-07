@@ -888,7 +888,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
     letterSpacing: -0.5,
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    // marginBottom: 12,
   },
   headerIconContainer: {
     flexDirection: 'row',
@@ -956,14 +956,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mainTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
     color: '#0f172a',
     letterSpacing: -0.3,
     marginBottom: 2,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#64748b',
     lineHeight: 18,
   },
@@ -990,7 +990,7 @@ const styles = StyleSheet.create({
   },
   listItem: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     backgroundColor: '#ffffff',
   },
   itemContent: {
@@ -1032,10 +1032,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#0f172a',
-    marginBottom: 6,
+    marginBottom: 3,
     letterSpacing: -0.2,
   },
   itemBalanceInfo: {
@@ -1053,7 +1053,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    // paddingVertical: 4,
     borderRadius: 10,
     borderWidth: 1.5,
   },
@@ -1090,8 +1090,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   viewButton: {
-    width: 32,
-    height: 32,
+    width: 25,
+    height: 25,
     borderRadius: 10,
     backgroundColor: '#eff6ff',
     alignItems: 'center',

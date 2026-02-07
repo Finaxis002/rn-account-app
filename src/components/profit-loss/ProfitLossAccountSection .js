@@ -97,17 +97,17 @@ export const ProfitLossAccountSection = ({
           </Text>
         </View>
 
-        <View style={[styles.totalCard, styles.netTotalCard]}>
-          <Text style={styles.totalLabel}>Net Balance</Text>
-          <Text
-            style={[
-              styles.totalValue,
-              netBalance >= 0 ? styles.netPositive : styles.netNegative,
-            ]}
-          >
-            {formatCurrency(netBalance)}
-          </Text>
-        </View>
+          {/* <View style={[styles.totalCard, styles.netTotalCard]}>
+            <Text style={styles.totalLabel}>Net Balance</Text>
+            <Text
+              style={[
+                styles.totalValue,
+                netBalance >= 0 ? styles.netPositive : styles.netNegative,
+              ]}
+            >
+              {formatCurrency(netBalance)}
+            </Text>
+          </View> */}
       </View>
     </View>
   );

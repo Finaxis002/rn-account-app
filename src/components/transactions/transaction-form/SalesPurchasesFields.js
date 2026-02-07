@@ -2558,7 +2558,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   sectionContent: {
-    marginTop: 16,
+    // marginTop: 16,
   },
   row: {
     flexDirection: 'row',
@@ -2603,7 +2603,7 @@ const styles = StyleSheet.create({
   },
   button: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2631,7 +2631,7 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   dateButton: {
-    height: 56,
+    height: 44,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
@@ -2779,13 +2779,13 @@ const styles = StyleSheet.create({
     color: '#374151',
   },
   textInput: {
-    height: 48,
+    height: 40,
     borderWidth: 1,
     borderColor: '#E6EEF5',
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     backgroundColor: 'white',
-    fontSize: 14,
+    fontSize: 12,
   },
   textArea: {
     height: 80,
@@ -2834,7 +2834,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionHeaderText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#1E40AF',
     marginLeft: 8,
@@ -2895,13 +2895,13 @@ const styles = StyleSheet.create({
   },
   productDetailsContainer: {
     backgroundColor: '#F9FAFB',
-    padding: 16,
+    padding: 10,
     borderRadius: 8,
     flexDirection: 'column',
   },
   serviceDetailsContainer: {
     backgroundColor: '#F9FAFB',
-    padding: 16,
+    padding: 10,
     borderRadius: 8,
     flexDirection: 'column',
   },
@@ -2984,7 +2984,7 @@ const styles = StyleSheet.create({
   addButtonsContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 16,
+    marginTop: 4,
   },
   addButton: {
     flex: 1,
@@ -3037,7 +3037,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     flex: 1,
   },
@@ -3054,7 +3054,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   invoiceTotalLabel: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: 'bold',
     flex: 1,
     marginRight: 10,
@@ -3079,7 +3079,7 @@ const styles = StyleSheet.create({
   invoiceTotalInput: {
     flex: 1,
     height: '100%',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'right',
     color: '#111827',

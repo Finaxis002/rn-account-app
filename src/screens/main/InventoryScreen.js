@@ -1804,7 +1804,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3b82f6',
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
     borderRadius: 8,
     gap: 8,
   },
@@ -1958,7 +1958,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   companyName: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#64748b',
     fontWeight: '500',
   },

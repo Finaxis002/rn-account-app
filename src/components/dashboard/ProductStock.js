@@ -864,19 +864,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   headerLeft: {
     flex: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1f2937',
     // marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6b7280',
     fontWeight: '400',
   },
@@ -884,7 +884,7 @@ const styles = StyleSheet.create({
   mobileHeaderButtonsContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 18,
   },
   mobileHeaderButton: {
     flex: 1,
@@ -1092,7 +1092,7 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
   },
   viewMoreButton: {
-    marginTop: 24,
+    marginTop: 15,
     borderColor: '#d1d5db',
     borderWidth: 1.5,
     borderRadius: 10,

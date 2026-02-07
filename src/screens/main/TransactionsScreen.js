@@ -2378,7 +2378,7 @@ const styles = StyleSheet.create({
   headerActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
     paddingVertical: 6,
     borderRadius: 12,
     gap: 4,
@@ -2500,11 +2500,11 @@ const styles = StyleSheet.create({
   tabButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 3,
     marginRight: 12,
     borderRadius: 14,
-    gap: 8,
+    gap: 6,
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e5e5ea',

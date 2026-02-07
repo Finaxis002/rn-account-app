@@ -140,10 +140,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    // marginBottom: 6,
   },
   title: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: '#64748b',
     textTransform: 'uppercase',
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   value: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#0f172a',
     marginBottom: 6,

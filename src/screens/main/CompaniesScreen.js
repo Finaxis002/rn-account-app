@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#666',
   },
   headerActions: {
@@ -570,8 +570,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#007AFF',
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 10,
     gap: 8,
     elevation: 4,
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
   addCompanyButtonText: {
     color: 'white',
     fontWeight: '700',
-    fontSize: 15,
+    fontSize: 14,
   },
   content: {
     flex: 1,
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   businessName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 2,
     color: '#1a1a1a',
