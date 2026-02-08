@@ -6,11 +6,13 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  PermissionsAndroid,
 } from 'react-native';
 import { Card, Button, Dialog, Portal } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { pick } from '@react-native-documents/picker';
 import RNFS from 'react-native-fs';
+import FileViewer from 'react-native-file-viewer';
 import XLSX from 'xlsx';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
@@ -39,7 +41,7 @@ const ExcelImportExport = ({
   const [failedItems, setFailedItems] = useState([]);
 
   // Download template function - Fixed for Android permissions
-  const handleDownloadTemplate = async () => {
+   const handleDownloadTemplate = async () => {
     try {
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.json_to_sheet(templateData);
@@ -72,7 +74,29 @@ const ExcelImportExport = ({
         let successMessage = '';
 
         if (Platform.OS === 'android') {
-          // Use ExternalDirectoryPath instead of ExternalStorageDirectoryPath
+          // Request permission for older Android versions
+          if (Platform.Version < 33) {
+            const granted = await PermissionsAndroid.request(
+              PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+              {
+                title: 'Storage Permission Required',
+                message:
+                  'We need permission to save templates to your Downloads folder',
+                buttonNeutral: 'Ask Later',
+                buttonNegative: 'Cancel',
+                buttonPositive: 'Allow',
+              },
+            );
+            if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+              Alert.alert(
+                'Permission Denied',
+                'Storage permission is required to download templates.',
+              );
+              return;
+            }
+          }
+
+          // Use ExternalDirectoryPath as primary app path
           filePath = `${RNFS.ExternalDirectoryPath}/${fileName}`;
           successMessage = `File saved to App Files\n\nName: ${fileName}`;
         } else {
@@ -96,7 +120,9 @@ const ExcelImportExport = ({
             for (const downloadPath of downloadPaths) {
               try {
                 await RNFS.copyFile(filePath, downloadPath);
-                await RNFS.scanFile(downloadPath);
+                try {
+                  if (typeof RNFS.scanFile === 'function') await RNFS.scanFile(downloadPath);
+                } catch (sErr) {}
                 filePath = downloadPath;
                 successMessage = `File saved to Downloads\n\nName: ${fileName}`;
                 break;
@@ -107,16 +133,27 @@ const ExcelImportExport = ({
             }
           } catch (err) {
             console.log('Could not copy to Downloads, using app storage:', err);
-            // Keep using app storage if download folder copy fails
           }
         }
 
-        // Scan the file to make it appear in file manager
-        await RNFS.scanFile(filePath);
+        // Try scanning to make it appear in file manager
+        try {
+          if (typeof RNFS.scanFile === 'function') await RNFS.scanFile(filePath);
+        } catch (scanErr) {}
 
-        // Show success Alert for mobile
+        // Show success Alert for mobile with Open option
         Alert.alert('Download Success', successMessage, [
           { text: 'OK', style: 'default' },
+          {
+            text: 'Open File',
+            onPress: () => {
+              const fileUri = Platform.OS === 'ios' ? `file://${filePath}` : filePath;
+              FileViewer.open(fileUri).catch(err => {
+                console.warn('FileViewer open failed', err);
+                Alert.alert('File Saved', `Location:\n${filePath}`);
+              });
+            },
+          },
         ]);
       }
     } catch (error) {

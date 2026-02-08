@@ -14,10 +14,12 @@ import {
   Linking,
   TouchableWithoutFeedback,
   TextInput,
+   PermissionsAndroid,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pick } from '@react-native-documents/picker';
 import RNFS from 'react-native-fs';
+import FileViewer from 'react-native-file-viewer';
 import * as XLSX from 'xlsx';
 import Toast from 'react-native-toast-message';
 import {
@@ -576,7 +578,7 @@ export function VendorSettings() {
     }
   };
 
-  const downloadTemplate = async () => {
+ const downloadTemplate = async () => {
     setIsDownloading(true);
 
     try {
@@ -704,6 +706,29 @@ export function VendorSettings() {
       // Determine Path Based On Platform
       let filePath = '';
       if (Platform.OS === 'android') {
+        // Request permission for older Android versions
+        if (Platform.Version < 33) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+            {
+              title: 'Storage Permission Required',
+              message:
+                'We need permission to save templates to your Downloads folder',
+              buttonNeutral: 'Ask Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'Allow',
+            },
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert(
+              'Permission Denied',
+              'Storage permission is required to download templates.',
+            );
+            setIsDownloading(false);
+            return;
+          }
+        }
+
         // Path to the public Downloads folder
         filePath = `${RNFS.ExternalStorageDirectoryPath}/Download/${fileName}`;
       } else {
@@ -714,7 +739,11 @@ export function VendorSettings() {
 
       // Ensure the file appears in Android file manager immediately
       if (Platform.OS === 'android') {
-        await RNFS.scanFile(filePath);
+        try {
+          await RNFS.scanFile(filePath);
+        } catch (scanErr) {
+          console.warn('scanFile failed', scanErr);
+        }
       }
 
       Alert.alert(
@@ -722,7 +751,18 @@ export function VendorSettings() {
         `File saved to: ${
           Platform.OS === 'android' ? 'Downloads Folder' : 'Documents'
         }\n\nName: ${fileName}`,
-        [{ text: 'OK' }],
+        [
+          { text: 'OK' },
+          {
+            text: 'Open File',
+            onPress: () => {
+              const fileUri = Platform.OS === 'ios' ? `file://${filePath}` : filePath;
+              FileViewer.open(fileUri).catch(() => {
+                Toast.show({ type: 'info', text1: 'File saved', text2: filePath });
+              });
+            },
+          },
+        ],
       );
 
       Toast.show({
@@ -741,7 +781,6 @@ export function VendorSettings() {
       setIsDownloading(false);
     }
   };
-
   // Render import status screen
   const renderImportStatus = () => {
     if (!importStatus) return null;

@@ -14,11 +14,13 @@ import {
   Linking,
   TouchableWithoutFeedback,
   TextInput,
+  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pick } from '@react-native-documents/picker';
 import RNFS from 'react-native-fs';
+import FileViewer from 'react-native-file-viewer';
 import * as XLSX from 'xlsx';
 import Toast from 'react-native-toast-message';
 import {
@@ -643,7 +645,7 @@ export function CustomerSettings() {
     }
   };
 
-  const downloadTemplate = async () => {
+   const downloadTemplate = async () => {
     setIsDownloading(true);
     try {
       const headers = [
@@ -695,9 +697,31 @@ export function CustomerSettings() {
 
       const fileName = `customer_template_${Date.now()}.xlsx`;
 
-      // Determine Path Based on Platform
+      // Determine Path Based on Platform and request permission on Android < 33
       let filePath = '';
       if (Platform.OS === 'android') {
+        if (Platform.Version < 33) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+            {
+              title: 'Storage Permission Required',
+              message:
+                'We need permission to save templates to your Downloads folder',
+              buttonNeutral: 'Ask Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'Allow',
+            },
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert(
+              'Permission Denied',
+              'Storage permission is required to download templates.',
+            );
+            setIsDownloading(false);
+            return;
+          }
+        }
+
         // Path to the public Downloads folder
         filePath = `${RNFS.ExternalStorageDirectoryPath}/Download/${fileName}`;
       } else {
@@ -708,7 +732,11 @@ export function CustomerSettings() {
 
       // CRITICAL STEP: Scan file so it appears in Media/File Manager immediately
       if (Platform.OS === 'android') {
-        await RNFS.scanFile(filePath);
+        try {
+          await RNFS.scanFile(filePath);
+        } catch (scanErr) {
+          console.warn('scanFile failed', scanErr);
+        }
       }
 
       Alert.alert(
@@ -716,7 +744,18 @@ export function CustomerSettings() {
         `File saved to: ${
           Platform.OS === 'android' ? 'Downloads Folder' : 'Documents'
         }\n\nName: ${fileName}`,
-        [{ text: 'OK' }],
+        [
+          { text: 'OK' },
+          {
+            text: 'Open File',
+            onPress: () => {
+              const fileUri = Platform.OS === 'ios' ? `file://${filePath}` : filePath;
+              FileViewer.open(fileUri).catch(() => {
+                Toast.show({ type: 'info', text1: 'File saved', text2: filePath });
+              });
+            },
+          },
+        ],
       );
 
       Toast.show({

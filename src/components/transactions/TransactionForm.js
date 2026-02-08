@@ -20,6 +20,7 @@ import {
   TextInput as RNTextInput,
   Keyboard,
   ActivityIndicator,
+  PermissionsAndroid,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
@@ -2915,6 +2916,7 @@ export function TransactionForm({
     }
   };
 
+ 
   const handleDownloadInvoice = async () => {
     if (!generatedInvoice) return;
 
@@ -2951,6 +2953,28 @@ export function TransactionForm({
         services,
       );
 
+      // 1) Android permission check for older OS versions
+      if (Platform.OS === 'android' && Platform.Version < 33) {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission Required',
+            message:
+              'We need permission to save invoices to your Downloads folder',
+            buttonNeutral: 'Ask Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'Allow',
+          },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert(
+            'Permission Denied',
+            'Storage permission is required to download invoices.',
+          );
+          return;
+        }
+      }
+
       const token = await AsyncStorage.getItem('token');
       const templateRes = await fetch(
         `${BASE_URL}/api/settings/default-template`,
@@ -2983,74 +3007,76 @@ export function TransactionForm({
         throw new Error('Invalid PDF data generated');
       }
 
+      // Filename with timestamp
       const invoiceNumber =
-        transactionToUse.invoiceNumber || transactionToUse.referenceNumber;
-      const fname = `Invoice-${
-        invoiceNumber ||
-        (transactionToUse._id ?? 'INV').toString().slice(-6).toUpperCase()
-      }.pdf`;
+        transactionToUse.invoiceNumber || transactionToUse.referenceNumber ||
+        (transactionToUse._id || '').toString().slice(-6);
+      const timestamp = Date.now();
+      const fname = `Invoice_${invoiceNumber || 'INV'}_${timestamp}.pdf`;
 
-      // Save to app's document directory
-      const appFilePath = `${RNFS.DocumentDirectoryPath}/${fname}`;
-      await RNFS.writeFile(appFilePath, pdfBase64, 'base64');
+      // Paths
+      const tempPath = `${RNFS.DocumentDirectoryPath}/${fname}`;
+      const downloadDir = Platform.OS === 'android'
+        ? RNFS.DownloadDirectoryPath
+        : RNFS.DocumentDirectoryPath;
+      const publicPath = `${downloadDir}/${fname}`;
 
-      const appFileExists = await RNFS.exists(appFilePath);
-      if (!appFileExists) {
-        throw new Error('Failed to save PDF to app storage');
-      }
+      // Write to temp
+      await RNFS.writeFile(tempPath, pdfBase64, 'base64');
 
-      let downloadsFilePath = '';
-      let copiedToDownloads = false;
-
-      // Try to copy to Downloads folder for easier access
+      // On Android, copy to Downloads and trigger media scan
       if (Platform.OS === 'android') {
         try {
-          downloadsFilePath = `${RNFS.DownloadDirectoryPath}/${fname}`;
-          await RNFS.copyFile(appFilePath, downloadsFilePath);
-          const downloadsFileExists = await RNFS.exists(downloadsFilePath);
-          copiedToDownloads = downloadsFileExists;
-        } catch (copyError) {
-          copiedToDownloads = false;
+          await RNFS.copyFile(tempPath, publicPath);
+          try {
+            if (typeof RNFS.scanFile === 'function') {
+              await RNFS.scanFile(publicPath);
+            }
+          } catch (scanErr) {
+            console.warn('Media scan warning:', scanErr);
+          }
+
+          Alert.alert(
+            'Download Successful ✅',
+            `Invoice saved as:\n${fname}\n\nLocation: Downloads folder`,
+            [{ text: 'OK' }],
+          );
+        } catch (copyErr) {
+          // If copy fails, fall back to temp path success
+          setSnackbar({
+            visible: true,
+            message: `Invoice saved to app storage: ${tempPath}`,
+            type: 'success',
+          });
+        }
+      } else {
+        // iOS: present share sheet for the generated PDF
+        try {
+          await Share.open({
+            url: `file://${tempPath}`,
+            type: 'application/pdf',
+            filename: fname,
+          });
+        } catch (shareErr) {
+          // ignore user cancellations
         }
       }
 
-      // Show success message with file location
-      let successMessage;
-      if (copiedToDownloads) {
-        successMessage = `Invoice ${invoiceNumber} saved to Downloads folder and app storage`;
-      } else {
-        successMessage = `Invoice ${invoiceNumber} saved to app storage. Use a file manager to access it.`;
-      }
-
-      setSnackbar({
-        visible: true,
-        message: successMessage,
-        type: 'success',
+      // Cleanup temp file if exists
+      await RNFS.unlink(tempPath).catch(() => {
+        // ignore cleanup errors
       });
 
-      // Optional: Show an alert with more details
-      Alert.alert(
-        'Invoice Saved Successfully',
-        `Invoice ${invoiceNumber} has been saved as ${fname}`,
-        [
-          { text: 'OK', style: 'default' },
-          // Only show "Open File" option if we have a reliable way to open it
-          ...(Platform.OS === 'ios'
-            ? [
-                {
-                  text: 'Open File',
-                  onPress: () => openFileWithFallback(appFilePath),
-                },
-              ]
-            : []),
-        ],
-      );
-    } catch (error) {
       setSnackbar({
         visible: true,
-        message: `Download failed: ${
-          error.message || 'Failed to download invoice'
-        }`,
+        message: 'Invoice generated and saved.',
+        type: 'success',
+      });
+    } catch (error) {
+      console.error('Download failed', error);
+      setSnackbar({
+        visible: true,
+        message: `Download failed: ${error.message || 'Failed to download invoice'}`,
         type: 'error',
       });
     }

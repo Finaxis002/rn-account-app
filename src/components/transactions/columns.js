@@ -1180,7 +1180,33 @@ const TransactionActions = ({
     }
 
     try {
-      // Attempt to generate PDF using available templates (default to template1)
+      // 1️⃣ Android Permission Check (Only for Android < 13)
+      if (Platform.OS === 'android' && Platform.Version < 33) {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission Required',
+            message: 'We need permission to save invoices to your Downloads folder',
+            buttonNeutral: 'Ask Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'Allow',
+          },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert(
+            'Permission Denied',
+            'Storage permission is required to download invoices.',
+          );
+          return;
+        }
+      }
+
+      // 2️⃣ Generate Unique Filename (Invoice No + Timestamp)
+      const invoiceNumber = transaction.invoiceNumber || transaction.referenceNumber || transaction._id.slice(-6);
+      const timestamp = Date.now();
+      const fname = `Invoice_${invoiceNumber}_${timestamp}.pdf`;
+
+      // 3️⃣ Generate PDF using template
       let pdfBlob;
       const template = 'template1';
       switch (template) {
@@ -1200,7 +1226,6 @@ const TransactionActions = ({
             serviceNameById,
           );
           break;
-        // add other templates if needed
         default:
           pdfBlob = await generatePdfForTemplate1(
             transaction,
@@ -1210,29 +1235,22 @@ const TransactionActions = ({
           );
       }
 
-      // Normalize the generator output to base64
+      // 4️⃣ Normalize PDF to Base64
       let pdfBase64;
       if (typeof pdfBlob === 'string') {
         pdfBase64 = pdfBlob;
-      } else if (
-        typeof Uint8Array !== 'undefined' &&
-        pdfBlob instanceof Uint8Array
-      ) {
+      } else if (typeof Uint8Array !== 'undefined' && pdfBlob instanceof Uint8Array) {
         pdfBase64 = Buffer.from(pdfBlob).toString('base64');
       } else if (typeof Blob !== 'undefined' && pdfBlob instanceof Blob) {
         const arrayBuffer = await new Response(pdfBlob).arrayBuffer();
         pdfBase64 = Buffer.from(arrayBuffer).toString('base64');
       } else if (pdfBlob && typeof pdfBlob === 'object' && pdfBlob.base64) {
         pdfBase64 = pdfBlob.base64;
-      } else if (
-        pdfBlob &&
-        typeof pdfBlob === 'object' &&
-        typeof pdfBlob.output === 'function'
-      ) {
+      } else if (pdfBlob && typeof pdfBlob === 'object' && typeof pdfBlob.output === 'function') {
         try {
           pdfBase64 = await pdfBlob.output('base64');
         } catch (e) {
-          // ignore and fallthrough
+          // fallback
         }
       } else {
         pdfBase64 = pdfBlob;
@@ -1242,48 +1260,58 @@ const TransactionActions = ({
         throw new Error('Invalid PDF data generated');
       }
 
-      const invoiceNumber =
-        transaction.invoiceNumber ||
-        transaction.referenceNumber ||
-        transaction._id;
-      const fname = `Invoice-${invoiceNumber || Date.now()}.pdf`;
+      // 5️⃣ Setup Paths (Temp + Public Download folder)
+      const tempPath = `${RNFS.DocumentDirectoryPath}/${fname}`;
+      const downloadDir = Platform.OS === 'android'
+        ? RNFS.DownloadDirectoryPath
+        : RNFS.DocumentDirectoryPath;
+      const publicPath = `${downloadDir}/${fname}`;
 
-      // Save to app's document directory
-      const appFilePath = `${RNFS.DocumentDirectoryPath}/${fname}`;
-      await RNFS.writeFile(appFilePath, pdfBase64, 'base64');
+      // 6️⃣ Write file to temp location first
+      await RNFS.writeFile(tempPath, pdfBase64, 'base64');
 
-      let downloadsFilePath = '';
-      let copiedToDownloads = false;
-
-      // Try to copy to Downloads folder for easier access (best-effort)
+      // 7️⃣ Copy to public Downloads folder (Android)
       if (Platform.OS === 'android') {
+        await RNFS.copyFile(tempPath, publicPath);
+
+        // ✅ CRITICAL: Trigger Media Scanner
+        // Yeh Android OS ko batata hai ki ek nayi file ayi hai
+        // Isse file Downloads app mein "Recent" list ke upar dikhegi
         try {
-          downloadsFilePath = `${RNFS.DownloadDirectoryPath}/${fname}`;
-          await RNFS.copyFile(appFilePath, downloadsFilePath);
-          copiedToDownloads = await RNFS.exists(downloadsFilePath);
-        } catch (copyErr) {
-          console.log(
-            'Could not copy to downloads, using app storage only:',
-            copyErr,
-          );
-          copiedToDownloads = false;
+          await RNFS.scanFile(publicPath);
+        } catch (scanErr) {
+          console.warn('Media scan warning:', scanErr);
+          // Don't fail if scan fails, file is still saved
         }
+
+        Alert.alert(
+          'Download Successful ✅',
+          `Invoice saved as:\n${fname}\n\nLocation: Downloads folder`,
+          [{ text: 'OK' }],
+        );
+      } else {
+        // iOS: Use share sheet for download confirmation
+        await Share.share({
+          url: `file://${tempPath}`,
+          type: 'application/pdf',
+          filename: fname,
+        });
       }
 
-      const finalPath = copiedToDownloads ? downloadsFilePath : appFilePath;
-      Alert.alert(
-        'File Downloaded',
-        'Your file has been downloaded successfully.',
-      );
+      // 8️⃣ Clean up temp file
+      await RNFS.unlink(tempPath).catch(() => {
+        console.log('Temp file cleanup skipped');
+      });
+
     } catch (error) {
-      console.error('🔴 Download failed:', error);
+      console.error('🔴 Download Error:', error);
       Alert.alert(
-        'Download failed',
-        error.message || 'Failed to download invoice',
+        'Download Failed',
+        error.message || 'Could not save invoice.',
       );
     }
   };
-
+  
   const handlePrintInvoice = async () => {
     if (!isInvoiceable) {
       Alert.alert(
