@@ -15,11 +15,13 @@ import {
   TextInput,
   FlatList,
   TouchableWithoutFeedback,
+  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { pick } from '@react-native-documents/picker';
 import RNFS from 'react-native-fs';
+import FileViewer from 'react-native-file-viewer';
 import * as XLSX from 'xlsx';
 import Toast from 'react-native-toast-message';
 import {
@@ -365,7 +367,6 @@ const ServiceSettings = () => {
       setIsImporting(false);
     }
   };
-
   const downloadTemplate = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -390,9 +391,29 @@ const ServiceSettings = () => {
 
       const fileName = 'services_import_template.xlsx';
       let path = '';
-
-      // Android aur iOS ke liye alag-alag public paths
+      // Request permission on older Android versions
       if (Platform.OS === 'android') {
+        if (Platform.Version < 33) {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+            {
+              title: 'Storage Permission Required',
+              message:
+                'We need permission to save templates to your Downloads folder',
+              buttonNeutral: 'Ask Later',
+              buttonNegative: 'Cancel',
+              buttonPositive: 'Allow',
+            },
+          );
+          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+            Alert.alert(
+              'Permission Denied',
+              'Storage permission is required to download templates.',
+            );
+            return;
+          }
+        }
+
         // ExternalStorageDirectoryPath se file public Downloads mein jayegi
         path = `${RNFS.ExternalStorageDirectoryPath}/Download/${fileName}`;
       } else {
@@ -403,16 +424,41 @@ const ServiceSettings = () => {
       await RNFS.writeFile(path, base64Data.split(',')[1], 'base64');
 
       if (Platform.OS === 'android') {
-        // System ko refresh karna taaki file turant dikhne lage
-        await RNFS.scanFile(path);
+        try {
+          // System ko refresh karna taaki file turant dikhne lage
+          await RNFS.scanFile(path);
+        } catch (scanErr) {
+          console.warn('scanFile failed', scanErr);
+        }
 
         Alert.alert(
           'Download Successful',
           `File saved to your Downloads folder as ${fileName}`,
-          [{ text: 'OK' }],
+          [
+            { text: 'OK' },
+            {
+              text: 'Open File',
+              onPress: () => {
+                const fileUri = path;
+                FileViewer.open(fileUri).catch(err => {
+                  console.warn('FileViewer open failed', err);
+                  Alert.alert('File Saved', `Location:\n${path}`);
+                });
+              },
+            },
+          ],
         );
       } else {
         Alert.alert('Download Successful', 'File saved to Documents folder.', [
+          {
+            text: 'Open File',
+            onPress: () => {
+              const fileUri = `file://${path}`;
+              FileViewer.open(fileUri).catch(() => {
+                Alert.alert('File Saved', `Location:\n${path}`);
+              });
+            },
+          },
           { text: 'OK' },
         ]);
       }

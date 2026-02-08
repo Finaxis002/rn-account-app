@@ -505,55 +505,73 @@ export default function InvoicePreview({
     if (!pdfPath) return Alert.alert('Not ready', 'PDF is not ready yet');
 
     try {
-      // --- 1. Permissions Check (Keeping existing logic for Android < 10) ---
-      if (Platform.OS === 'android') {
-        const isLegacyAndroid = Platform.Version < 29; // ... (Legacy Android permission check logic remains the same)
-        if (isLegacyAndroid) {
-          // ... (permission request logic) ...
-        } else {
+      // 1️⃣ Android Permission Check (Only for Android < 13)
+      if (Platform.OS === 'android' && Platform.Version < 33) {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: 'Storage Permission Required',
+            message: 'We need permission to save invoices to your Downloads folder',
+            buttonNeutral: 'Ask Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'Allow',
+          },
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert(
+            'Permission Denied',
+            'Storage permission is required to download invoices.',
+          );
+          return;
         }
-      } // --- 2. Define File Paths ---
+      }
 
+      // 2️⃣ Generate Unique Filename (Invoice No + Timestamp)
+      const invoiceNumber = transaction?.invoiceNumber || transaction?._id?.slice(-6) || Date.now();
+      const timestamp = Date.now();
+      const fname = `Invoice_${invoiceNumber}_${timestamp}.pdf`;
+
+      // 3️⃣ Setup Paths (Temp + Public Download folder)
       const sourcePath = pdfPath.replace(/^file:\/\//, '');
-      // **START: UNIQUE FILE NAME GENERATION LOGIC**
+      const tempPath = `${RNFS.DocumentDirectoryPath}/${fname}`;
+      const downloadDir = Platform.OS === 'android'
+        ? RNFS.DownloadDirectoryPath
+        : RNFS.DocumentDirectoryPath;
+      const publicPath = `${downloadDir}/${fname}`;
 
-      const baseFileName = `invoice_${
-        transaction?.invoiceNumber || transaction?._id || Date.now()
-      }_${selectedTemplate}`; // **ADDED TEMPLATE NAME FOR UNIQUENESS**
-      const baseTargetDir = RNFS.DownloadDirectoryPath;
-      const baseFilePath = `${baseTargetDir}/${baseFileName}.pdf`;
-      let downloadsFilePath = baseFilePath;
-      let suffix = 1; // Loop to find a non-existing file name (e.g., invoice_T1(1).pdf, invoice_T1(2).pdf)
-
-      while (await RNFS.exists(downloadsFilePath)) {
-        downloadsFilePath = `${baseTargetDir}/${baseFileName} (${suffix}).pdf`;
-        suffix++; // Safety break for extremely rare cases or testing
-        if (suffix > 50) {
-          throw new Error('Too many duplicate file attempts.');
-        }
-      } // **END: UNIQUE FILE NAME GENERATION LOGIC**
-      // LOG 2 // --- 3. Copy to Downloads Folder ---
-
+      // 4️⃣ Verify source file exists
       const sourceExists = await RNFS.exists(sourcePath);
       if (!sourceExists) {
         throw new Error('Source PDF file not found.');
       }
 
-      await RNFS.copyFile(sourcePath, downloadsFilePath);
-      const downloadsFileExists = await RNFS.exists(downloadsFilePath);
+      // 5️⃣ Copy to public Downloads folder
+      await RNFS.copyFile(sourcePath, publicPath);
 
-      if (downloadsFileExists) {
-        // Confirming existence in both locations (Internal/Source and Downloads/Target)
-        Alert.alert('Download Success', 'Your invoice has been downloaded.', [
-          { text: 'OK' },
-        ]);
-      } else {
+      // 6️⃣ Trigger Media Scanner on Android (shows file in Downloads app immediately)
+      if (Platform.OS === 'android') {
+        try {
+          await RNFS.scanFile(publicPath);
+        } catch (scanErr) {
+          console.warn('Media scan warning:', scanErr);
+          // Don't fail if scan fails, file is still saved
+        }
+
         Alert.alert(
-          'Download Warning',
-          'File could not be verified in the Downloads folder, but was attempted.',
+          'Download Successful ✅',
+          `Invoice saved as:\n${fname}\n\nLocation: Downloads folder`,
+          [{ text: 'OK' }],
         );
+      } else {
+        // iOS: Use share sheet for download confirmation
+        await Share.share({
+          url: `file://${publicPath}`,
+          type: 'application/pdf',
+          filename: fname,
+        });
       }
     } catch (e) {
+      console.error('🔴 Download Error:', e);
       Alert.alert(
         'Download Failed',
         `Could not save file to Downloads. Error: ${
