@@ -29,6 +29,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import RNFS from 'react-native-fs';
+import RNPrint from 'react-native-print';
 import Share from 'react-native-share';
 import FileViewer from 'react-native-file-viewer';
 import DropDownPicker from 'react-native-dropdown-picker';
@@ -1445,25 +1446,31 @@ export function TransactionForm({
       lineTotal: s.lineTotal ?? s.amount,
 
       sac: (() => {
-    
-    if (s.sac) {
-      if (typeof s.sac === 'object') {
-        return String(s.sac.SAC_CD ?? s.sac.sac ?? s.sac.code ?? s.sac.value ?? '');
-      }
-      return String(s.sac);
-    }
-    
-    
-    const serviceObj = s.service || s.serviceName;
-    if (serviceObj && typeof serviceObj === 'object' && serviceObj.sac) {
-      if (typeof serviceObj.sac === 'object') {
-        return String(serviceObj.sac.SAC_CD ?? serviceObj.sac.sac ?? serviceObj.sac.code ?? serviceObj.sac.value ?? '');
-      }
-      return String(serviceObj.sac);
-    }
-    
-    return '';
-  })(),
+        if (s.sac) {
+          if (typeof s.sac === 'object') {
+            return String(
+              s.sac.SAC_CD ?? s.sac.sac ?? s.sac.code ?? s.sac.value ?? '',
+            );
+          }
+          return String(s.sac);
+        }
+
+        const serviceObj = s.service || s.serviceName;
+        if (serviceObj && typeof serviceObj === 'object' && serviceObj.sac) {
+          if (typeof serviceObj.sac === 'object') {
+            return String(
+              serviceObj.sac.SAC_CD ??
+                serviceObj.sac.sac ??
+                serviceObj.sac.code ??
+                serviceObj.sac.value ??
+                '',
+            );
+          }
+          return String(serviceObj.sac);
+        }
+
+        return '';
+      })(),
     });
 
     const toUnifiedItem = i => ({
@@ -2916,7 +2923,6 @@ export function TransactionForm({
     }
   };
 
- 
   const handleDownloadInvoice = async () => {
     if (!generatedInvoice) return;
 
@@ -3009,16 +3015,18 @@ export function TransactionForm({
 
       // Filename with timestamp
       const invoiceNumber =
-        transactionToUse.invoiceNumber || transactionToUse.referenceNumber ||
+        transactionToUse.invoiceNumber ||
+        transactionToUse.referenceNumber ||
         (transactionToUse._id || '').toString().slice(-6);
       const timestamp = Date.now();
       const fname = `Invoice_${invoiceNumber || 'INV'}_${timestamp}.pdf`;
 
       // Paths
       const tempPath = `${RNFS.DocumentDirectoryPath}/${fname}`;
-      const downloadDir = Platform.OS === 'android'
-        ? RNFS.DownloadDirectoryPath
-        : RNFS.DocumentDirectoryPath;
+      const downloadDir =
+        Platform.OS === 'android'
+          ? RNFS.DownloadDirectoryPath
+          : RNFS.DocumentDirectoryPath;
       const publicPath = `${downloadDir}/${fname}`;
 
       // Write to temp
@@ -3076,7 +3084,9 @@ export function TransactionForm({
       console.error('Download failed', error);
       setSnackbar({
         visible: true,
-        message: `Download failed: ${error.message || 'Failed to download invoice'}`,
+        message: `Download failed: ${
+          error.message || 'Failed to download invoice'
+        }`,
         type: 'error',
       });
     }
@@ -3171,58 +3181,35 @@ export function TransactionForm({
 
       const invoiceNumber =
         transactionToUse.invoiceNumber || transactionToUse.referenceNumber;
-      const fname = `Invoice-${
-        invoiceNumber ||
-        (transactionToUse._id ?? 'INV').toString().slice(-6).toUpperCase()
-      }.pdf`;
+      const fname = `Invoice_${invoiceNumber || Date.now()}.pdf`;
+      const cachePath = `${RNFS.CachesDirectoryPath}/${fname}`;
 
-      // Save file
-      const appFilePath = `${RNFS.DocumentDirectoryPath}/${fname}`;
-      await RNFS.writeFile(appFilePath, pdfBase64, 'base64');
+      // Write temporary file for printing
+      await RNFS.writeFile(cachePath, pdfBase64, 'base64');
 
-      let downloadsFilePath = '';
-      let copiedToDownloads = false;
-
-      if (Platform.OS === 'android') {
-        try {
-          downloadsFilePath = `${RNFS.DownloadDirectoryPath}/${fname}`;
-          await RNFS.copyFile(appFilePath, downloadsFilePath);
-          copiedToDownloads = await RNFS.exists(downloadsFilePath);
-        } catch (copyError) {}
-      }
+      // Open native print dialog
+      await RNPrint.print({ filePath: cachePath })
+        .catch(err => {
+          setSnackbar({
+            visible: true,
+            message: `Print dialog error: ${
+              err.message || 'Could not open print dialog'
+            }`,
+            type: 'error',
+          });
+        })
+        .finally(() => {
+          // Delete temporary file after printing
+          setTimeout(() => {
+            RNFS.unlink(cachePath).catch(() => {});
+          }, 2000);
+        });
 
       setSnackbar({
         visible: true,
-        message: `Invoice ${invoiceNumber} saved and ready for printing. ${
-          copiedToDownloads
-            ? 'File is in Downloads folder.'
-            : 'Use a file manager to access the file.'
-        }`,
+        message: `Invoice ${invoiceNumber} prepared for printing`,
         type: 'success',
       });
-
-      // Show instructions for printing
-      Alert.alert(
-        'Ready for Printing',
-        `Invoice ${invoiceNumber} has been saved as ${fname}\n\nTo print:\n1. Open your device's file manager\n2. Navigate to ${
-          copiedToDownloads ? 'Downloads folder' : 'App storage'
-        }\n3. Open the PDF file\n4. Use the print option from your PDF viewer`,
-        [
-          { text: 'OK', style: 'default' },
-          {
-            text: 'Show File Location',
-            onPress: () => {
-              setSnackbar({
-                visible: true,
-                message: `File location: ${
-                  copiedToDownloads ? downloadsFilePath : appFilePath
-                }`,
-                type: 'info',
-              });
-            },
-          },
-        ],
-      );
     } catch (error) {
       setSnackbar({
         visible: true,
