@@ -675,7 +675,7 @@ export const generatePdfForTemplate11 = async (
                     bankData.qrCode
                       ? `<div style="margin-top:10px;text-align:center;">
                            <div style="font-weight:bold;font-size:9pt;margin-bottom:5px;">QR Code</div>
-                           <img src="${BASE_URL}${bankData.qrCode}" style="width:70px;height:70px;object-fit:contain;" />
+                           <img src="${BASE_URL}/${bankData.qrCode}" style="width:70px;height:70px;object-fit:contain;" />
                          </div>`
                       : ''
                   }

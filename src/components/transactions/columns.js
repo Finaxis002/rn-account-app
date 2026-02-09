@@ -1367,12 +1367,9 @@ const TransactionActions = ({
         } catch (scanErr) {
           console.warn('Media scan warning:', scanErr);
         }
-
-        Alert.alert(
-          'Download Successful ✅',
-          `Invoice saved as:\n${fname}\n\nLocation: Downloads folder`,
-          [{ text: 'OK' }],
-        );
+        Alert.alert('Download Successful ✅', `Saved as: ${fname}`, [
+          { text: 'OK' },
+        ]);
       } else {
         await Share.share({
           url: `file://${tempPath}`,
