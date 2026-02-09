@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   dropdownButtonText: {
-    fontSize: 11,
+    fontSize: 14,
     color: '#333',
     flex: 1,
   },

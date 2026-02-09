@@ -511,10 +511,12 @@ export const ReceiptPaymentFields = props => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    paddingBottom: 12,
   },
   content: {
-    padding: 16,
+    padding: 10,
   },
   fieldContainer: {
     marginBottom: 16,
@@ -531,12 +533,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
-    fontSize: 12,
+    fontSize: 14,
     backgroundColor: 'white',
     color: '#1F2937',
   },
   textArea: {
-    minHeight: 100,
+    minHeight: 90,
     paddingTop: 12,
     textAlignVertical: 'top',
   },

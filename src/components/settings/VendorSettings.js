@@ -1142,7 +1142,7 @@ export function VendorSettings() {
               />
             }
             contentContainerStyle={{
-              paddingHorizontal: 16,
+              // paddingHorizontal: 16,
               paddingBottom: 100,
             }}
             scrollEnabled={false}
@@ -1466,11 +1466,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
+    padding: 10,
     borderRadius: 10,
     flex: 1,
   },
-  mainActionText: { color: 'white', fontWeight: 'bold', fontSize: 15 },
+  mainActionText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
   secondaryActionBtn: {
     backgroundColor: 'white',
     borderHorizontal: 1,
@@ -1479,18 +1479,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
+    padding: 10,
     borderRadius: 10,
     flex: 1,
   },
-  secondaryActionText: { color: '#1e293b', fontWeight: '600', fontSize: 15 },
+  secondaryActionText: { color: '#1e293b', fontWeight: '600', fontSize: 12 },
   // Search Styles
   searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
+    marginBottom: 8,
   },
   searchInputWrapper: {
     flexDirection: 'row',

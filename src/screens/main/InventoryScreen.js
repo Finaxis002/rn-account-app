@@ -1804,7 +1804,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3b82f6',
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     borderRadius: 8,
     gap: 8,
   },
@@ -1888,7 +1888,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cardHeader: {
-    padding: 16,
+    // padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical:8,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
@@ -1902,7 +1904,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   cardBody: {
-    padding: 16,
+    // padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   cardFooter: {
     flexDirection: 'row',
