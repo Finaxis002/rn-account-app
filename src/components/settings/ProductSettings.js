@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 20,
-    paddingHorizontal: 12,
+    // paddingHorizontal: 10,
   },
   title: {
     fontSize: 20,

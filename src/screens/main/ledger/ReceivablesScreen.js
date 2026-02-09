@@ -91,7 +91,7 @@ const SummaryCard = memo(({ icon, label, value, type, note }) => {
 
 SummaryCard.displayName = 'SummaryCard';
 
-// Memoized Section Header Component
+//  Section Header Component
 const SectionHeader = memo(({ type, subtitle }) => {
   const badgeStyle = type === 'debit' ? styles.debitBadge : styles.creditBadge;
   const iconName = type === 'debit' ? 'arrow-down' : 'arrow-up';
@@ -126,7 +126,7 @@ const EmptyState = memo(({ message, submessage }) => (
 
 EmptyState.displayName = 'EmptyState';
 
-// Memoized No Data Component
+
 const NoDataState = memo(({ message }) => (
   <View style={styles.noDataContainer}>
     <Icon name="inbox" size={32} color="#E5E7EB" />
@@ -136,7 +136,7 @@ const NoDataState = memo(({ message }) => (
 
 NoDataState.displayName = 'NoDataState';
 
-// Memoized Loading Component
+
 const LoadingState = memo(({ message }) => (
   <View style={styles.loadingContainer}>
     <ActivityIndicator size="large" color="#3B82F6" />
@@ -170,6 +170,9 @@ const ReceivablesLedger = () => {
   const [isItemsDialogOpen, setIsItemsDialogOpen] = useState(false);
   const [itemsToView, setItemsToView] = useState([]);
   const [lastTransactionDates, setLastTransactionDates] = useState({});
+
+  // Active section state ('debit' or 'credit')
+  const [activeSection, setActiveSection] = useState('debit');
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -659,7 +662,7 @@ const ReceivablesLedger = () => {
     );
   }, [parties, customerSearchTerm]);
 
-  // Separate entries - memoized
+  // Separate entries 
   const { debitEntries, creditEntries } = useMemo(() => ({
     debitEntries: ledgerData.filter(entry => entry.type === 'debit'),
     creditEntries: ledgerData.filter(entry => entry.type === 'credit'),
@@ -672,7 +675,7 @@ const ReceivablesLedger = () => {
     [parties, selectedParty]
   );
 
-  // Pagination logic - memoized
+  // Pagination logic
   const sortedParties = useMemo(() => {
     return parties
       .filter(party => lastTransactionDates[party._id])
@@ -808,7 +811,7 @@ const exportToExcel = useCallback(async () => {
       throw new Error('File was not created');
     }
 
-    // Show success alert with share option
+    
     Alert.alert(
       'Export Successful! ✅',
       `Excel file has been saved as:\n${fileName}\n\nLocation: ${
@@ -1244,6 +1247,77 @@ const exportToExcel = useCallback(async () => {
               </View>
             )}
 
+            
+            <View style={styles.tabsWrapper}>
+              <View style={styles.tabsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.tab,
+                    activeSection === 'debit' && styles.tabActiveDebit,
+                  ]}
+                  onPress={() => setActiveSection('debit')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.tabContent}>
+                    <Text style={[
+                      styles.tabText,
+                      activeSection === 'debit' && styles.tabTextActiveDebit,
+                    ]}>
+                      Debit Side
+                    </Text>
+                    <View style={[
+                      styles.tabBadge,
+                      activeSection === 'debit' && styles.tabBadgeActiveDebit,
+                    ]}>
+                      <Text style={[
+                        styles.tabBadgeText,
+                        activeSection === 'debit' && styles.tabBadgeTextActiveDebit,
+                      ]}>
+                        {debitEntries.length}
+                      </Text>
+                    </View>
+                  </View>
+                  {activeSection === 'debit' && (
+                    <View style={styles.tabIndicatorDebit} />
+                  )}
+                </TouchableOpacity>
+
+                <View style={styles.tabDivider} />
+
+                <TouchableOpacity
+                  style={[
+                    styles.tab,
+                    activeSection === 'credit' && styles.tabActiveCredit,
+                  ]}
+                  onPress={() => setActiveSection('credit')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.tabContent}>
+                    <Text style={[
+                      styles.tabText,
+                      activeSection === 'credit' && styles.tabTextActiveCredit,
+                    ]}>
+                      Credit Side
+                    </Text>
+                    <View style={[
+                      styles.tabBadge,
+                      activeSection === 'credit' && styles.tabBadgeActiveCredit,
+                    ]}>
+                      <Text style={[
+                        styles.tabBadgeText,
+                        activeSection === 'credit' && styles.tabBadgeTextActiveCredit,
+                      ]}>
+                        {creditEntries.length}
+                      </Text>
+                    </View>
+                  </View>
+                  {activeSection === 'credit' && (
+                    <View style={styles.tabIndicatorCredit} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Ledger Details */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
@@ -1251,11 +1325,13 @@ const exportToExcel = useCallback(async () => {
                   <View style={styles.ledgerIconContainer}>
                     <Icon name="file-document" size={20} color="#3B82F6" />
                   </View>
-                  <Text style={styles.cardTitle}>Ledger Details</Text>
+                  <Text style={styles.cardTitle}>
+                    {activeSection === 'debit' ? 'Debit Transactions' : 'Credit Transactions'}
+                  </Text>
                 </View>
                 <View style={styles.transactionCount}>
                   <Text style={styles.transactionCountText}>
-                    {ledgerData.length} transactions
+                    {activeSection === 'debit' ? debitEntries.length : creditEntries.length} transactions
                   </Text>
                 </View>
               </View>
@@ -1270,39 +1346,34 @@ const exportToExcel = useCallback(async () => {
                   />
                 ) : (
                   <View>
-                    {/* Debit Section */}
-                    <View style={styles.section}>
-                      <SectionHeader type="debit" subtitle="Receipts" />
-                      <View style={styles.sectionContent}>
-                        {debitEntries.length === 0 ? (
-                          <NoDataState message="No debit transactions" />
-                        ) : (
-                          debitEntries.map((entry, index) => (
-                            <MobileLedgerCard
-                              key={`debit-${entry.id}-${index}`}
-                              entry={entry}
-                              type="debit"
-                              formatIndianNumber={formatIndianNumber}
-                              format={format}
-                            />
-                          ))
-                        )}
+                    {/* Show only the active section */}
+                    {activeSection === 'debit' ? (
+                      <View style={styles.section}>
+                        <SectionHeader type="debit" subtitle="Receipts" />
+                        <View style={styles.sectionContent}>
+                          {debitEntries.length === 0 ? (
+                            <NoDataState message="No debit transactions" />
+                          ) : (
+                            debitEntries.map((entry, index) => (
+                              <MobileLedgerCard
+                                key={`debit-${entry.id}-${index}`}
+                                entry={entry}
+                                type="debit"
+                                formatIndianNumber={formatIndianNumber}
+                                format={format}
+                              />
+                            ))
+                          )}
+                        </View>
                       </View>
-                    </View>
-
-                    {/* Credit Section */}
-                    <View style={[styles.section, styles.creditSection]}>
-                      <SectionHeader type="credit" subtitle="Sales" />
-                      <View style={styles.sectionContent}>
-                        {creditEntries.length === 0 ? (
-                          <NoDataState message="No credit transactions" />
-                        ) : (
-                          creditEntries.map((entry, index) => (
-                            // <TouchableOpacity
-                            //   key={`credit-${entry.id}-${index}`}
-                            //   onPress={() => handleViewItems(entry)}
-                            //   activeOpacity={0.7}
-                            // >
+                    ) : (
+                      <View style={styles.section}>
+                        <SectionHeader type="credit" subtitle="Sales" />
+                        <View style={styles.sectionContent}>
+                          {creditEntries.length === 0 ? (
+                            <NoDataState message="No credit transactions" />
+                          ) : (
+                            creditEntries.map((entry, index) => (
                               <MobileLedgerCard
                                 key={`credit-${entry.id}-${index}`}
                                 entry={entry}
@@ -1312,11 +1383,11 @@ const exportToExcel = useCallback(async () => {
                                 showViewDetails={true}
                                 onViewDetails={() => handleViewItems(entry)}
                               />
-                            // </TouchableOpacity>
-                          ))
-                        )}
+                            ))
+                          )}
+                        </View>
                       </View>
-                    </View>
+                    )}
                   </View>
                 )}
               </View>
@@ -1381,7 +1452,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     color: '#6B7280',
-    // marginTop: 2,
     fontWeight: '500',
   },
   exportButton: {
@@ -1570,7 +1640,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 16,
-    // paddingVertical: 14,
     backgroundColor: '#FFFFFF',
     minHeight: 42,
     elevation: 1,
@@ -1746,35 +1815,35 @@ const styles = StyleSheet.create({
     borderLeftColor: '#EA580C',
   },
   summaryContent: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-},
-summaryTextContainer: {
-  flex: 1,
-  marginRight: 8,
-},
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  summaryTextContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
   summaryIconContainer: {
     width: 25,
     height: 25,
     borderRadius: 10,
-      justifyContent: 'center',
-  alignItems: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
- summaryLabel: {
-  fontSize: 10,
-  color: '#6B7280',
-  marginBottom: 4,
-  fontWeight: '600',
-  textTransform: 'uppercase',
-  letterSpacing: 0.5,
-},
-summaryValue: {
-  fontSize: 14,
-  fontWeight: '700',
-  color: '#111827',
-  marginBottom: 2,
-},
+  summaryLabel: {
+    fontSize: 10,
+    color: '#6B7280',
+    marginBottom: 4,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 2,
+  },
   creditValue: {
     color: '#16A34A',
   },
@@ -1792,6 +1861,106 @@ summaryValue: {
     color: '#9CA3AF',
     marginTop: 4,
     fontWeight: '500',
+  },
+  tabsWrapper: {
+    marginHorizontal: 8,
+    marginTop: 16,
+    backgroundColor: '#ebebeb',
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    overflow: 'hidden',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    position: 'relative',
+  },
+  tabActiveDebit: {
+    backgroundColor: '#FAFAFA',
+  },
+  tabActiveCredit: {
+    backgroundColor: '#FAFAFA',
+  },
+  tabContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  tabDivider: {
+    width: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6B7280',
+    letterSpacing: -0.2,
+  },
+  tabTextActiveDebit: {
+    color: '#DC2626',
+    fontWeight: '700',
+  },
+  tabTextActiveCredit: {
+    color: '#16A34A',
+    fontWeight: '700',
+  },
+  tabBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  tabBadgeActiveDebit: {
+    backgroundColor: '#FEE2E2',
+  },
+  tabBadgeActiveCredit: {
+    backgroundColor: '#DCFCE7',
+  },
+  tabBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  tabBadgeTextActiveDebit: {
+    color: '#DC2626',
+    fontWeight: '700',
+  },
+  tabBadgeTextActiveCredit: {
+    color: '#16A34A',
+    fontWeight: '700',
+  },
+  tabIndicatorDebit: {
+    position: 'absolute',
+    bottom: -1,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: '#DC2626',
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+  },
+  tabIndicatorCredit: {
+    position: 'absolute',
+    bottom: -1,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: '#16A34A',
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -1830,9 +1999,6 @@ summaryValue: {
     fontWeight: '500',
   },
   section: {
-    marginBottom: 24,
-  },
-  creditSection: {
     marginBottom: 0,
   },
   sectionHeader: {
@@ -1891,4 +2057,4 @@ summaryValue: {
   },
 });
 
-export default ReceivablesLedger; 
+export default ReceivablesLedger;

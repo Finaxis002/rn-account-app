@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    padding: 16,
+    padding: 12,
   },
   loadingContainer: {
     flex: 1,
@@ -881,16 +881,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   cardContent: {
-    padding: 20,
+    padding: 10,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    padding:8
   },
   cardHeaderText: {
     flex: 1,
     marginLeft: 12,
+    
   },
   cardTitle: {
     fontSize: 20,
@@ -908,7 +910,7 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   section: {
-    marginBottom: 24,
+    // marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 12,
@@ -928,7 +930,7 @@ const styles = StyleSheet.create({
   },
   limitItem: {
     flex: 1,
-    padding: 16,
+    padding: 12,
     backgroundColor: '#f8fafc',
     borderRadius: 8,
     borderWidth: 1,
