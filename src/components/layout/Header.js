@@ -358,7 +358,7 @@ export default memo(function Header() {
               >
                 <Ionicons
                   name="person-circle-outline"
-                  size={28}
+                  size={20}
                   color="#334155"
                 />
                 {/* Formatted role label display */}
@@ -509,6 +509,7 @@ const styles = StyleSheet.create({
   },
   notificationContainer: {
     marginHorizontal: 4,
+    paddingTop: 4,
   },
   profileWrapper: {
     position: 'relative',
@@ -519,10 +520,10 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   roleText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#64748B',
     fontWeight: '600',
-    marginTop: 2,
+    // marginTop: 2,
     textAlign: 'center',
   },
   

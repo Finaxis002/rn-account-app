@@ -1636,7 +1636,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   topSection: {
-    padding: 6,
+    padding: 10,
     paddingBottom: 0,
     backgroundColor: '#FFFFFF',
     marginBottom: 12,

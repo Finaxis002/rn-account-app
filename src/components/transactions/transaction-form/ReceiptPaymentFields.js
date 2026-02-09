@@ -516,13 +516,14 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   content: {
-    padding: 10,
+    padding: 12,
+    paddingTop:14
   },
   fieldContainer: {
     marginBottom: 16,
   },
   label: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     marginBottom: 6,
     color: '#333',
