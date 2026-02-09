@@ -791,15 +791,17 @@ const generatePageHTML = (
                   transaction.type !== 'proforma' && isBankDetailAvailable
                     ? `
                 <div class="bank-details">
-                  <div style="font-size: 9px; font-weight: bold; margin-bottom: 5px;">Bank Details:</div>
-                  <div style="display: flex; flex-direction: row; gap: 60px;">
+                  <div style="font-size: 9px; font-weight: bold; margin-bottom: 3px;">Bank Details:</div>
+                  <div style="display: flex; flex-direction: row; gap: 10px;">
                     <div class="bank-info">
                       ${
                         bankData?.bankName
                           ? `
                       <div class="bank-row">
-                        <span style="width: 70px; font-weight: bold;">Name:</span>
-                        <span>${capitalizeWords(bankData.bankName)}</span>
+                        <span class="bank-label">Name:</span>
+                        <span class="bank-value">${capitalizeWords(
+                          bankData.bankName,
+                        )}</span>
                       </div>
                       `
                           : ''
@@ -809,8 +811,8 @@ const generatePageHTML = (
                         bankData?.accountNo
                           ? `
                       <div class="bank-row">
-                        <span style="width: 70px; font-weight: bold;">Acc. No:</span>
-                        <span>${bankData.accountNo}</span>
+                        <span class="bank-label">Acc. No:</span>
+                        <span class="bank-value">${bankData.accountNo}</span>
                       </div>
                       `
                           : ''
@@ -820,8 +822,8 @@ const generatePageHTML = (
                         bankData?.ifscCode
                           ? `
                       <div class="bank-row">
-                        <span style="width: 70px; font-weight: bold;">IFSC:</span>
-                        <span>${bankData.ifscCode}</span>
+                        <span class="bank-label">IFSC:</span>
+                        <span class="bank-value">${bankData.ifscCode}</span>
                       </div>
                       `
                           : ''
@@ -831,8 +833,8 @@ const generatePageHTML = (
                         bankData?.branchAddress
                           ? `
                       <div class="bank-row">
-                        <span style="width: 70px; font-weight: bold;">Branch:</span>
-                        <span style="flex: 1; word-wrap: break-word;">${bankData.branchAddress}</span>
+                        <span class="bank-label">Branch:</span>
+                        <span class="bank-value">${bankData.branchAddress}</span>
                       </div>
                       `
                           : ''
@@ -842,8 +844,8 @@ const generatePageHTML = (
                         bankData?.upiDetails?.upiId
                           ? `
                       <div class="bank-row">
-                        <span style="width: 70px; font-weight: bold;">UPI ID:</span>
-                        <span>${bankData.upiDetails.upiId}</span>
+                        <span class="bank-label">UPI ID:</span>
+                        <span class="bank-value">${bankData.upiDetails.upiId}</span>
                       </div>
                       `
                           : ''
@@ -853,8 +855,8 @@ const generatePageHTML = (
                         bankData?.upiDetails?.upiName
                           ? `
                       <div class="bank-row">
-                        <span style="width: 70px; font-weight: bold;">UPI Name:</span>
-                        <span>${bankData.upiDetails.upiName}</span>
+                        <span class="bank-label">UPI Name:</span>
+                        <span class="bank-value">${bankData.upiDetails.upiName}</span>
                       </div>
                       `
                           : ''
@@ -864,8 +866,8 @@ const generatePageHTML = (
                         bankData?.upiDetails?.upiMobile
                           ? `
                       <div class="bank-row">
-                        <span style="width: 70px; font-weight: bold;">UPI Mobile:</span>
-                        <span>${bankData.upiDetails.upiMobile}</span>
+                        <span class="bank-label">UPI Mobile:</span>
+                        <span class="bank-value">${bankData.upiDetails.upiMobile}</span>
                       </div>
                       `
                           : ''
@@ -875,10 +877,10 @@ const generatePageHTML = (
                     ${
                       bankData?.qrCode
                         ? `
-                    <div style="flex-direction: column;  margin-left: 60px;">
-                      <div style="font-size: 9px; font-weight: bold; margin-bottom: 5px;">QR Code</div>
-                      <img src="${BASE_URL}${bankData.qrCode}" class="qr-image" style="max-width: 100%;" />
-                    </div>
+                 <div style="display: flex; flex-direction: column; align-items: center; margin-left: 60px; width: fit-content;">
+    <div style="font-size: 9px; font-weight: bold; margin-bottom: 0px;">QR Code</div>
+    <img src="${BASE_URL}/${bankData.qrCode}" class="qr-image" alt="QR Code" style="max-width: 100%; display: block;" />
+</div>
                     `
                         : ''
                     }
@@ -1194,15 +1196,15 @@ const Template1 = ({
             gap: 4pt;
             align-items: center;
           }
-          
-          .contact-label {
+            align-items: flex-start;
+            margin-bottom: 0pt;
             font-size: 10pt;
             font-weight: bold;
           }
-          
-          .contact-value {
-            font-size: 10pt;
-            font-weight: normal;
+          .bank-label {
+            width: 60pt;
+            font-weight: bold;
+            display: inline-block;
           }
           
           /* Section Styles */
@@ -1705,11 +1707,31 @@ const Template1 = ({
             margin-bottom: 6pt;
           }
           
+          .bank-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1pt;
+          }
+
           .bank-row {
             display: flex;
             flex-direction: row;
-            // margin-bottom: 1pt;
+            justify-content: flex-start;
+            align-items: flex-start;
+            margin-bottom: 1pt;
             font-size: 8pt;
+          }
+
+          .bank-label {
+            width: 50pt;
+            font-weight: bold;
+            flex-shrink: 0;
+          }
+
+          .bank-value {
+            flex: 1;
+            word-wrap: break-word;
+            padding-left: 2pt;
           }
           
           /* Terms and Conditions */
@@ -1746,6 +1768,15 @@ const Template1 = ({
           
           .no-overflow {
             overflow: hidden !important;
+          }
+          
+          /* QR Image Styling */
+          .qr-image {
+            width: 70pt;
+            height: 70pt;
+            object-fit: contain;
+            margin-top: 0pt;
+            padding: 0pt 2pt 2pt 2pt;
           }
           
           /* Utility classes */

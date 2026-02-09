@@ -846,7 +846,7 @@ const TemplateA5_3PDF = ({
                     bankData?.qrCode
                       ? `
                     <div class="section-title">QR Code</div>
-                    <img src="${BASE_URL}${bankData.qrCode}" class="qr-image" />
+                    <img src="${BASE_URL}/${bankData.qrCode}" class="qr-image" />
                   `
                       : '<div class="section-title">QR Code</div>'
                   }

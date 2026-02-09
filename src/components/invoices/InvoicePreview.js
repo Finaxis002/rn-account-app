@@ -559,7 +559,7 @@ export default function InvoicePreview({
 
         Alert.alert(
           'Download Successful ✅',
-          `Invoice saved as:\n${fname}\n\nLocation: Downloads folder`,
+          `Invoice saved as: ${fname}`,
           [{ text: 'OK' }],
         );
       } else {
