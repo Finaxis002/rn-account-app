@@ -1104,7 +1104,7 @@ const styles = StyleSheet.create({
   filterCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
     shadowColor: '#0F172A',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
@@ -1174,8 +1174,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 13,
-    minHeight: 48,
+    paddingVertical: 11,
+    minHeight: 40,
   },
   dateInputActive: {
     backgroundColor: '#FFFFFF',

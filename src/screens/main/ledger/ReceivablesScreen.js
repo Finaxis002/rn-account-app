@@ -82,7 +82,7 @@ const SummaryCard = memo(({ icon, label, value, type, note }) => {
           {note && <Text style={styles.balanceNote}>{note}</Text>}
         </View>
         <View style={[styles.summaryIconContainer, { backgroundColor: `${iconColor}15` }]}>
-          <Icon name={icon} size={20} color={iconColor} />
+          <Icon name={icon} size={18} color={iconColor} />
         </View>
       </View>
     </View>
@@ -1002,7 +1002,7 @@ const exportToExcel = useCallback(async () => {
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderLeft}>
               <View style={styles.filterIconContainer}>
-                <Icon name="filter-variant" size={20} color="#3B82F6" />
+                <Icon name="filter-variant" size={18} color="#3B82F6" />
               </View>
               <Text style={styles.cardTitle}>Filters</Text>
             </View>
@@ -1054,7 +1054,7 @@ const exportToExcel = useCallback(async () => {
                       : 'Select date'}
                   </Text>
                   <View style={styles.calendarIcon}>
-                    <Icon name="calendar" size={18} color="#3B82F6" />
+                    <Icon name="calendar" size={15} color="#3B82F6" />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -1074,7 +1074,7 @@ const exportToExcel = useCallback(async () => {
                       : 'Select end date'}
                   </Text>
                   <View style={styles.calendarIcon}>
-                    <Icon name="calendar" size={18} color="#3B82F6" />
+                    <Icon name="calendar" size={15} color="#3B82F6" />
                   </View>
                 </TouchableOpacity>
               </View>
@@ -1343,8 +1343,7 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#FFFFFF',
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
-    paddingBottom: 16,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
@@ -1472,8 +1471,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
@@ -1482,8 +1481,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterIconContainer: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     borderRadius: 8,
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
@@ -1516,7 +1515,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   cardContent: {
-    padding: 20,
+    padding: 12,
   },
   inputContainer: {
     marginBottom: 20,
@@ -1536,8 +1535,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 13,
-    minHeight: 48,
+    paddingVertical: 11,
+    minHeight: 40,
   },
   filterInputActive: {
     backgroundColor: '#FFFFFF',
@@ -1571,9 +1570,9 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    // paddingVertical: 14,
     backgroundColor: '#FFFFFF',
-    minHeight: 54,
+    minHeight: 42,
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -1581,13 +1580,13 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   dateButtonText: {
-    fontSize: 15,
+    fontSize: 12,
     color: '#111827',
     fontWeight: '500',
   },
   calendarIcon: {
-    width: 28,
-    height: 28,
+    width: 25,
+    height: 25,
     borderRadius: 6,
     backgroundColor: '#EFF6FF',
     justifyContent: 'center',
@@ -1598,7 +1597,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
@@ -1723,7 +1722,7 @@ const styles = StyleSheet.create({
     minWidth: (width - 56) / 3,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    padding: 16,
+    padding: 10,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1731,19 +1730,19 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   customerCard: {
-    borderLeftWidth: 3,
+    borderLeftWidth: 2,
     borderLeftColor: '#DC2626',
   },
   creditCard: {
-    borderLeftWidth: 3,
+    borderLeftWidth: 2,
     borderLeftColor: '#16A34A',
   },
   debitCard: {
-    borderLeftWidth: 3,
+    borderLeftWidth: 2,
     borderLeftColor: '#2563EB',
   },
   balanceCard: {
-    borderLeftWidth: 3,
+    borderLeftWidth: 2,
     borderLeftColor: '#EA580C',
   },
   summaryContent: {
@@ -1756,14 +1755,14 @@ summaryTextContainer: {
   marginRight: 8,
 },
   summaryIconContainer: {
-    width: 30,
-    height: 30,
+    width: 25,
+    height: 25,
     borderRadius: 10,
       justifyContent: 'center',
   alignItems: 'center',
   },
  summaryLabel: {
-  fontSize: 12,
+  fontSize: 10,
   color: '#6B7280',
   marginBottom: 4,
   fontWeight: '600',
@@ -1771,7 +1770,7 @@ summaryTextContainer: {
   letterSpacing: 0.5,
 },
 summaryValue: {
-  fontSize: 18,
+  fontSize: 14,
   fontWeight: '700',
   color: '#111827',
   marginBottom: 2,

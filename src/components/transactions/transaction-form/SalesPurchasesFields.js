@@ -2523,7 +2523,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
+    padding: 6,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -2642,7 +2642,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dateButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#111827',
   },
   dueDateContainer: {
@@ -2895,7 +2895,7 @@ const styles = StyleSheet.create({
   },
   productDetailsContainer: {
     backgroundColor: '#F9FAFB',
-    padding: 10,
+    padding: 12,
     borderRadius: 8,
     flexDirection: 'column',
   },
@@ -3026,7 +3026,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   totalsContainer: {
-    gap: 12,
+    // gap: 12,
     width: '100%',
   },
   totalRow: {

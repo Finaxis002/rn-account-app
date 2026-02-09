@@ -1589,9 +1589,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     paddingVertical: 4,
+    // paddingHorizontal: 4,
+    // backgroundColor: '#ffffff',
+    // borderRadius: 8,
+    // marginBottom: 12,
   },
   chip: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#d9dbdf',
   },
   chipSelected: {
     backgroundColor: '#3b82f6',
@@ -1603,7 +1607,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   journalContainer: {
-    gap: 16,
+    // gap: 16,
   },
   section: {
     backgroundColor: 'white',
@@ -1649,7 +1653,7 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     padding: 8,
     borderRadius: 6,
-    fontSize: 12,
+    fontSize: 14,
     backgroundColor: 'white',
     color: '#111827',
   },

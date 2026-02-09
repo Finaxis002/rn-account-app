@@ -941,7 +941,9 @@ export function CustomerSettings() {
             </View>
           ) : (
             <View style={styles.contentContainer}>
-              {/* Header */}
+             <View style={styles.topSection}>
+
+               {/* Header */}
               <View style={styles.header}>
                 <View style={styles.headerText}>
                   <Text style={styles.title}>Manage Customers</Text>
@@ -1004,6 +1006,7 @@ export function CustomerSettings() {
                   </Text>
                 </View>
               )}
+             </View>
 
               {/* Main Content */}
               {isLoading ? (
@@ -1629,8 +1632,14 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    padding: 10,
+    // padding: 10,
     paddingTop: 0,
+  },
+  topSection: {
+    padding: 6,
+    paddingBottom: 0,
+    backgroundColor: '#FFFFFF',
+    marginBottom: 12,
   },
   header: {
     marginBottom: 16,
@@ -1639,13 +1648,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1f2937',
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6b7280',
     lineHeight: 20,
   },
@@ -1687,7 +1696,7 @@ const styles = StyleSheet.create({
   },
   // Search Styles
   searchContainer: {
-    marginBottom: 16,
+    marginBottom: 10,
     backgroundColor: '#fff',
     borderRadius: 10,
     padding: 12,

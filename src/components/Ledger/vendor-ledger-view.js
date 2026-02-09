@@ -849,7 +849,7 @@ const styles = StyleSheet.create({
     color: '#0f172a',
   },
   cardContent: {
-    padding: 16,
+    padding: 12,
   },
   // Summary card styles
   summaryCard: {
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   balanceAmount: {
-    fontSize: 20,
+    fontSize: 14,
     fontWeight: '700',
     marginBottom: 8,
   },
