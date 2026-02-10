@@ -559,13 +559,15 @@ const ProductStock = ({
     });
   }, [products, searchTerm]);
 
-  const renderProductItem = ({ item }) => (
-    <ProductMobileCard
-      product={item}
-      onEditClick={handleEditClick}
-      role={role}
-      onNamePress={() => setOpenNameDialog(item.name)}
-    />
+  const renderProductItem = ({ item, index }) => (
+    <View style={{ marginBottom: 12 }}>
+      <ProductMobileCard
+        product={item}
+        onEditClick={handleEditClick}
+        role={role}
+        onNamePress={() => setOpenNameDialog(item.name)}
+      />
+    </View>
   );
 
   const renderTableRow = ({ item, index }) => (
@@ -1053,7 +1055,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   mobileList: {
-    gap: 12,
     paddingBottom: 0,
   },
   productScrollContent: {
