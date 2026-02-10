@@ -1,87 +1,69 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  ScrollView,
-  RefreshControl,
-} from 'react-native';
-import React, { useState, useCallback } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
 import PayablesScreen from './PayablesScreen';
 import ReceivablesScreen from './ReceivablesScreen';
 import { useCompany } from '../../../contexts/company-context';
 export default function Ledger() {
   const [activeTab, setActiveTab] = useState('payables');
-  const [refreshing, setRefreshing] = useState(false);
   const { triggerCompaniesRefresh } = useCompany();
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-   
-  triggerCompaniesRefresh();
-  
-  
-  setTimeout(() => {
-    setRefreshing(false);
-  }, 1000);
-  }, [triggerCompaniesRefresh]);
-
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={['#007AFF']}
-        />
-      }
-    >
-      
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
+    <View style={styles.container}>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'payables' && styles.activeTabButton,
+          ]}
+          onPress={() => setActiveTab('payables')}
+        >
+          <Text
             style={[
-              styles.tabButton,
-              activeTab === 'payables' && styles.activeTabButton,
+              styles.tabButtonText,
+              activeTab === 'payables' && styles.activeTabButtonText,
             ]}
-            onPress={() => setActiveTab('payables')}
           >
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === 'payables' && styles.activeTabButtonText,
-              ]}
-            >
-              Payables
-            </Text>
-          </TouchableOpacity>
+            Payables
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'receivables' && styles.activeTabButton,
+          ]}
+          onPress={() => setActiveTab('receivables')}
+        >
+          <Text
             style={[
-              styles.tabButton,
-              activeTab === 'receivables' && styles.activeTabButton,
+              styles.tabButtonText,
+              activeTab === 'receivables' && styles.activeTabButtonText,
             ]}
-            onPress={() => setActiveTab('receivables')}
           >
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === 'receivables' && styles.activeTabButtonText,
-              ]}
-            >
-              Receivables
-            </Text>
-          </TouchableOpacity>
-        </View>
+            Receivables
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.contentArea}>
-          {activeTab === 'payables' ? (
-            <PayablesScreen />
-          ) : (
-            <ReceivablesScreen />
-          )}
+      <View style={styles.contentArea}>
+        <View
+          style={{
+            display: activeTab === 'payables' ? 'flex' : 'none',
+            flex: 1,
+          }}
+        >
+          <PayablesScreen />
         </View>
-      </ScrollView>
+        <View
+          style={{
+            display: activeTab === 'receivables' ? 'flex' : 'none',
+            flex: 1,
+          }}
+        >
+          <ReceivablesScreen />
+        </View>
+      </View>
+    </View>
   );
 }
 

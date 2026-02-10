@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   StyleSheet,
   Text,
@@ -16,10 +22,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  Filter,
-  ArrowLeft,
-} from 'lucide-react-native';
+import { Filter, ArrowLeft } from 'lucide-react-native';
 import { BASE_URL } from '../../../config';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
@@ -43,7 +46,7 @@ export default function PayablesScreen() {
   const navigation = useNavigation();
   const baseURL = BASE_URL;
   const [loading, setLoading] = useState(false);
-  const { selectedCompanyId } = useCompany();
+  const { selectedCompanyId, refreshTrigger } = useCompany();
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [ledgerData, setLedgerData] = useState(null);
@@ -177,91 +180,97 @@ export default function PayablesScreen() {
   }, [baseURL]);
 
   // Optimized fetch vendors
-  const fetchVendors = useCallback(async (forceRefresh = false) => {
-    if (dataLoadedRef.current.vendors && !forceRefresh) return;
+  const fetchVendors = useCallback(
+    async (forceRefresh = false) => {
+      if (dataLoadedRef.current.vendors && !forceRefresh) return;
 
-    try {
-      setVendorsLoading(true);
-      const token = await AsyncStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (selectedCompanyId) params.append('companyId', selectedCompanyId);
-      
-      const res = await fetch(`${baseURL}/api/vendors?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      try {
+        setVendorsLoading(true);
+        const token = await AsyncStorage.getItem('token');
+        const params = new URLSearchParams();
+        if (selectedCompanyId) params.append('companyId', selectedCompanyId);
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch vendors');
-      }
-
-      const data = await res.json();
-      let vendorsArray = [];
-
-      if (Array.isArray(data)) {
-        vendorsArray = data;
-      } else if (data && Array.isArray(data.vendors)) {
-        vendorsArray = data.vendors;
-      } else if (data && Array.isArray(data.data)) {
-        vendorsArray = data.data;
-      }
-
-      setVendors(vendorsArray);
-      dataLoadedRef.current.vendors = true;
-    } catch (error) {
-      console.error('Error fetching vendors:', error);
-      setVendors([]);
-    } finally {
-      setVendorsLoading(false);
-    }
-  }, [baseURL, selectedCompanyId]);
-
-  // Optimized fetch expenses
-  const fetchExpenses = useCallback(async (forceRefresh = false) => {
-    if (dataLoadedRef.current.expenses && !forceRefresh) return;
-
-    try {
-      setExpensesLoading(true);
-      const token = await AsyncStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (selectedCompanyId) params.append('companyId', selectedCompanyId);
-      
-      const res = await fetch(
-        `${baseURL}/api/payment-expenses?${params.toString()}`,
-        {
+        const res = await fetch(`${baseURL}/api/vendors?${params.toString()}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
-      );
+        });
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch expenses');
+        if (!res.ok) {
+          throw new Error('Failed to fetch vendors');
+        }
+
+        const data = await res.json();
+        let vendorsArray = [];
+
+        if (Array.isArray(data)) {
+          vendorsArray = data;
+        } else if (data && Array.isArray(data.vendors)) {
+          vendorsArray = data.vendors;
+        } else if (data && Array.isArray(data.data)) {
+          vendorsArray = data.data;
+        }
+
+        setVendors(vendorsArray);
+        dataLoadedRef.current.vendors = true;
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+        setVendors([]);
+      } finally {
+        setVendorsLoading(false);
       }
+    },
+    [baseURL, selectedCompanyId],
+  );
 
-      const data = await res.json();
-      let expensesArray = [];
+  // Optimized fetch expenses
+  const fetchExpenses = useCallback(
+    async (forceRefresh = false) => {
+      if (dataLoadedRef.current.expenses && !forceRefresh) return;
 
-      if (Array.isArray(data)) {
-        expensesArray = data;
-      } else if (data && Array.isArray(data.expenses)) {
-        expensesArray = data.expenses;
-      } else if (data && Array.isArray(data.data)) {
-        expensesArray = data.data;
-      } else if (data && data.success && Array.isArray(data.data)) {
-        expensesArray = data.data;
+      try {
+        setExpensesLoading(true);
+        const token = await AsyncStorage.getItem('token');
+        const params = new URLSearchParams();
+        if (selectedCompanyId) params.append('companyId', selectedCompanyId);
+
+        const res = await fetch(
+          `${baseURL}/api/payment-expenses?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch expenses');
+        }
+
+        const data = await res.json();
+        let expensesArray = [];
+
+        if (Array.isArray(data)) {
+          expensesArray = data;
+        } else if (data && Array.isArray(data.expenses)) {
+          expensesArray = data.expenses;
+        } else if (data && Array.isArray(data.data)) {
+          expensesArray = data.data;
+        } else if (data && data.success && Array.isArray(data.data)) {
+          expensesArray = data.data;
+        }
+
+        setExpenses(expensesArray);
+        dataLoadedRef.current.expenses = true;
+      } catch (error) {
+        console.error('Error fetching expenses:', error);
+        setExpenses([]);
+      } finally {
+        setExpensesLoading(false);
       }
-
-      setExpenses(expensesArray);
-      dataLoadedRef.current.expenses = true;
-    } catch (error) {
-      console.error('Error fetching expenses:', error);
-      setExpenses([]);
-    } finally {
-      setExpensesLoading(false);
-    }
-  }, [baseURL, selectedCompanyId]);
+    },
+    [baseURL, selectedCompanyId],
+  );
 
   // Optimized fetch companies
   const fetchCompanies = useCallback(async () => {
@@ -298,7 +307,7 @@ export default function PayablesScreen() {
         currentView === 'vendor' ? fetchVendors() : fetchExpenses(),
         fetchCompanies(),
       ]);
-      
+
       // Load products in background (non-blocking)
       fetchProducts();
     };
@@ -311,17 +320,14 @@ export default function PayablesScreen() {
     const resetAndFetch = async () => {
       dataLoadedRef.current.vendors = false;
       dataLoadedRef.current.expenses = false;
-      
+
       setVendors([]);
       setExpenses([]);
       setVendorBalances({});
       setExpenseTotals({});
       setTransactionTotals({ totalCredit: 0, totalDebit: 0 });
-      
-      await Promise.all([
-        fetchVendors(true),
-        fetchExpenses(true)
-      ]);
+
+      await Promise.all([fetchVendors(true), fetchExpenses(true)]);
     };
 
     resetAndFetch();
@@ -558,6 +564,19 @@ export default function PayablesScreen() {
       setRefreshing(false);
     }
   }, [currentView, fetchVendors, fetchExpenses, fetchLedgerData]);
+
+  // Trigger refresh when refreshTrigger increments. Use ref to avoid
+  // re-running when onRefresh identity changes.
+  const onRefreshRef = React.useRef(onRefresh);
+  useEffect(() => {
+    onRefreshRef.current = onRefresh;
+  }, [onRefresh]);
+
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      onRefreshRef.current();
+    }
+  }, [refreshTrigger]);
 
   const stats = useMemo(() => {
     return {
@@ -860,7 +879,11 @@ export default function PayablesScreen() {
   ));
 
   // Minimal loading state
-  if ((vendorsLoading || expensesLoading) && vendors.length === 0 && expenses.length === 0) {
+  if (
+    (vendorsLoading || expensesLoading) &&
+    vendors.length === 0 &&
+    expenses.length === 0
+  ) {
     return (
       <SafeAreaView style={styles.loadingScreen}>
         <View style={styles.loadingContent}>
