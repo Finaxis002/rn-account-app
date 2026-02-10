@@ -92,8 +92,8 @@ const TransactionsScreen = ({ navigation }) => {
   const { width: windowWidth } = useWindowDimensions();
   // Reduce title sizes so it fits on one line with buttons
   const largeTitleFontSize =
-    windowWidth < 360 ? 18 : windowWidth < 400 ? 20 : 22;
-  const subtitleFontSize = windowWidth < 360 ? 12 : 13;
+    windowWidth < 360 ? 18 : windowWidth < 400 ? 20 : 20;
+  const subtitleFontSize = windowWidth < 360 ? 10 : 10;
   // State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isProformaFormOpen, setIsProformaFormOpen] = useState(false);

@@ -35,6 +35,7 @@ import { useUserPermissions } from '../../contexts/user-permissions-context';
 import { usePermissions } from '../../contexts/permission-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { BASE_URL } from '../../config';
+import { red100 } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -568,6 +569,7 @@ const styles = StyleSheet.create({
     padding: 14,
     flexGrow: 1,
     paddingTop: 4,
+    backgroundColor:'#f7f7f7'
   },
   loadingContainer: {
     flex: 1,

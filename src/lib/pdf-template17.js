@@ -12,6 +12,7 @@ import {
 } from './pdf-utils';
 import { capitalizeWords } from './utils';
 import { generatePDF } from 'react-native-html-to-pdf';
+import { BASE_URL } from '../config';
 
 // --- Constants ---
 const PRIMARY_BLUE = '#0066cc';
@@ -213,6 +214,8 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
     showCGSTSGST,
   } = preparedData;
 
+  const logoSrc = company?.logo ? `${BASE_URL}${company.logo}` : null;
+
   const typedItems = preparedData.itemsWithGST || allItems;
   const shouldHideBankDetails = transaction.type === 'proforma';
   const bankData = bank || transaction?.bank || {};
@@ -306,6 +309,32 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
             margin: 0 0 5px 0;
             /* NO BORDER */
           }
+
+          .logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+          }
+
+          .company-header {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+          }
+
+          .logo-container {
+            flex-shrink: 0;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+
+          .company-details {
+            flex: 1;
+          }
+          
           
           /* Main wrapper - border starts from header section */
           .invoice-wrapper {
@@ -596,52 +625,65 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
                 <div class="header-section">
                   <div class="header-content">
                     <div class="company-col">
-                      <div class="company-name">${capitalizeWords(
-                        companyName,
-                      )}</div>
-                      ${
-                        company?.address
-                          ? `<div class="company-line">${company.address}</div>`
-                          : ''
-                      }
-                      <div class="company-line">
-                        ${
-                          company?.City
-                            ? capitalizeWords(company.City) + ', '
-                            : ''
-                        }${
+                      <div class="company-header">
+                        <div class="logo-container">
+                          ${
+                            logoSrc
+                              ? `<img src="${logoSrc}" class="logo" alt="Company Logo" />`
+                              : ''
+                          }
+                        </div>
+                        <div class="company-details">
+                          <div class="company-name">${capitalizeWords(
+                            companyName,
+                          )}</div>
+                          ${
+                            company?.address
+                              ? `<div class="company-line">${company.address}</div>`
+                              : ''
+                          }
+                          <div class="company-line">
+                            ${
+                              company?.City
+                                ? capitalizeWords(company.City) + ', '
+                                : ''
+                            }${
                 company?.addressState
                   ? capitalizeWords(company.addressState) + ', '
                   : ''
               }${company?.Pincode || ''}
+                          </div>
+                          ${
+                            company?.Country
+                              ? `<div class="company-line">${capitalizeWords(
+                                  company.Country,
+                                )}</div>`
+                              : ''
+                          }
+                          ${
+                            company?.gstin
+                              ? `<div class="company-line"><span class="bold">GSTIN:</span> ${company.gstin}</div>`
+                              : ''
+                          }
+                          <div class="company-line">
+                            <span class="bold">Phone:</span> ${
+                              company?.mobileNumber
+                                ? safeFormatPhoneNumber(company.mobileNumber)
+                                : company?.Telephone
+                                ? safeFormatPhoneNumber(company.Telephone)
+                                : '-'
+                            }
+                          </div>
+                          ${
+                            company?.email
+                              ? `<div class="company-line"><span class="bold">Email:</span> ${company.email}</div>`
+                              : ''
+                          }
+                        </div>
                       </div>
-                      ${
-                        company?.Country
-                          ? `<div class="company-line">${capitalizeWords(
-                              company.Country,
-                            )}</div>`
-                          : ''
-                      }
-                      ${
-                        company?.gstin
-                          ? `<div class="company-line"><span class="bold">GSTIN:</span> ${company.gstin}</div>`
-                          : ''
-                      }
-                      <div class="company-line">
-                        <span class="bold">Phone:</span> ${
-                          company?.mobileNumber
-                            ? safeFormatPhoneNumber(company.mobileNumber)
-                            : company?.Telephone
-                            ? safeFormatPhoneNumber(company.Telephone)
-                            : '-'
-                        }
-                      </div>
-                      ${
-                        company?.email
-                          ? `<div class="company-line"><span class="bold">Email:</span> ${company.email}</div>`
-                          : ''
-                      }
                     </div>
+
+                    
                     <div class="invoice-col">
                       <table class="invoice-grid">
                         <tr>
