@@ -654,7 +654,7 @@ export default function ClientManagementPage() {
             filteredClients.length === 0
               ? styles.emptyListContent
               : styles.listContent,
-            { paddingTop: HEADER_HEIGHT + 10 },
+            { paddingTop: HEADER_HEIGHT - 8 },
           ]}
           style={styles.listContainer}
           onScroll={Animated.event(
@@ -939,9 +939,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
     zIndex: 10,
-    elevation: 6,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    // elevation: 6,
+    paddingHorizontal: 16,
+    // paddingBottom: 8,
     paddingTop: 10,
   },
   headerContent: {

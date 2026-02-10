@@ -567,6 +567,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 14,
     flexGrow: 1,
+    paddingTop: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -601,16 +602,16 @@ const styles = StyleSheet.create({
     // marginBottom: 24,
   },
   headerText: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
     // marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 10,
     color: '#666',
   },
   headerActions: {
@@ -638,13 +639,13 @@ const styles = StyleSheet.create({
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 6,
     // padding: 8,
-    marginBottom: 14,
+    marginBottom: 6,
   },
   cardWrapper: {
     width: '48%',
-    minWidth: 150,
+    minWidth: 155,
   },
   kpiCard: {
     backgroundColor: '#ffffff',
@@ -656,7 +657,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   cardInner: {
-    padding: 16,
+    padding: 10,
     borderRadius: 12,
     backgroundColor: '#ffffff',
   },
@@ -667,7 +668,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   cardTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: '#64748b',
     textTransform: 'uppercase',
@@ -676,7 +677,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   cardValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#0f172a',
     marginBottom: 6,

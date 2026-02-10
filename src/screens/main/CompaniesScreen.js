@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
@@ -190,9 +189,13 @@ const CompaniesScreen = () => {
     };
   }, []);
 
-  
-  const fetchCompanies = useCallback(async (signal) => {
+  // Fetch companies with optional loader control
+  const fetchCompanies = useCallback(async (signal, showLoader = false) => {
     try {
+      if (showLoader && isMountedRef.current) {
+        setIsLoading(true);
+      }
+
       const token = await AsyncStorage.getItem('token');
       if (!token) throw new Error('Authentication token not found.');
 
@@ -202,7 +205,7 @@ const CompaniesScreen = () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        signal, // Add abort signal
+        signal,
       });
 
       if (!response.ok) {
@@ -226,10 +229,14 @@ const CompaniesScreen = () => {
           error.message || 'Failed to load companies. Please try again.',
         );
       }
+    } finally {
+      if (showLoader && isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
-  //  fetch clients
+  // Fetch clients
   const fetchClients = useCallback(async (signal) => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -256,22 +263,15 @@ const CompaniesScreen = () => {
     }
   }, []);
 
-  // Initial data fetch with abort controller
+  
   useEffect(() => {
     const abortController = new AbortController();
     
     const loadData = async () => {
-      setIsLoading(true);
-      try {
-        await Promise.all([
-          fetchCompanies(abortController.signal),
-          fetchClients(abortController.signal),
-        ]);
-      } finally {
-        if (isMountedRef.current) {
-          setIsLoading(false);
-        }
-      }
+      await Promise.all([
+        fetchCompanies(abortController.signal, true), 
+        fetchClients(abortController.signal),
+      ]);
     };
 
     loadData();
@@ -281,35 +281,40 @@ const CompaniesScreen = () => {
     };
   }, [fetchCompanies, fetchClients]);
 
-  // Handle refresh trigger
+ 
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
       const abortController = new AbortController();
-      fetchCompanies(abortController.signal);
+      fetchCompanies(abortController.signal, false); 
       return () => abortController.abort();
     }
   }, [refreshTrigger, fetchCompanies]);
 
-  // Orefresh handler
+  // Pull to refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     const abortController = new AbortController();
     
     try {
       await Promise.all([
-        fetchCompanies(abortController.signal),
+        fetchCompanies(abortController.signal, false), 
         fetchClients(abortController.signal),
         triggerCompaniesRefresh?.(),
         refetch?.(),
         refetchUserPermissions?.(),
       ]);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        console.error('Error refreshing data:', error);
+      }
     } finally {
       if (isMountedRef.current) {
         setRefreshing(false);
       }
     }
-
-    return () => abortController.abort();
+    
+   
+    setTimeout(() => abortController.abort(), 100);
   }, [
     fetchCompanies,
     fetchClients,
@@ -363,7 +368,8 @@ const CompaniesScreen = () => {
 
       // Refresh the companies list
       const abortController = new AbortController();
-      await fetchCompanies(abortController.signal);
+      await fetchCompanies(abortController.signal, false);
+      abortController.abort();
     } catch (error) {
       console.error('Error deleting company:', error);
       Alert.alert(
@@ -395,7 +401,8 @@ const CompaniesScreen = () => {
   const onFormSubmit = useCallback(() => {
     setIsDialogOpen(false);
     const abortController = new AbortController();
-    fetchCompanies(abortController.signal);
+    fetchCompanies(abortController.signal, false);
+    setTimeout(() => abortController.abort(), 100);
   }, [fetchCompanies]);
 
   const toggleMenu = useCallback((companyId) => {
@@ -546,18 +553,20 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 4,
     paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   headerTitle: {
     flex: 1,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     // marginBottom: 2,
     color: '#1a1a1a',
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#666',
   },
   headerActions: {
@@ -565,7 +574,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginTop: 9,
-  },
+  },  
   addCompanyButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -583,7 +592,7 @@ const styles = StyleSheet.create({
   addCompanyButtonText: {
     color: 'white',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 12,
   },
   content: {
     flex: 1,

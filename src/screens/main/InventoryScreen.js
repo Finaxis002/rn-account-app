@@ -1775,12 +1775,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: '#0f172a',
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 10,
     color: '#64748b',
   },
   headerActions: {

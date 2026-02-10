@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    // marginBottom: 8,
   },
   backButton: {
     marginRight: 12,
@@ -807,14 +807,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#1f2937',
   },
   headerSubtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6b7280',
-    lineHeight: 22,
+    // lineHeight: 22,
   },
   tabsContainer: {
     marginBottom: 16,
@@ -930,13 +930,14 @@ const styles = StyleSheet.create({
   },
   limitItem: {
     flex: 1,
-    padding: 12,
+    padding: 6,
     backgroundColor: '#f8fafc',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     marginBottom: 12,
   },
+  
   limitItemHeader: {
     flexDirection: 'row',
     alignItems: 'center',
