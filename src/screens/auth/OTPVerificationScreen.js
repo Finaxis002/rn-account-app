@@ -15,8 +15,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-// import { BASE_URL } from '../../config';
-const BASE_URL = 'https://accountapp-backend-ooxj.vercel.app';
+import { BASE_URL } from '../../config';
+// const BASE_URL = 'https://accountapp-backend-ooxj.vercel.app';
 
 const DURATION = 3000;
 
