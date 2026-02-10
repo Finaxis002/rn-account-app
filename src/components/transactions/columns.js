@@ -1220,7 +1220,9 @@ const TransactionActions = ({
             const partyRes = await fetch(`${BASE_URL}/api/parties/${partyId}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
-            if (partyRes.ok) partyData = await partyRes.json();
+            if (partyRes.ok) {
+              partyData = await partyRes.json();
+            }
           }
         } catch (err) {
           console.warn('⚠️ Failed to fetch party:', err.message);
@@ -1235,7 +1237,9 @@ const TransactionActions = ({
                 headers: { Authorization: `Bearer ${token}` },
               },
             );
-            if (companyRes.ok) companyData = await companyRes.json();
+            if (companyRes.ok) {
+              companyData = await companyRes.json();
+            }
           }
         } catch (err) {
           console.warn('⚠️ Failed to fetch company:', err.message);
@@ -1250,10 +1254,29 @@ const TransactionActions = ({
                 headers: { Authorization: `Bearer ${token}` },
               },
             );
-            if (bankRes.ok) bankData = await bankRes.json();
+            if (bankRes.ok) {
+              const bankResponse = await bankRes.json();
+              // Extract .data if API returns wrapper {data: {...}, success: true}
+              bankData = bankResponse.data || bankResponse;
+            } else {
+              console.warn(
+                '⚠️ Download: Bank API returned status:',
+                bankRes.status,
+              );
+              if (transaction.bank && typeof transaction.bank === 'object') {
+                bankData = transaction.bank;
+              }
+            }
+          } else {
+            if (transaction.bank && typeof transaction.bank === 'object') {
+              bankData = transaction.bank;
+            }
           }
         } catch (err) {
           console.warn('⚠️ Failed to fetch bank:', err.message);
+          if (transaction.bank && typeof transaction.bank === 'object') {
+            bankData = transaction.bank;
+          }
         }
       }
 
@@ -1437,7 +1460,9 @@ const TransactionActions = ({
             const partyRes = await fetch(`${BASE_URL}/api/parties/${partyId}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
-            if (partyRes.ok) partyData = await partyRes.json();
+            if (partyRes.ok) {
+              partyData = await partyRes.json();
+            }
           }
         } catch (err) {
           console.warn('⚠️ Failed to fetch party:', err.message);
@@ -1452,7 +1477,9 @@ const TransactionActions = ({
                 headers: { Authorization: `Bearer ${token}` },
               },
             );
-            if (companyRes.ok) companyData = await companyRes.json();
+            if (companyRes.ok) {
+              companyData = await companyRes.json();
+            }
           }
         } catch (err) {
           console.warn('⚠️ Failed to fetch company:', err.message);
@@ -1467,10 +1494,29 @@ const TransactionActions = ({
                 headers: { Authorization: `Bearer ${token}` },
               },
             );
-            if (bankRes.ok) bankData = await bankRes.json();
+            if (bankRes.ok) {
+              const bankResponse = await bankRes.json();
+              // Extract .data if API returns wrapper {data: {...}, success: true}
+              bankData = bankResponse.data || bankResponse;
+            } else {
+              console.warn(
+                '⚠️ Print: Bank API returned status:',
+                bankRes.status,
+              );
+              if (transaction.bank && typeof transaction.bank === 'object') {
+                bankData = transaction.bank;
+              }
+            }
+          } else {
+            if (transaction.bank && typeof transaction.bank === 'object') {
+              bankData = transaction.bank;
+            }
           }
         } catch (err) {
           console.warn('⚠️ Failed to fetch bank:', err.message);
+          if (transaction.bank && typeof transaction.bank === 'object') {
+            bankData = transaction.bank;
+          }
         }
       }
 
