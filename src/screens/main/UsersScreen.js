@@ -169,6 +169,7 @@ export default function UsersPage() {
   const [viewMode, setViewMode] = useState('card');
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const { toast } = useToast();
   const { permissions, refetch } = usePermissions();
@@ -227,23 +228,29 @@ export default function UsersPage() {
 
   // Optimized fetch with abort support
   const fetchUsersAndCompanies = useCallback(
-    async signal => {
+    async (signal = null) => {
       try {
         const token = await AsyncStorage.getItem('token');
-        if (!token) throw new Error('Authentication token not found.');
+        if (!token) {
+          throw new Error('Authentication token not found.');
+        }
 
         const [usersRes, companiesRes] = await Promise.all([
           fetch(`${BASE_URL}/api/users`, {
             headers: { Authorization: `Bearer ${token}` },
-            signal,
+            ...(signal && { signal }),
           }),
           fetch(`${BASE_URL}/api/companies/my`, {
             headers: { Authorization: `Bearer ${token}` },
-            signal,
+            ...(signal && { signal }),
           }),
         ]);
 
         if (!usersRes.ok || !companiesRes.ok) {
+          const usersError = await usersRes.text();
+          const companiesError = await companiesRes.text();
+          console.error('Users fetch error:', usersError);
+          console.error('Companies fetch error:', companiesError);
           throw new Error('Failed to fetch data');
         }
 
@@ -267,16 +274,28 @@ export default function UsersPage() {
               : companiesData?.data || [],
           );
         }
-      } catch (err) {
-        if (err.name === 'AbortError') return;
 
+        return { usersData: filteredUsers, companiesData };
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('Fetch aborted');
+          return null;
+        }
+
+        console.error('Error fetching users and companies:', err);
+        
         if (isMountedRef.current) {
           toast({
             variant: 'destructive',
             title: 'Error',
             description: err.message || 'Failed to fetch data',
           });
+          
+          // Set empty arrays on error to prevent infinite loading
+          setUsers([]);
+          setCompanies([]);
         }
+        return null;
       }
     },
     [toast],
@@ -284,15 +303,25 @@ export default function UsersPage() {
 
   // Initial data fetch
   useEffect(() => {
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
+    let isActive = true;
+    let abortController = null;
 
     const loadData = async () => {
-      setIsLoading(true);
       try {
+        setIsLoading(true);
+        
+        abortController = new AbortController();
+        abortControllerRef.current = abortController;
+        
         await fetchUsersAndCompanies(abortController.signal);
+
+        if (isActive && isMountedRef.current) {
+          setInitialLoadComplete(true);
+        }
+      } catch (error) {
+        console.error('Error in initial load:', error);
       } finally {
-        if (isMountedRef.current) {
+        if (isActive && isMountedRef.current) {
           setIsLoading(false);
         }
       }
@@ -301,19 +330,22 @@ export default function UsersPage() {
     loadData();
 
     return () => {
-      abortController.abort();
+      isActive = false;
+      if (abortController) {
+        abortController.abort();
+      }
     };
   }, [fetchUsersAndCompanies]);
 
   // Optimized companies-only fetch
-  const fetchCompaniesOnly = useCallback(async signal => {
+  const fetchCompaniesOnly = useCallback(async (signal = null) => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
       const res = await fetch(`${BASE_URL}/api/companies/my`, {
         headers: { Authorization: `Bearer ${token}` },
-        signal,
+        ...(signal && { signal }),
       });
 
       if (!res.ok) return;
@@ -330,12 +362,12 @@ export default function UsersPage() {
 
   // Handle refresh trigger
   useEffect(() => {
-    if (refreshTrigger && refreshTrigger > 0) {
+    if (refreshTrigger && refreshTrigger > 0 && initialLoadComplete) {
       const abortController = new AbortController();
       fetchCompaniesOnly(abortController.signal);
       return () => abortController.abort();
     }
-  }, [refreshTrigger, fetchCompaniesOnly]);
+  }, [refreshTrigger, initialLoadComplete, fetchCompaniesOnly]);
 
   // Optimized refresh handler
   const handleRefresh = useCallback(async () => {
@@ -368,7 +400,7 @@ export default function UsersPage() {
         setRefreshing(false);
       }
     }
-
+    
     return () => abortController.abort();
   }, [
     fetchUsersAndCompanies,
@@ -524,7 +556,7 @@ export default function UsersPage() {
 
   // Memoized render functions
   const renderUserContent = useMemo(() => {
-    if (isLoading) {
+    if (isLoading && !initialLoadComplete) {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#666" />
@@ -532,7 +564,7 @@ export default function UsersPage() {
       );
     }
 
-    if (users.length === 0) {
+    if (users.length === 0 && initialLoadComplete) {
       return (
         <EmptyState
           canCreateUsers={permissions?.canCreateUsers}
@@ -541,23 +573,28 @@ export default function UsersPage() {
       );
     }
 
-    return viewMode === 'list' ? (
-      <UserTable
-        users={users}
-        onEdit={handleOpenForm}
-        onDelete={openDeleteDialog}
-        companyMap={companyMap}
-      />
-    ) : (
-      <UserCard
-        users={users}
-        onEdit={handleOpenForm}
-        onDelete={openDeleteDialog}
-        companyMap={companyMap}
-      />
-    );
+    if (users.length > 0) {
+      return viewMode === 'list' ? (
+        <UserTable
+          users={users}
+          onEdit={handleOpenForm}
+          onDelete={openDeleteDialog}
+          companyMap={companyMap}
+        />
+      ) : (
+        <UserCard
+          users={users}
+          onEdit={handleOpenForm}
+          onDelete={openDeleteDialog}
+          companyMap={companyMap}
+        />
+      );
+    }
+
+    return null;
   }, [
     isLoading,
+    initialLoadComplete,
     users,
     viewMode,
     permissions?.canCreateUsers,
@@ -566,8 +603,8 @@ export default function UsersPage() {
     companyMap,
   ]);
 
-  // Loading state
-  if (isLoading && companies.length === 0) {
+  // Show loading only if initial load is not complete
+  if (isLoading && !initialLoadComplete && companies.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.fullscreenLoader}>
@@ -579,7 +616,7 @@ export default function UsersPage() {
   }
 
   // No company state
-  if (companies.length === 0) {
+  if (companies.length === 0 && initialLoadComplete) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
@@ -607,87 +644,87 @@ export default function UsersPage() {
           refreshing={refreshing}
           onRefresh={handleRefresh}
           colors={['#2563eb']}
-            tintColor="#2563eb"
-          />
-        }
-      >
-        <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View>
-                <Text style={styles.title}>User Management</Text>
-                <View style={styles.subtitleRow}>
-                  <Text style={styles.subtitle}>Manage your users</Text>
-                </View>
+          tintColor="#2563eb"
+        />
+      }
+    >
+      <View style={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View>
+              <Text style={styles.title}>User Management</Text>
+              <View style={styles.subtitleRow}>
+                <Text style={styles.subtitle}>Manage your users</Text>
               </View>
             </View>
-            {permissions?.canCreateUsers && (
-              <TouchableOpacity
-                style={styles.addUserButton}
-                onPress={() => handleOpenForm()}
-              >
-                <Icon name="plus" size={16} color="#fff" />
-                <Text style={styles.addUserButtonText}>Add User</Text>
-              </TouchableOpacity>
-            )}
           </View>
-
-          {/* URL Card - Uncomment if needed */}
-          {/* <URLCard
-            userLoginUrl={userLoginUrl}
-            onCopy={copyToClipboard}
-            copied={copied}
-          /> */}
-
-          <Card>
-            <CardContent
-              style={
-                viewMode === 'card' ? styles.cardContent : styles.listContent
-              }
+          {permissions?.canCreateUsers && (
+            <TouchableOpacity
+              style={styles.addUserButton}
+              onPress={() => handleOpenForm()}
             >
-              {renderUserContent}
-            </CardContent>
-          </Card>
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent style={styles.dialogContent}>
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedUser ? 'Edit User' : 'Add New User'}
-                </DialogTitle>
-                <DialogDescription>Fill in the form below.</DialogDescription>
-              </DialogHeader>
-              <UserForm
-                user={selectedUser}
-                allCompanies={companies}
-                onSave={handleSave}
-                onCancel={handleCloseForm}
-              />
-            </DialogContent>
-          </Dialog>
-
-          <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete the
-                  user account.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onPress={() => setIsAlertOpen(false)}>
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction onPress={handleDelete}>
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              <Icon name="plus" size={16} color="#fff" />
+              <Text style={styles.addUserButtonText}>Add User</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </ScrollView>
+
+        {/* URL Card - Uncomment if needed */}
+        {/* <URLCard
+          userLoginUrl={userLoginUrl}
+          onCopy={copyToClipboard}
+          copied={copied}
+        /> */}
+
+        <Card>
+          <CardContent
+            style={
+              viewMode === 'card' ? styles.cardContent : styles.listContent
+            }
+          >
+            {renderUserContent}
+          </CardContent>
+        </Card>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent style={styles.dialogContent}>
+            <DialogHeader>
+              <DialogTitle>
+                {selectedUser ? 'Edit User' : 'Add New User'}
+              </DialogTitle>
+              <DialogDescription>Fill in the form below.</DialogDescription>
+            </DialogHeader>
+            <UserForm
+              user={selectedUser}
+              allCompanies={companies}
+              onSave={handleSave}
+              onCancel={handleCloseForm}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the
+                user account.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onPress={() => setIsAlertOpen(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onPress={handleDelete}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -700,7 +737,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  content: {},
+  content: {
+    paddingTop: 8,
+  },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
@@ -791,9 +830,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    margin: 8,
-    paddingLeft: 10,
-    paddingRight: 10,
+    marginHorizontal: 16,
+    // marginTop: 8,
+    marginBottom: 8,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -801,7 +840,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1F2937',
   },
@@ -811,7 +850,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 10, 
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -819,16 +858,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#3B82F6',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
     gap: 6,
     shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
-    marginTop: 6,
   },
   addUserButtonText: {
     color: '#FFFFFF',
@@ -836,8 +874,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   urlCardWrapper: {
-    marginLeft: 16,
-    marginRight: 16,
+    marginHorizontal: 16,
+    marginBottom: 8,
   },
   urlCard: {
     backgroundColor: '#FFFFFF',
@@ -939,4 +977,4 @@ const styles = StyleSheet.create({
     maxWidth: 640,
     width: '100%',
   },
-});
+});   

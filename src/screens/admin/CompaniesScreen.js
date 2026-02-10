@@ -398,7 +398,7 @@ export default function AdminCompaniesPage() {
             filteredCompanies.length === 0
               ? styles.emptyListContent
               : styles.listContent,
-            { paddingTop: 140 }, // Adjusted for tight UI spacing
+            { paddingTop: 95 }, 
           ]}
           onScroll={Animated.event(
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingTop: 10,
     paddingBottom: 8,
   },
   headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    // paddingVertical: 5,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#f3f4f6',

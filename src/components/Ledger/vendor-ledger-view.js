@@ -581,7 +581,7 @@ export function VendorLedgerView({
           <View style={styles.summaryHeader}>
             <View style={styles.vendorInfo}>
               <View style={styles.vendorIcon}>
-                <FileText size={20} color="#4b5563" />
+                <FileText size={17} color="#4b5563" />
               </View>
               <View style={styles.vendorDetails}>
                 <Text style={styles.vendorName}>
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   cardContent: {
     padding: 12,
   },
-  // Summary card styles
+  
   summaryCard: {
     marginBottom: 16,
   },
@@ -903,12 +903,12 @@ const styles = StyleSheet.create({
   vendorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     flex: 1,
   },
   vendorIcon: {
-    width: 40,
-    height: 40,
+    width: 30,
+    height: 30,
     backgroundColor: '#f3f4f6',
     borderRadius: 20,
     alignItems: 'center',
@@ -918,12 +918,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   vendorName: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
   },
   vendorDate: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#6b7280',
     marginTop: 2,
   },
@@ -951,6 +951,7 @@ const styles = StyleSheet.create({
   badgeAdvance: {
     borderColor: '#bbf7d0',
     backgroundColor: '#f0fdf4',
+    
   },
   badgeSettled: {
     borderColor: '#bfdbfe',
@@ -961,6 +962,7 @@ const styles = StyleSheet.create({
   },
   badgeTextAdvance: {
     color: '#065f46',
+    fontSize:8
   },
   badgeTextSettled: {
     color: '#1e40af',

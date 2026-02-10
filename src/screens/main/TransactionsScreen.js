@@ -2360,12 +2360,12 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 10,
     color: '#6b7280',
     // marginTop: 6,
   },
