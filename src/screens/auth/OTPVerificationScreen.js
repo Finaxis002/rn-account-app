@@ -237,7 +237,7 @@ export default function OTPVerificationScreen({ navigation, route }) {
     if (timer > 0) return;
     const id = identifier || email || '';
     setLoadingResend(true);
-    setTimer(30);
+    setTimer(45);
     setEnteredOtp(['', '', '', '', '', '']);
     try {
       const res = await fetch(
