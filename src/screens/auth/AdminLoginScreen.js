@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import Toast from '../../components/ui/Toast';
 import { loginMasterAdmin, getCurrentUser } from '../../lib/auth';
 import {
   getCurrentUserNew as getSession,
@@ -35,6 +35,12 @@ export default function AdminLoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [toast, setToast] = useState({
+    visible: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
 
   // ✅ Context hooks for both permission providers
   const { refetch: refetchPermissions } = useUserPermissions();
@@ -108,11 +114,11 @@ export default function AdminLoginScreen({ navigation }) {
       scheduleAutoLogout(user.token, async () => {
         await clearSession();
         navigation.replace('AdminLoginScreen');
-        Toast.show({
+        setToast({
+          visible: true,
           type: 'info',
-          text1: 'Session expired',
-          text2: 'Please log in again',
-          position: 'top',
+          title: 'Session expired',
+          message: 'Please log in again',
         });
       });
 
@@ -126,12 +132,11 @@ export default function AdminLoginScreen({ navigation }) {
       } else if (err.message && err.message !== 'Network Error') {
         errorMessage = err.message;
       }
-      Toast.show({
+      setToast({
+        visible: true,
         type: 'error',
-        text1: 'Login Failed',
-        text2: errorMessage,
-        position: 'top',
-        visibilityTime: 1500,
+        title: 'Login Failed',
+        message: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -248,42 +253,14 @@ export default function AdminLoginScreen({ navigation }) {
       </KeyboardAvoidingView>
 
       {/* === Toast Config === */}
-      <Toast
-        config={{
-          success: props => (
-            <BaseToast
-              {...props}
-              style={{
-                borderLeftColor: '#10b981',
-                borderRadius: 12,
-                backgroundColor: '#ecfdf5',
-              }}
-              text1Style={{
-                fontSize: 16,
-                fontWeight: '700',
-                color: '#065f46',
-              }}
-              text2Style={{ fontSize: 14, color: '#065f46' }}
-            />
-          ),
-          error: props => (
-            <ErrorToast
-              {...props}
-              style={{
-                borderLeftColor: '#ef4444',
-                borderRadius: 12,
-                backgroundColor: '#fee2e2',
-              }}
-              text1Style={{
-                fontSize: 16,
-                fontWeight: '700',
-                color: '#b91c1c',
-              }}
-              text2Style={{ fontSize: 14, color: '#b91c1c' }}
-            />
-          ),
-        }}
-      />
+      {toast.visible && (
+        <Toast
+          type={toast.type}
+          title={toast.title}
+          message={toast.message}
+          onClose={() => setToast({ ...toast, visible: false })}
+        />
+      )}
     </SafeAreaView>
   );
 }

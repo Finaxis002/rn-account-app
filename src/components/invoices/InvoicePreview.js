@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import Toast from '../ui/Toast';
 import {
   StyleSheet,
   Text,
@@ -85,6 +86,21 @@ export default function InvoicePreview({
   const [isLoading, setIsLoading] = useState(false);
   const [pdfPath, setPdfPath] = useState(null);
   const [error, setError] = useState(null);
+  // Toast state
+  const [toast, setToast] = useState({
+    visible: false,
+    type: 'success',
+    title: '',
+    message: '',
+    duration: 4000,
+  });
+  const showToast = useCallback((type, title, message, duration = 4000) => {
+    setToast({ visible: true, type, title, message, duration });
+  }, []);
+  const hideToast = useCallback(
+    () => setToast(t => ({ ...t, visible: false })),
+    [],
+  );
   // Queue to serialize PDF generation calls to avoid "Another PDF conversion is currently in progress"
   const genQueueRef = React.useRef(Promise.resolve());
   const generationTokenRef = React.useRef(0);
@@ -502,8 +518,10 @@ export default function InvoicePreview({
 
   // Write/Copy the generated PDF to a user-accessible location and share it
   const handleDownload = async () => {
-    if (!pdfPath) return Alert.alert('Not ready', 'PDF is not ready yet');
-
+    if (!pdfPath) {
+      showToast('warning', 'Not ready', 'PDF is not ready yet');
+      return;
+    }
     try {
       // 1️⃣ Android Permission Check (Only for Android < 13)
       if (Platform.OS === 'android' && Platform.Version < 33) {
@@ -511,56 +529,53 @@ export default function InvoicePreview({
           PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
           {
             title: 'Storage Permission Required',
-            message: 'We need permission to save invoices to your Downloads folder',
+            message:
+              'We need permission to save invoices to your Downloads folder',
             buttonNeutral: 'Ask Later',
             buttonNegative: 'Cancel',
             buttonPositive: 'Allow',
           },
         );
         if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          Alert.alert(
+          showToast(
+            'error',
             'Permission Denied',
             'Storage permission is required to download invoices.',
           );
           return;
         }
       }
-
       // 2️⃣ Generate Unique Filename (Invoice No + Timestamp)
-      const invoiceNumber = transaction?.invoiceNumber || transaction?._id?.slice(-6) || Date.now();
+      const invoiceNumber =
+        transaction?.invoiceNumber || transaction?._id?.slice(-6) || Date.now();
       const timestamp = Date.now();
       const fname = `Invoice_${invoiceNumber}_${timestamp}.pdf`;
-
       // 3️⃣ Setup Paths (Temp + Public Download folder)
       const sourcePath = pdfPath.replace(/^file:\/\//, '');
       const tempPath = `${RNFS.DocumentDirectoryPath}/${fname}`;
-      const downloadDir = Platform.OS === 'android'
-        ? RNFS.DownloadDirectoryPath
-        : RNFS.DocumentDirectoryPath;
+      const downloadDir =
+        Platform.OS === 'android'
+          ? RNFS.DownloadDirectoryPath
+          : RNFS.DocumentDirectoryPath;
       const publicPath = `${downloadDir}/${fname}`;
-
       // 4️⃣ Verify source file exists
       const sourceExists = await RNFS.exists(sourcePath);
       if (!sourceExists) {
         throw new Error('Source PDF file not found.');
       }
-
       // 5️⃣ Copy to public Downloads folder
       await RNFS.copyFile(sourcePath, publicPath);
-
       // 6️⃣ Trigger Media Scanner on Android (shows file in Downloads app immediately)
       if (Platform.OS === 'android') {
         try {
           await RNFS.scanFile(publicPath);
         } catch (scanErr) {
           console.warn('Media scan warning:', scanErr);
-          // Don't fail if scan fails, file is still saved
         }
-
-        Alert.alert(
-          'Download Successful ✅',
+        showToast(
+          'download',
+          'Download Successful',
           `Invoice saved as: ${fname}`,
-          [{ text: 'OK' }],
         );
       } else {
         // iOS: Use share sheet for download confirmation
@@ -569,10 +584,16 @@ export default function InvoicePreview({
           type: 'application/pdf',
           filename: fname,
         });
+        showToast(
+          'download',
+          'Download Successful',
+          `Invoice saved as: ${fname}`,
+        );
       }
     } catch (e) {
       console.error('🔴 Download Error:', e);
-      Alert.alert(
+      showToast(
+        'error',
         'Download Failed',
         `Could not save file to Downloads. Error: ${
           e.message || 'Unknown error'
@@ -582,11 +603,12 @@ export default function InvoicePreview({
   };
 
   const handleShare = async () => {
-    if (!pdfPath) return Alert.alert('Not ready', 'PDF is not ready yet');
-
+    if (!pdfPath) {
+      showToast('warning', 'Not ready', 'PDF is not ready yet');
+      return;
+    }
     let cachePath = null;
     try {
-      // ... (steps 1, 2, 3, 4: Copying file to cache and setting up options)
       const sourcePath = pdfPath.replace(/^file:\/\//, '');
       const fileName = `invoice_share_${
         transaction?.invoiceNumber || 'temp'
@@ -594,7 +616,6 @@ export default function InvoicePreview({
       cachePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
       await RNFS.copyFile(sourcePath, cachePath);
       const fileUriForShare = `file://${cachePath}`;
-
       const shareOptions = {
         url: fileUriForShare,
         title: 'Invoice',
@@ -603,29 +624,19 @@ export default function InvoicePreview({
         subject: `Invoice: ${transaction?.invoiceNumber || 'Document'}`,
         filename: fileName,
       };
-
-      // 5. Open the share dialog
       await Share.open(shareOptions);
+      showToast('success', 'Shared', 'Invoice shared successfully');
     } catch (e) {
-      // **FIX:** Check for user cancellation first.
       if (e.message && e.message.includes('User did not share')) {
-        // User cancelled the share dialog. Log a neutral message and return silently.
-
         return;
       }
-
-    
-
       let userMessage = e.message || 'Failed to share file.';
-
       if (Platform.OS === 'android') {
         userMessage =
           'Failed to attach file. Please ensure your `react-native-share` library is up to date and native FileProvider configuration is correct.';
       }
-
-      Alert.alert('Share Failed', userMessage);
+      showToast('error', 'Share Failed', userMessage);
     } finally {
-      // 6. Clean up the temporary cache file if it exists
       if (cachePath) {
         RNFS.unlink(cachePath).catch(err => {});
       }
@@ -724,7 +735,7 @@ export default function InvoicePreview({
             source={{ uri: pdfPath }}
             style={styles.pdf}
             onError={e => {
-              Alert.alert('PDF Error', 'Failed to render PDF');
+              showToast('error', 'PDF Error', 'Failed to render PDF');
             }}
           />
         ) : (
@@ -750,6 +761,15 @@ export default function InvoicePreview({
           <Text style={styles.buttonText}>Share</Text>
         </TouchableOpacity>
       </View>
+      {toast.visible && (
+        <Toast
+          type={toast.type}
+          title={toast.title}
+          message={toast.message}
+          duration={toast.duration}
+          onClose={hideToast}
+        />
+      )}
     </SafeAreaView>
   );
 }
