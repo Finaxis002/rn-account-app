@@ -12,7 +12,7 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, Button } from 'react-native-paper';
+// Replaced react-native-paper Card/Button with native components
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ClientsValidityManager from '../../components/admin/settings/ClientsValidityManager';
@@ -214,8 +214,8 @@ export default function SettingsPage() {
 
   // Render different sections of the settings
   const renderProfileSection = () => (
-    <Card style={styles.card}>
-      <Card.Content>
+    <View style={styles.card}>
+      <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
           <Icon name="account-circle" size={24} color="#666" />
           <View style={styles.cardHeaderText}>
@@ -276,13 +276,12 @@ export default function SettingsPage() {
             </View>
           </View>
         </View>
-      </Card.Content>
+      </View>
 
-      <Card.Actions style={styles.cardActions}>
-        <Button
-          mode="contained"
+      <View style={styles.cardActions}>
+        <TouchableOpacity
           onPress={handleSaveProfile}
-          style={styles.saveButton}
+          style={[styles.saveButton, loading && { opacity: 0.6 }]}
           disabled={loading}
         >
           <Icon
@@ -291,15 +290,15 @@ export default function SettingsPage() {
             color="white"
             style={styles.buttonIcon}
           />
-          Save Profile
-        </Button>
-      </Card.Actions>
-    </Card>
+          <Text style={{ color: '#fff', marginLeft: 8 }}>Save Profile</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 
   const renderNotificationSection = () => (
-    <Card style={styles.card}>
-      <Card.Content>
+    <View style={styles.card}>
+      <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
           <Icon name="bell" size={24} color="#666" />
           <View style={styles.cardHeaderText}>
@@ -352,20 +351,8 @@ export default function SettingsPage() {
             onValueChange={value => handleInputChange('securityAlerts', value)}
           />
         </View>
-      </Card.Content>
-
-      {/* <Card.Actions style={styles.cardActions}>
-        <Button 
-          mode="contained" 
-          onPress={handleSaveNotificationSettings}
-          style={styles.saveButton}
-          disabled={loading}
-        >
-          <Icon name="bell" size={20} color="white" style={styles.buttonIcon} />
-          Save Notifications
-        </Button>
-      </Card.Actions> */}
-    </Card>
+      </View>
+    </View>
   );
 
   // Data for FlatList sections
@@ -435,70 +422,70 @@ export default function SettingsPage() {
         )}
 
         <FlatList
-            data={settingsSections}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-          />
+          data={settingsSections}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+        />
 
-          {/* Client Dialog Modal */}
-          <Modal
-            visible={isClientDialogOpen}
-            animationType="slide"
-            presentationStyle="pageSheet"
-            onRequestClose={handleCloseClientDialog}
-          >
-            <SafeAreaView style={styles.modalSafeArea}>
-              <View style={styles.modalContainer}>
-                <View style={styles.modalHeader}>
-                  <View style={styles.modalHeaderText}>
-                    <Text style={styles.modalTitle}>
-                      {selectedClient ? 'Edit Client' : 'Add New Client'}
-                    </Text>
-                    <Text style={styles.modalDescription}>
-                      {selectedClient
-                        ? `Update the details for ${selectedClient.contactName}.`
-                        : 'Fill in the form below to add a new client.'}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={handleCloseClientDialog}
-                    style={styles.closeButton}
-                  >
-                    <Icon name="close" size={24} color="#666" />
-                  </TouchableOpacity>
+        {/* Client Dialog Modal */}
+        <Modal
+          visible={isClientDialogOpen}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={handleCloseClientDialog}
+        >
+          <SafeAreaView style={styles.modalSafeArea}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHeaderText}>
+                  <Text style={styles.modalTitle}>
+                    {selectedClient ? 'Edit Client' : 'Add New Client'}
+                  </Text>
+                  <Text style={styles.modalDescription}>
+                    {selectedClient
+                      ? `Update the details for ${selectedClient.contactName}.`
+                      : 'Fill in the form below to add a new client.'}
+                  </Text>
                 </View>
-
-                <View style={styles.modalContent}>
-                  <ClientForm
-                    client={selectedClient || undefined}
-                    onFormSubmit={handleClientFormSubmit}
-                    onCancel={handleCloseClientDialog}
-                    loading={loading}
-                    baseUrl={BASE_URL}
-                  />
-                </View>
+                <TouchableOpacity
+                  onPress={handleCloseClientDialog}
+                  style={styles.closeButton}
+                >
+                  <Icon name="close" size={24} color="#666" />
+                </TouchableOpacity>
               </View>
-            </SafeAreaView>
-          </Modal>
-        </View>
-      </SafeAreaView>
+
+              <View style={styles.modalContent}>
+                <ClientForm
+                  client={selectedClient || undefined}
+                  onFormSubmit={handleClientFormSubmit}
+                  onCancel={handleCloseClientDialog}
+                  loading={loading}
+                  baseUrl={BASE_URL}
+                />
+              </View>
+            </View>
+          </SafeAreaView>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
   },
   modalSafeArea: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#ffffff',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
   },
   listContent: {
     padding: 16,
@@ -534,11 +521,20 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 0,
+    borderWidth: 1,
+    borderColor: '#eef2f7',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    alignSelf: 'stretch',
+  },
+  cardContent: {
+    padding: 12,
   },
   cardHeader: {
     flexDirection: 'row',
