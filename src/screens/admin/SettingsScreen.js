@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -375,42 +375,45 @@ export default function SettingsPage() {
     },
   ];
 
-  const renderItem = ({ item }) => {
-    switch (item.type) {
-      case 'header':
-        return (
-          <View style={styles.headerRow}>
-            <View style={styles.headerTextWrap}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity
-                  onPress={handleBack}
-                  style={styles.backButton}
-                >
-                  <Icon name="arrow-left" size={24} color="#666" />
-                </TouchableOpacity>
-                <Text style={styles.title}>Settings</Text>
+  const renderItem = useCallback(
+    ({ item }) => {
+      switch (item.type) {
+        case 'header':
+          return (
+            <View style={styles.headerRow}>
+              <View style={styles.headerTextWrap}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={handleBack}
+                    style={styles.backButton}
+                  >
+                    <Icon name="arrow-left" size={24} color="#666" />
+                  </TouchableOpacity>
+                  <Text style={styles.title}>Settings</Text>
+                </View>
+                <Text style={styles.subtitle}>
+                  Manage your account and system preferences
+                </Text>
               </View>
-              <Text style={styles.subtitle}>
-                Manage your account and system preferences
-              </Text>
             </View>
-          </View>
-        );
-      case 'profile':
-        return renderProfileSection();
-      case 'clients':
-        return (
-          <ClientsValidityManager
-            onClientClick={handleClientClick}
-            baseUrl={BASE_URL}
-          />
-        );
-      case 'notifications':
-        return renderNotificationSection();
-      default:
-        return null;
-    }
-  };
+          );
+        case 'profile':
+          return renderProfileSection();
+        case 'clients':
+          return (
+            <ClientsValidityManager
+              onClientClick={handleClientClick}
+              baseUrl={BASE_URL}
+            />
+          );
+        case 'notifications':
+          return renderNotificationSection();
+        default:
+          return null;
+      }
+    },
+    [formData, loading, userData, isClientDialogOpen],
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
