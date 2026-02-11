@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { BASE_URL } from '../../config';
-// const BASE_URL = 'https://accountapp-backend-ooxj.vercel.app';
+import Toast from '../../components/ui/Toast';
 
 const DURATION = 3000;
 
@@ -107,11 +107,11 @@ export default function OTPVerificationScreen({ navigation, route }) {
   const [loadingVerify, setLoadingVerify] = useState(false);
   const [loadingResend, setLoadingResend] = useState(false);
 
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastData, setToastData] = useState({
+  const [toast, setToast] = useState({
+    visible: false,
     type: 'info',
-    text1: '',
-    text2: '',
+    title: '',
+    message: '',
   });
 
   const otpInputsRef = useRef([]);
@@ -132,10 +132,9 @@ export default function OTPVerificationScreen({ navigation, route }) {
   const otpValue = enteredOtp.join('');
 
   const showToast = (type, text1, text2) => {
-    setToastData({ type, text1, text2 });
-    setToastVisible(true);
+    setToast({ visible: true, type, title: text1, message: text2 });
   };
-  const hideToast = () => setToastVisible(false);
+  const hideToast = () => setToast({ ...toast, visible: false });
 
   // Build the message based on method
   const getDisplayMessage = () => {
@@ -365,13 +364,14 @@ export default function OTPVerificationScreen({ navigation, route }) {
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
 
-        <ToastComponent
-          isVisible={toastVisible}
-          type={toastData.type}
-          text1={toastData.text1}
-          text2={toastData.text2}
-          onHide={hideToast}
-        />
+        {toast.visible && (
+          <Toast
+            type={toast.type}
+            title={toast.title}
+            message={toast.message}
+            onClose={hideToast}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

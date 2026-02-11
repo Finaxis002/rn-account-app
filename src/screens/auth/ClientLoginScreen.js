@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import Toast from '../../components/ui/Toast';
 import { loginClientBySlug } from '../../lib/auth';
 import {
   saveSession,
@@ -34,6 +34,12 @@ export default function ClientLoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [toast, setToast] = useState({
+    visible: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
 
   // ✅ Access refetch from both contexts
   const { refetch: refetchUserPermissions } = useUserPermissions();
@@ -83,19 +89,19 @@ export default function ClientLoginScreen({ navigation }) {
     scheduleAutoLogout(user.token, async () => {
       await clearSession();
       navigation.replace('ClientLoginScreen');
-      Toast.show({
+      setToast({
+        visible: true,
         type: 'info',
-        text1: 'Session expired',
-        text2: 'Please login again',
-        position: 'top',
+        title: 'Session expired',
+        message: 'Please login again',
       });
     });
 
-    Toast.show({
+    setToast({
+      visible: true,
       type: 'success',
-      text1: 'Login Successful',
-      text2: `Welcome, ${user.name}!`,
-      position: 'top',
+      title: 'Login Successful',
+      message: `Welcome, ${user.name}!`,
     });
 
     navigateByRole(navigation, roleLabel);
@@ -104,11 +110,11 @@ export default function ClientLoginScreen({ navigation }) {
   // 🔹 Handle Password Login
   const handlePasswordLogin = async () => {
     if (!username.trim() || !password.trim()) {
-      Toast.show({
+      setToast({
+        visible: true,
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter username and password',
-        position: 'top',
+        title: 'Validation Error',
+        message: 'Please enter username and password',
       });
       return;
     }
@@ -122,11 +128,11 @@ export default function ClientLoginScreen({ navigation }) {
 
       await completeLoginFlow(user, 'customer');
     } catch (error) {
-      Toast.show({
+      setToast({
+        visible: true,
         type: 'error',
-        text1: 'Login Failed',
-        text2: error.message || 'Something went wrong',
-        position: 'top',
+        title: 'Login Failed',
+        message: error.message || 'Something went wrong',
       });
     } finally {
       setLoading(false);
@@ -230,34 +236,14 @@ export default function ClientLoginScreen({ navigation }) {
       </KeyboardAvoidingView>
 
       {/* Toast Configuration */}
-      <Toast
-        config={{
-          success: props => (
-            <BaseToast
-              {...props}
-              style={{
-                borderLeftColor: '#10b981',
-                borderRadius: 12,
-                backgroundColor: '#ecfdf5',
-              }}
-              text1Style={{ fontSize: 16, fontWeight: '700', color: '#065f46' }}
-              text2Style={{ fontSize: 14, color: '#065f46' }}
-            />
-          ),
-          error: props => (
-            <ErrorToast
-              {...props}
-              style={{
-                borderLeftColor: '#ef4444',
-                borderRadius: 12,
-                backgroundColor: '#fee2e2',
-              }}
-              text1Style={{ fontSize: 16, fontWeight: '700', color: '#b91c1c' }}
-              text2Style={{ fontSize: 14, color: '#b91c1c' }}
-            />
-          ),
-        }}
-      />
+      {toast.visible && (
+        <Toast
+          type={toast.type}
+          title={toast.title}
+          message={toast.message}
+          onClose={() => setToast({ ...toast, visible: false })}
+        />
+      )}
     </SafeAreaView>
   );
 }

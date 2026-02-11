@@ -14,7 +14,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast, { ErrorToast } from 'react-native-toast-message';
+import Toast from '../../components/ui/Toast';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { BASE_URL } from '../../config';
 // const BASE_URL = 'https://accountapp-backend-ooxj.vercel.app';
@@ -26,6 +26,12 @@ export default function SendOtpScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({
+    visible: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
 
   const USERS = [
     {
@@ -57,11 +63,13 @@ export default function SendOtpScreen({ navigation }) {
     const identifier = method === 'email' ? email.trim() : userId.trim();
 
     if (!identifier) {
-      Toast.show({
-        type: 'custom_error',
-        text1: 'Validation Error',
-        text2: `Please enter your ${method === 'email' ? 'Email' : 'User ID'}.`,
-        position: 'top',
+      setToast({
+        visible: true,
+        type: 'error',
+        title: 'Validation Error',
+        message: `Please enter your ${
+          method === 'email' ? 'Email' : 'User ID'
+        }.`,
       });
       return;
     }
@@ -77,11 +85,11 @@ export default function SendOtpScreen({ navigation }) {
         role: 'master',
         fromServer: false,
       });
-      Toast.show({
+      setToast({
+        visible: true,
         type: 'success',
-        text1: 'OTP Sent (Dev)',
-        text2: `Master OTP is ${master.otp}. Redirecting to verification screen.`,
-        position: 'top',
+        title: 'OTP Sent (Dev)',
+        message: `Master OTP is ${master.otp}. Redirecting to verification screen.`,
       });
       return;
     }
@@ -102,11 +110,11 @@ export default function SendOtpScreen({ navigation }) {
 
       if (!res.ok) {
         const message = json?.message || `Request failed (${res.status})`;
-        Toast.show({
-          type: 'custom_error',
-          text1: 'Failed to send OTP',
-          text2: message,
-          position: 'top',
+        setToast({
+          visible: true,
+          type: 'error',
+          title: 'Failed to send OTP',
+          message: message,
         });
         setLoading(false);
         return;
@@ -128,19 +136,19 @@ export default function SendOtpScreen({ navigation }) {
         fromServer: true,
       });
 
-      Toast.show({
+      setToast({
+        visible: true,
         type: 'success',
-        text1: 'OTP Sent',
-        text2: json?.message || 'OTP sent to registered email.',
-        position: 'top',
+        title: 'OTP Sent',
+        message: json?.message || 'OTP sent to registered email.',
       });
     } catch (err) {
       console.error('request-user-otp error:', err);
-      Toast.show({
-        type: 'custom_error',
-        text1: 'Network Error',
-        text2: 'Could not reach server. Please try again.',
-        position: 'top',
+      setToast({
+        visible: true,
+        type: 'error',
+        title: 'Network Error',
+        message: 'Could not reach server. Please try again.',
       });
     } finally {
       setLoading(false);
@@ -261,27 +269,14 @@ export default function SendOtpScreen({ navigation }) {
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
 
-        <Toast
-          config={{
-            custom_error: props => (
-              <ErrorToast
-                {...props}
-                style={{
-                  borderLeftColor: '#EF4444',
-                  borderRadius: 6,
-                  backgroundColor: '#FEE2E2',
-                  paddingHorizontal: 12,
-                }}
-                text1Style={{
-                  fontSize: 14,
-                  fontWeight: '700',
-                  color: '#B91C1C',
-                }}
-                text2Style={{ fontSize: 12, color: '#B91C1C' }}
-              />
-            ),
-          }}
-        />
+        {toast.visible && (
+          <Toast
+            type={toast.type}
+            title={toast.title}
+            message={toast.message}
+            onClose={() => setToast({ ...toast, visible: false })}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

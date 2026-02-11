@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+import Toast from '../../components/ui/Toast';
 import { navigateByRole } from '../../utils/roleNavigation';
 import { loginUser, getCurrentUser } from '../../lib/auth';
 
@@ -26,6 +26,12 @@ export default function UserLoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [toast, setToast] = useState({
+    visible: false,
+    type: 'success',
+    title: '',
+    message: '',
+  });
 
   const { refetch: refetchUserPermissions } = useUserPermissions();
   const { refetch: refetchAppPermissions } = usePermissions();
@@ -68,11 +74,11 @@ export default function UserLoginScreen({ navigation }) {
 
   const handleSubmit = async () => {
     if (!userId.trim() || !password.trim()) {
-      Toast.show({
-        type: 'custom_error',
-        text1: 'Validation Error',
-        text2: 'Please enter User ID and Password',
-        visibilityTime: 1500,
+      setToast({
+        visible: true,
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please enter User ID and Password',
       });
       return;
     }
@@ -82,11 +88,11 @@ export default function UserLoginScreen({ navigation }) {
     try {
       const user = await loginUser(userId, password);
 
-      Toast.show({
-        type: 'custom_success',
-        text1: 'Login Successful',
-        text2: `Welcome, ${user.name || user.username}!`,
-        visibilityTime: 1500,
+      setToast({
+        visible: true,
+        type: 'success',
+        title: 'Login Successful',
+        message: `Welcome, ${user.name || user.username}!`,
       });
 
       await refetchPermissions();
@@ -95,11 +101,11 @@ export default function UserLoginScreen({ navigation }) {
         navigateByRole(navigation, user.role);
       }, 500);
     } catch (error) {
-      Toast.show({
-        type: 'custom_error',
-        text1: 'Login Failed',
-        text2: error.message || 'Invalid User ID or Password',
-        visibilityTime: 1500,
+      setToast({
+        visible: true,
+        type: 'error',
+        title: 'Login Failed',
+        message: error.message || 'Invalid User ID or Password',
       });
     } finally {
       setLoading(false);
@@ -244,7 +250,14 @@ export default function UserLoginScreen({ navigation }) {
         </View>
       </KeyboardAvoidingView>
 
-      <Toast config={toastConfig} />
+      {toast.visible && (
+        <Toast
+          type={toast.type}
+          title={toast.title}
+          message={toast.message}
+          onClose={() => setToast({ ...toast, visible: false })}
+        />
+      )}
     </SafeAreaView>
   );
 }
