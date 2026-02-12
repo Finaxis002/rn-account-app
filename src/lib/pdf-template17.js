@@ -624,16 +624,24 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
                 <!-- Header Section -->
                 <div class="header-section">
                   <div class="header-content">
-                    <div class="company-col">
-                      <div class="company-header">
-                        <div class="logo-container">
-                          ${
-                            logoSrc
-                              ? `<img src="${logoSrc}" class="logo" alt="Company Logo" />`
-                              : ''
-                          }
-                        </div>
-                        <div class="company-details">
+                    <div class="company-col" style="${
+                      !logoSrc
+                        ? 'width:60%;border-right:1px solid ' +
+                          PRIMARY_BLUE +
+                          ';'
+                        : ''
+                    }">
+                      <div class="company-header" style="${
+                        !logoSrc ? 'gap:0;' : ''
+                      }">
+                        ${
+                          logoSrc
+                            ? `<div class="logo-container"><img src="${logoSrc}" class="logo" alt="Company Logo" /></div>`
+                            : ''
+                        }
+                        <div class="company-details" style="${
+                          !logoSrc ? 'margin-left:0;width:100%;' : ''
+                        }">
                           <div class="company-name">${capitalizeWords(
                             companyName,
                           )}</div>
@@ -1081,27 +1089,35 @@ const Template17 = ({ transaction, company, party, shippingAddress, bank }) => {
                           !shouldHideBankDetails && isBankDetailAvailable
                             ? `
                           <div class="section-heading">Bank Details:</div>
-                          <div class="bank-line"><span class="bold">Bank Name:</span> ${capitalizeWords(
-                            bankData?.bankName || '-',
-                          )}</div>
-                          <div class="bank-line"><span class="bold">Account No:</span> ${
-                            bankData?.accountNo || '-'
-                          }</div>
-                          <div class="bank-line"><span class="bold">IFSC Code:</span> ${
-                            bankData?.ifscCode || '-'
-                          }</div>
-                          <div class="bank-line"><span class="bold">Branch:</span> ${
-                            bankData?.branchAddress || '-'
-                          }</div>
-                          ${
-                            bankData?.upiDetails?.upiId
-                              ? `<div class="bank-line"><span class="bold">UPI ID:</span> ${bankData.upiDetails.upiId}</div>`
-                              : ''
-                          }
+                          <div style="display: flex; flex-direction: row; gap: 10px; align-items: flex-start;">
+                            <div style="flex: 1;">
+                              <div class="bank-line"><span class="bold">Bank Name:</span> ${capitalizeWords(
+                                bankData?.bankName || '-',
+                              )}</div>
+                              <div class="bank-line"><span class="bold">Account No:</span> ${
+                                bankData?.accountNo || '-'
+                              }</div>
+                              <div class="bank-line"><span class="bold">IFSC Code:</span> ${
+                                bankData?.ifscCode || '-'
+                              }</div>
+                              <div class="bank-line"><span class="bold">Branch:</span> ${
+                                bankData?.branchAddress || '-'
+                              }</div>
+                              ${
+                                bankData?.upiDetails?.upiId
+                                  ? `<div class="bank-line"><span class="bold">UPI ID:</span> ${bankData.upiDetails.upiId}</div>`
+                                  : ''
+                              }
+                            </div>
+                            ${
+                              bankData?.qrCode
+                                ? `<div style="display: flex; flex-direction: column; align-items: center; margin-left: 20px; width: fit-content;"><div style="font-size: 9px; font-weight: bold; margin-bottom: 0px;">QR Code</div><img src="${BASE_URL}/${bankData.qrCode}" class="qr-image" alt="QR Code" style="max-width: 80px; max-height: 80px; display: block; border: 1px solid #eee; padding: 2px; background: #fff;" /></div>`
+                                : ''
+                            }
+                          </div>
                         `
                             : ''
                         }
-                        
                         <div class="signature-area">
                           <div style="font-weight: bold; font-size: 9px;">For ${companyName}</div>
                           <div class="signature-line">Authorised Signatory</div>
