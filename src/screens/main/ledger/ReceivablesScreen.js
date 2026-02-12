@@ -1091,12 +1091,12 @@ const ReceivablesLedger = () => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <View style={styles.iconBadge}>
+            {/* <View style={styles.iconBadge}>
               <Icon name="book-open-variant" size={20} color="#3B82F6" />
-            </View>
+            </View> */}
             <View>
               <Text style={styles.title}>Customer Ledger</Text>
-              <Text style={styles.subtitle}>Manage receivables</Text>
+              {/* <Text style={styles.subtitle}>Manage receivables</Text> */}
             </View>
           </View>
           <TouchableOpacity
@@ -1586,7 +1586,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
     elevation: 4,
@@ -1615,7 +1615,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
     letterSpacing: -0.5,
@@ -1776,7 +1776,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    // paddingVertical: 11,
     minHeight: 40,
   },
   filterInputActive: {

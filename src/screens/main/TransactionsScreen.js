@@ -27,6 +27,7 @@ import {
   TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FileText, PlusCircle, Package, X } from 'lucide-react-native';
 import RNFS from 'react-native-fs';
 import Pdf from 'react-native-pdf';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -1607,8 +1608,9 @@ const TransactionsScreen = ({ navigation }) => {
                 onPress={() => handleOpenForm(null)}
               >
                 {/* <Icon name="add" size={14} color="#ffffff" /> */}
+                <PlusCircle size={14} color="#ffffff" strokeWidth={2.5} />
                 <Text style={styles.headerPrimaryButtonText}>
-                  New Transaction
+                  Transaction
                 </Text>
               </TouchableOpacity>
 
@@ -1620,6 +1622,7 @@ const TransactionsScreen = ({ navigation }) => {
                 onPress={() => setIsProformaFormOpen(true)}
               >
                 {/* <Feather name="file-text" size={13} color="#007AFF" /> */}
+                {/* <FileText size={14} color="#3b82f6" strokeWidth={2.5} /> */}
                 <Text style={styles.headerSecondaryButtonText}>
                   Proforma Invoice
                 </Text>
@@ -2342,7 +2345,7 @@ const styles = StyleSheet.create({
   headerFixed: {
     backgroundColor: 'white',
     paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingTop: 6,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e6e6e6',
@@ -2380,7 +2383,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 6,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 8,
     gap: 4,
     minHeight: 32,
     shadowColor: '#000',
@@ -2390,7 +2393,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   headerPrimaryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3b82f6',
     borderWidth: 0,
   },
   headerSecondaryButton: {
@@ -2459,7 +2462,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 0,
-    paddingVertical: 10,
+    paddingVertical: 6,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -2500,7 +2503,7 @@ const styles = StyleSheet.create({
   tabButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 3,
     marginRight: 12,
     borderRadius: 14,
@@ -2513,11 +2516,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
-    minHeight: 40,
+    minHeight: 35,
   },
   activeTabButton: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
     shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
@@ -2525,7 +2528,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '400',
     color: '#45454e',
     letterSpacing: -0.3,

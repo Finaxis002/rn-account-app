@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#111827",
     marginBottom: 16,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     minWidth: 300,
   },
   sideTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     borderBottomWidth: 1,
     paddingBottom: 8,
@@ -314,12 +314,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fee2e2", // red-50
   },
   itemLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "500",
     color: "#374151",
   },
   itemAmount: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   leftAmount: {
@@ -355,8 +355,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   colorDot: {
-    width: 8,
-    height: 8,
+    width: 5,
+    height: 5,
     borderRadius: 4,
   },
   paymentMethodText: {
@@ -400,12 +400,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
     color: "#111827",
   },
   totalAmount: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
     color: "#111827",
   },

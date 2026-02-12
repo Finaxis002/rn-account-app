@@ -83,7 +83,7 @@ const TransactionItem = memo(({
   const isPurchase = !item.type || item.type === 'debit';
   const bgColor = isDebit ? '#fef2f2' : '#f0fdf4';
   const borderColor = isDebit ? '#fecaca' : '#bbf7d0';
-  const textColor = isDebit ? '#dc2626' : '#10b981';
+  const textColor = isDebit ? '#d64b4b' : '#2ec995';
   
   const handlePress = useCallback(() => {
     onPress(item);
@@ -1061,11 +1061,11 @@ const styles = StyleSheet.create({
   },
   statusTextAdvance: {
     color: '#065f46',
-    fontSize: 12,
+    fontSize: 8,
   },
   statusTextSettled: {
     color: '#1e40af',
-    fontSize: 12,
+    fontSize: 8,
   },
   // Tab styles
   tabContainer: {
@@ -1121,10 +1121,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tabBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 4,
+    // paddingVertical: 4,
     borderRadius: 12,
-    minWidth: 32,
+    minWidth: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1138,7 +1138,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#DCFCE7',
   },
   tabBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#64748B',
   },
@@ -1254,14 +1254,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   transactionIndex: {
-    width: 32,
-    height: 32,
+    width: 25,
+    height: 25,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   transactionIndexText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: 'white',
   },
