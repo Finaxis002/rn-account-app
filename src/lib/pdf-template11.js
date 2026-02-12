@@ -929,6 +929,7 @@ export const generatePdfForTemplate11 = async (
       width: 60px;
       height: 60px;
       margin-right: 10px;
+      margin-top: 4px;
       flex-shrink: 0;
       display: flex;
       align-items: flex-start;
