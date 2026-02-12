@@ -735,7 +735,7 @@ const Template8 = ({
           .logo {
             position: absolute;
             right: 25pt;
-            top: 25pt;
+            top: 45pt;
             width: 70px;
             height: 70px;
           }
