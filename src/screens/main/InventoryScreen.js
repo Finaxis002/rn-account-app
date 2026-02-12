@@ -115,12 +115,12 @@ const ProductCard = memo(
             >
               <Icon
                 name={isSelected ? 'check-box' : 'check-box-outline-blank'}
-                size={24}
+                size={16}
                 color={isSelected ? '#3b82f6' : '#64748b'}
               />
             </TouchableOpacity>
             <View style={styles.iconCircle}>
-              <Icon name="inventory-2" size={20} color="#3b82f6" />
+              <Icon name="inventory-2" size={18} color="#3b82f6" />
             </View>
             <View style={styles.productDetails}>
               <Text style={styles.productName} numberOfLines={1}>
@@ -1843,7 +1843,7 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
   },
@@ -1895,8 +1895,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   iconCircle: {
-    width: 40,
-    height: 40,
+    width: 35,
+    height: 35,
     borderRadius: 20,
     backgroundColor: '#eff6ff',
     justifyContent: 'center',
@@ -1956,13 +1956,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   productName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#0f172a',
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   companyName: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#64748b',
     fontWeight: '500',
   },
@@ -1982,7 +1982,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   stockValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
     lineHeight: 20,
   },
@@ -1996,7 +1996,7 @@ const styles = StyleSheet.create({
     color: '#ef4444',
   },
   unit: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: '#64748b',
     lineHeight: 20,
@@ -2022,12 +2022,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   costPrice: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#0f172a',
   },
   sellingPrice: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#10b981',
   },
@@ -2044,7 +2044,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   hsnValue: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#0f172a',
   },
@@ -2056,7 +2056,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   serviceName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#0f172a',
     marginBottom: 4,

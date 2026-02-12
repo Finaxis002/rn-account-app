@@ -891,12 +891,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: '800',
     color: '#212529',
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6c757d',
   },
 

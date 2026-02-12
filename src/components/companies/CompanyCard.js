@@ -134,13 +134,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   companyName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   businessType: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6b7280',
   },
   badge: {
