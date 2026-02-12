@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Animated,
   TouchableOpacity,
-  Dimensions,
+  Platform,
 } from 'react-native';
 import {
   CheckCircle,
@@ -17,10 +17,8 @@ import {
 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-const { width } = Dimensions.get('window');
-
 const Toast = ({
-  type = 'success',
+  type = 'download',
   title,
   message,
   onClose,
@@ -28,37 +26,40 @@ const Toast = ({
 }) => {
   const progressAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-20)).current;
 
   const toastConfig = {
-    success: { icon: CheckCircle, color: '#22c55e', bg: '#15803d' },
-    error: { icon: XCircle, color: '#ef4444', bg: '#b91c1c' },
-    warning: { icon: AlertTriangle, color: '#f59e0b', bg: '#b45309' },
-    download: { icon: Download, color: '#3b82f6', bg: '#1d4ed8' },
-    print: { icon: Printer, color: '#6366f1', bg: '#4338ca' },
+    success: { icon: CheckCircle, color: '#059669' },
+    error: { icon: XCircle, color: '#dc2626' },
+    warning: { icon: AlertTriangle, color: '#d97706' },
+    download: { icon: Download, color: '#2563eb' },
+    print: { icon: Printer, color: '#4f46e5' },
   };
 
   const config = toastConfig[type] || toastConfig.success;
   const IconComponent = config.icon;
 
   useEffect(() => {
-    // Fade In
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 9,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    // Progress Bar Animation
     Animated.timing(progressAnim, {
       toValue: 0,
       duration: duration,
       useNativeDriver: false,
     }).start();
 
-    const timer = setTimeout(() => {
-      handleClose();
-    }, duration);
-
+    const timer = setTimeout(() => handleClose(), duration);
     return () => clearTimeout(timer);
   }, []);
 
@@ -71,47 +72,63 @@ const Toast = ({
   };
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      <LinearGradient
-        colors={['#1e293b', '#0f172a']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.toastBox}
-      >
-        {/* Icon */}
-        <View style={[styles.iconContainer, { backgroundColor: config.color }]}>
-          <IconComponent size={20} color="white" strokeWidth={3} />
-        </View>
-
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-        </View>
-
-        {/* Close Button */}
-        <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-          <View style={styles.closeCircle}>
-            <X size={14} color="#94a3b8" />
-          </View>
-        </TouchableOpacity>
-
-        {/* Progress Bar */}
-        <View style={styles.progressTrack}>
-          <Animated.View
+    <Animated.View
+      // renderToHardwareTextureAndroid glitch ko khatam karta hai
+      renderToHardwareTextureAndroid={true}
+      style={[
+        styles.container,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: translateY }],
+        },
+      ]}
+    >
+      {/* Border aur Shadow ko humne yahan shift kar diya hai 
+        taaki animation ke waqt border 'scatter' na ho
+      */}
+      <View style={styles.shadowWrapper}>
+        <LinearGradient
+          colors={['#eff6ff', '#f8fafc']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.toastBox}
+        >
+          <View
             style={[
-              styles.progressBar,
-              {
-                backgroundColor: config.color,
-                width: progressAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
+              styles.iconContainer,
+              { backgroundColor: `${config.color}15` },
             ]}
-          />
-        </View>
-      </LinearGradient>
+          >
+            <IconComponent size={20} color={config.color} strokeWidth={2.5} />
+          </View>
+
+          <View style={styles.content}>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.message} numberOfLines={2}>
+              {message}
+            </Text>
+          </View>
+
+          <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+            <X size={18} color="#94a3b8" />
+          </TouchableOpacity>
+
+          <View style={styles.progressTrack}>
+            <Animated.View
+              style={[
+                styles.progressBar,
+                {
+                  backgroundColor: config.color,
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
+        </LinearGradient>
+      </View>
     </Animated.View>
   );
 };
@@ -119,30 +136,41 @@ const Toast = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 50,
+    top: 60,
     width: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     zIndex: 9999,
+  },
+  shadowWrapper: {
+    // Shadow aur Elevation ko parent pe rakha hai glitches se bachne ke liye
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2563eb',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   toastBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 20,
-    padding: 16,
-    paddingBottom: 20, // Space for progress bar
-    overflow: 'hidden',
+    borderRadius: 12,
+    padding: 12,
+    paddingBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
+    borderColor: '#dbeafe',
+    overflow: 'hidden',
   },
   iconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -151,31 +179,26 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   title: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#1e3a8a',
+    fontSize: 15,
+    fontWeight: '700',
   },
   message: {
-    color: '#cbd5e1',
-    fontSize: 13,
-    marginTop: 2,
+    color: '#475569',
+    fontSize: 12,
+    marginTop: 1,
+    lineHeight: 16,
   },
   closeBtn: {
     padding: 4,
-  },
-  closeCircle: {
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 12,
-    padding: 2,
   },
   progressTrack: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    height: 3,
+    backgroundColor: 'rgba(0,0,0,0.03)',
   },
   progressBar: {
     height: '100%',
