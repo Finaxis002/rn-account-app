@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#111827',
     marginBottom: 16,
@@ -215,17 +215,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   itemName: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#374151',
     flex: 1,
   },
   expenseAmount: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#dc2626',
   },
   incomeAmount: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#059669',
   },
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   totalValue: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   expenseTotal: {

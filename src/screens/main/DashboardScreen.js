@@ -487,23 +487,6 @@ export default function DashboardPage() {
             </Suspense>
 
             <AnimatedTouchable
-              onPress={() => setIsProformaFormOpen(true)}
-              disabled={companies.length === 0}
-              style={[
-                styles.headerButton,
-                styles.proformaButton,
-                companies.length === 0 && styles.headerButtonDisabled,
-              ]}
-            >
-              <FileText size={14} color="#3b82f6" strokeWidth={2.5} />
-              <Text
-                style={[styles.headerButtonText, styles.proformaButtonText]}
-              >
-                Proforma
-              </Text>
-            </AnimatedTouchable>
-
-            <AnimatedTouchable
               onPress={() => setIsTransactionFormOpen(true)}
               disabled={companies.length === 0}
               style={[
@@ -519,6 +502,25 @@ export default function DashboardPage() {
                 Transaction
               </Text>
             </AnimatedTouchable>
+
+            <AnimatedTouchable
+              onPress={() => setIsProformaFormOpen(true)}
+              disabled={companies.length === 0}
+              style={[
+                styles.headerButton,
+                styles.proformaButton,
+                companies.length === 0 && styles.headerButtonDisabled,
+              ]}
+            >
+              {/* <FileText size={14} color="#3b82f6" strokeWidth={2.5} /> */}
+              <Text
+                style={[styles.headerButtonText, styles.proformaButtonText]}
+              >
+                Proforma Invoice
+              </Text>
+            </AnimatedTouchable>
+
+            
           </View>
         </View>
       </Animated.View>
@@ -728,7 +730,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
     paddingVertical: 6,
     borderRadius: 8,
     ...Platform.select({
@@ -745,8 +747,8 @@ const styles = StyleSheet.create({
   },
   proformaButton: {
     backgroundColor: '#ffffff',
-    borderWidth: 1.5,
-    borderColor: '#3b82f6',
+    borderWidth: 1,
+    borderColor: '#e5e5ea',
   },
   transactionButton: {
     backgroundColor: '#3b82f6',
@@ -900,8 +902,9 @@ const styles = StyleSheet.create({
   },
   dataContainer: {
     gap: 12,
-    marginTop: 8,
-    margin: 8,
+    // marginTop: 8,  
+    // margin: 8,
+    marginHorizontal:8
   },
   productStockSkeleton: {
     height: 200,

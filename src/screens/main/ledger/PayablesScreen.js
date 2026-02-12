@@ -607,7 +607,7 @@ export default function PayablesScreen() {
       <View style={styles.filterHeader}>
         <View style={styles.filterHeaderLeft}>
           <View style={styles.filterIconWrapper}>
-            <Filter size={14} color="#475569" strokeWidth={2.5} />
+            <Icon name="filter-variant" size={18} color="#3B82F6" />
           </View>
           <Text style={styles.filterTitle}>Filters</Text>
           {getActiveFilterCount() > 0 && (
@@ -632,7 +632,8 @@ export default function PayablesScreen() {
         <View style={styles.filterGrid}>
           {currentView === 'vendor' ? (
             <View style={styles.filterItem}>
-              <Text style={styles.filterLabel}>Vendor</Text>
+              <Text style={styles.filterLabel}>
+                 <Icon name="account-multiple" size={14} color="#6B7280" />{' '}Vendor</Text>
               <TouchableOpacity
                 style={[
                   styles.filterInput,
@@ -686,7 +687,9 @@ export default function PayablesScreen() {
 
           <View style={styles.filterItem}>
             <View style={styles.dateFilterHeader}>
-              <Text style={styles.filterLabel}>Date Range</Text>
+              
+              <Text style={styles.filterLabel}>
+                 <Icon name="calendar-start" size={14} color="#6B7280" /> {' '}Date Range</Text>
               {(dateRange.from || dateRange.to) && (
                 <TouchableOpacity
                   style={styles.dateResetButton}
@@ -905,26 +908,7 @@ export default function PayablesScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <View style={styles.headerTop}>
-              {isDetailOpen && (
-                <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => {
-                    setSelectedVendor('');
-                    setSelectedExpense('');
-                    setSelectedVendorFilter('');
-                    setSelectedExpenseFilter('');
-                    AsyncStorage.removeItem('selectedVendor_payables');
-                  }}
-                >
-                  <ArrowLeft size={16} color="#64748b" />
-                  <Text style={styles.backButtonText}>Back to List</Text>
-                </TouchableOpacity>
-              )}
-
-              <View style={styles.headerMain}>
+           <View style={styles.headerMain}>
                 <View style={styles.titleRow}>
                   <Text style={styles.title}>
                     {currentView === 'vendor'
@@ -939,6 +923,26 @@ export default function PayablesScreen() {
                   </View>
                 </View>
               </View>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.headerTop}>
+              {isDetailOpen && (
+                <TouchableOpacity
+                  style={styles.backButton}
+                  onPress={() => {
+                    setSelectedVendor('');
+                    setSelectedExpense('');
+                    setSelectedVendorFilter('');
+                    setSelectedExpenseFilter('');
+                    AsyncStorage.removeItem('selectedVendor_payables');
+                  }}
+                >
+                  <ArrowLeft size={16} color="#3B82F6" />
+                  <Text style={styles.backButtonText}>Back to List</Text>
+                </TouchableOpacity>
+              )}
+
+           
             </View>
           </View>
 
@@ -1051,22 +1055,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
+    // marginBottom: 16,
     paddingHorizontal: 12,
     paddingVertical: 8,
+
+    // backgroundColor:'white'
   },
   backButtonText: {
-    fontSize: 14,
-    color: '#64748b',
+    color: '#3B82F6',
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 8,
   },
-  headerMain: {},
+  headerMain: {
+    backgroundColor:'white',
+     paddingHorizontal: 10,
+     paddingVertical:10,
+      elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+  },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#0f172a',
   },
@@ -1074,7 +1091,15 @@ const styles = StyleSheet.create({
     display: 'flex',
   },
   filterSection: {
-    marginBottom: 20,
+    marginBottom: 4,
+    backgroundColor:'white',
+     borderRadius: 16,
+    padding: 12,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   filterHeader: {
     flexDirection: 'row',
@@ -1126,13 +1151,13 @@ const styles = StyleSheet.create({
   },
   filterCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 12,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    // borderRadius: 16,
+    // padding: 12,
+    // shadowColor: '#0F172A',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.04,
+    // shadowRadius: 8,
+    // elevation: 2,
   },
   filterGrid: {
     gap: 16,
@@ -1156,8 +1181,8 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 13,
-    minHeight: 48,
+    // paddingVertical: 13,
+    minHeight: 40,
   },
   filterInputActive: {
     backgroundColor: '#FFFFFF',
@@ -1197,7 +1222,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    // paddingVertical: 11,
     minHeight: 40,
   },
   dateInputActive: {
