@@ -387,7 +387,7 @@ export default function SettingsPage() {
                     onPress={handleBack}
                     style={styles.backButton}
                   >
-                    <Icon name="arrow-left" size={24} color="#666" />
+                    <Icon name="arrow-left" size={20} color="#666" />
                   </TouchableOpacity>
                   <Text style={styles.title}>Settings</Text>
                 </View>
@@ -497,12 +497,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 2,
+    // marginBottom: 2,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#666',
   },
   headerRow: {
@@ -548,12 +548,12 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   cardDescription: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
   },
   formGrid: {
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
+    fontSize: 14,
     backgroundColor: 'white',
   },
   pickerContainer: {

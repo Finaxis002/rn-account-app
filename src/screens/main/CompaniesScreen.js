@@ -38,7 +38,7 @@ const CompanyCard = React.memo(
         <View style={styles.cardHeader}>
           <View style={styles.companyInfo}>
             <View style={styles.iconContainer}>
-              <Building size={20} color="#007AFF" />
+              <Building size={18} color="#007AFF" />
             </View>
             <View style={styles.companyTextContainer}>
               <Text style={styles.businessName} numberOfLines={1}>
@@ -643,13 +643,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   businessName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     marginBottom: 2,
     color: '#1a1a1a',
   },
   businessType: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#666',
   },
   menuContainer: {
@@ -661,28 +661,28 @@ const styles = StyleSheet.create({
   },
   dropdownMenu: {
     position: 'absolute',
-    top: 35,
+    top: 22,
     right: 0,
     backgroundColor: 'white',
     borderRadius: 8,
-    paddingVertical: 8,
+    paddingVertical: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5,
-    minWidth: 120,
+    minWidth: 80,
     zIndex: 1000,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 4,
     gap: 12,
   },
   menuItemText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
   },
   deleteMenuItem: {},
@@ -715,13 +715,13 @@ const styles = StyleSheet.create({
   contactIcon: {
     padding: 4,
     borderRadius: 4,
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   contactText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
     flex: 1,
   },
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
     marginBottom: 4,
   },
@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   badgeText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#333',
     fontWeight: '500',
     flex: 1,
@@ -778,13 +778,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   statusDot: {
-    width: 8,
-    height: 8,
+    width: 6,
+    height: 6,
     borderRadius: 4,
     backgroundColor: '#34C759',
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#666',
   },
   emptyState: {
