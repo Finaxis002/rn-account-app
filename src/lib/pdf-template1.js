@@ -796,92 +796,45 @@ const generatePageHTML = (
                     <div class="bank-info">
                       ${
                         bankData?.bankName
-                          ? `
-                      <div class="bank-row">
-                        <span class="bank-label">Name:</span>
-                        <span class="bank-value">${capitalizeWords(
-                          bankData.bankName,
-                        )}</span>
-                      </div>
-                      `
+                          ? `<div class="bank-row"><span class="bank-label">Name:</span><span class="bank-value">${capitalizeWords(
+                              bankData.bankName,
+                            )}</span></div>`
                           : ''
                       }
-                      
                       ${
                         bankData?.accountNo
-                          ? `
-                      <div class="bank-row">
-                        <span class="bank-label">Acc. No:</span>
-                        <span class="bank-value">${bankData.accountNo}</span>
-                      </div>
-                      `
+                          ? `<div class="bank-row"><span class="bank-label">Acc. No:</span><span class="bank-value">${bankData.accountNo}</span></div>`
                           : ''
                       }
-                      
                       ${
                         bankData?.ifscCode
-                          ? `
-                      <div class="bank-row">
-                        <span class="bank-label">IFSC:</span>
-                        <span class="bank-value">${bankData.ifscCode}</span>
-                      </div>
-                      `
+                          ? `<div class="bank-row"><span class="bank-label">IFSC:</span><span class="bank-value">${bankData.ifscCode}</span></div>`
                           : ''
                       }
-                      
                       ${
                         bankData?.branchAddress
-                          ? `
-                      <div class="bank-row">
-                        <span class="bank-label">Branch:</span>
-                        <span class="bank-value">${bankData.branchAddress}</span>
-                      </div>
-                      `
+                          ? `<div class="bank-row"><span class="bank-label">Branch:</span><span class="bank-value">${bankData.branchAddress}</span></div>`
                           : ''
                       }
-                      
                       ${
                         bankData?.upiDetails?.upiId
-                          ? `
-                      <div class="bank-row">
-                        <span class="bank-label">UPI ID:</span>
-                        <span class="bank-value">${bankData.upiDetails.upiId}</span>
-                      </div>
-                      `
+                          ? `<div class="bank-row"><span class="bank-label">UPI ID:</span><span class="bank-value">${bankData.upiDetails.upiId}</span></div>`
                           : ''
                       }
-
                       ${
                         bankData?.upiDetails?.upiName
-                          ? `
-                      <div class="bank-row">
-                        <span class="bank-label">UPI Name:</span>
-                        <span class="bank-value">${bankData.upiDetails.upiName}</span>
-                      </div>
-                      `
+                          ? `<div class="bank-row"><span class="bank-label">UPI Name:</span><span class="bank-value">${bankData.upiDetails.upiName}</span></div>`
                           : ''
                       }
-
                       ${
                         bankData?.upiDetails?.upiMobile
-                          ? `
-                      <div class="bank-row">
-                        <span class="bank-label">UPI Mobile:</span>
-                        <span class="bank-value">${bankData.upiDetails.upiMobile}</span>
-                      </div>
-                      `
+                          ? `<div class="bank-row"><span class="bank-label">UPI Mobile:</span><span class="bank-value">${bankData.upiDetails.upiMobile}</span></div>`
                           : ''
                       }
                     </div>
-                    
                     ${
                       bankData?.qrCode
-                        ? `
-                 <div style="display: flex; flex-direction: column; align-items: center; margin-left: 60px; width: fit-content;">
-    <div style="font-size: 9px; font-weight: bold; margin-bottom: 0px;">QR Code</div>
-    <img src="${BASE_URL}/${bankData.qrCode}" class="qr-image" alt="QR Code" style="max-width: 100%; display: block;" />
-</div>
-                    `
+                        ? `<div style="display: flex; flex-direction: column; align-items: center; margin-left: 60px; width: fit-content;"><div style="font-size: 9px; font-weight: bold; margin-bottom: 0px;">QR Code</div><img src="${BASE_URL}/${bankData.qrCode}" class="qr-image" alt="QR Code" style="max-width: 100%; display: block;" /></div>`
                         : ''
                     }
                   </div>
@@ -894,6 +847,7 @@ const generatePageHTML = (
                   transaction?.notes
                     ? `
                 <div class="terms-container">
+                  <div style="font-weight: bold; margin-bottom: 2px;">Notes:</div>
                   <div class="terms-content">
                     ${renderNotesHTML(transaction.notes)}
                   </div>
@@ -1479,30 +1433,26 @@ const Template1 = ({
             display: flex;
             flex-direction: row;
             width: 100%;
-            font-size: 7pt;
-            align-items: flex-start;
-            min-height: auto;
-            // margin-top: 5pt;
+            // border-bottom: 1.5pt solid #0371C1;
+            // border-left: 1.5pt solid #0371C1;
+            // border-right: 1.5pt solid #0371C1;
+            align-items: stretch;
+            min-height: 120pt;
           }
           
           .left-section {
             width: 65%;
-            // border-right: 1.5pt solid #0371C1; 
-            padding: 5pt;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            min-height: auto;
-            overflow: hidden;
           }
           
           .right-section {
             width: 35%;
-            border-left: 1pt solid #0371C1; 
-            // padding: 5pt;
+            border-left: 1pt solid #0371C1;
             display: flex;
             flex-direction: column;
-            min-height: auto;
-            justify-content: flex-start;
+            justify-content: space-between;
           }
           
           .amount-tax-box {
@@ -1652,23 +1602,19 @@ const Template1 = ({
           
           /* Signature Block */
           .signature-box {
-            border-top: 1pt solid #0371C1;
-            // border-left: 1px solid #0371C1;
             width: 100%;
-            min-height: 84pt;
+            padding: 5pt;
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding-top: 2pt;
-            flex-grow: 0;
-            margin-top: 5pt;
+        
           }
 
           .signature-title {
             font-size: 9pt;
             font-weight: bold;
             color: #000000;
-            padding: 3pt;
+            padding: 5pt;
             text-align: center;
             width: 100%;
           }
@@ -1682,7 +1628,7 @@ const Template1 = ({
           
           .signature-line {
             border-top: 1pt solid #0371C1; 
-            width: 80%;
+            width: 100%;
             margin: 0 auto;
             margin-bottom: 1pt;
             margin-top: 10pt; 
@@ -1704,7 +1650,8 @@ const Template1 = ({
           
           /* Bank Details - Left Section */
           .bank-details {
-            margin-bottom: 6pt;
+            padding: 5pt;
+            margin-bottom: 0;
           }
           
           .bank-info {
@@ -1736,14 +1683,11 @@ const Template1 = ({
           
           /* Terms and Conditions */
           .terms-container {
-            // margin-top: 5pt;
             font-size: 8pt;
-            width: 110%;
-            
-            margin-left: -10px;
+            width: 100%;
             border-top: 1pt solid #0371C1;
-            padding-top: 5pt;
-            padding-left: 15pt;
+            padding: 5pt;
+            flex-grow: 1;
           }
           
           .terms-content {
