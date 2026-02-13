@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 5,
     paddingBottom: 8,
   },
   headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
