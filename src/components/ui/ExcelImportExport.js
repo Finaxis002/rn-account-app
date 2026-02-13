@@ -437,7 +437,7 @@ const ExcelImportExport = ({
         style={styles.importButton}
         onPress={() => setIsDialogOpen(true)}
       >
-        <Icon name="upload" size={20} color="#007AFF" />
+        <Icon name="upload" size={18} color="#007AFF" />
         <Text style={styles.buttonText}>Import/Export</Text>
       </TouchableOpacity>
 
@@ -637,12 +637,12 @@ const styles = StyleSheet.create({
     // paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
-    minHeight: 34,
+    minHeight: 31,
   },
   buttonText: {
     color: '#007AFF',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   dialog: {
     borderRadius: 12,

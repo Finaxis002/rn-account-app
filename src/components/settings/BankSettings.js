@@ -509,7 +509,7 @@ const BankSettings = () => {
             activeOpacity={0.8}
           >
             <View style={styles.addButtonIconContainer}>
-              <PlusCircle size={18} color="#FFFFFF" />
+              <PlusCircle size={16} color="#FFFFFF" />
             </View>
             <Text style={styles.addButtonText}>Add New Bank</Text>
           </TouchableOpacity>
@@ -947,8 +947,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#111827',
     letterSpacing: -0.5,
   },
@@ -977,7 +977,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -1109,7 +1109,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   accountNumberText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#92400E',
     letterSpacing: 0.3,
@@ -1252,7 +1252,9 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 14,
+    // padding: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: '#FAFAFA',
     borderRadius: 12,
     borderWidth: 1,
@@ -1476,7 +1478,7 @@ const styles = StyleSheet.create({
   detailItemCard: {
     width: '48%',
     backgroundColor: '#FAFAFA',
-    padding: 16,
+    padding: 16,  
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#F3F4F6',

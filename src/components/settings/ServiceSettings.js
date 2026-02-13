@@ -499,7 +499,7 @@ const ServiceSettings = () => {
       <View style={styles.serviceCardHeader}>
         <View style={styles.serviceTitleContainer}>
           <View style={styles.serviceIcon}>
-            <Server size={16} color="#0d9488" />
+            <Server size={14} color="#0d9488" />
           </View>
           <Text style={styles.serviceName} numberOfLines={1}>
             {item.serviceName}
@@ -1004,7 +1004,7 @@ const styles = StyleSheet.create({
   mainCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
+    padding: 8,
     margin: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1015,19 +1015,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'column',
     gap: 16,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   headerLeft: {
     flex: 1,
   },
   title: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6b7280',
     lineHeight: 20,
   },
@@ -1040,8 +1040,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 8,
     gap: 8,
     flex: 1,
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: 'white',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   importButton: {
     borderWidth: 1,
@@ -1057,8 +1057,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 8,
     gap: 8,
     flex: 1,
@@ -1066,7 +1066,7 @@ const styles = StyleSheet.create({
   importButtonText: {
     color: '#3b82f6',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 12,
   },
   loadingContent: {
     padding: 40,
@@ -1079,7 +1079,7 @@ const styles = StyleSheet.create({
   serviceCard: {
     backgroundColor: '#f9fafb',
     borderRadius: 8,
-    padding: 16,
+    padding: 14,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
@@ -1087,7 +1087,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    // marginBottom: 12,
   },
   serviceTitleContainer: {
     flexDirection: 'row',
@@ -1097,11 +1097,11 @@ const styles = StyleSheet.create({
   },
   serviceIcon: {
     backgroundColor: '#ccfbf1',
-    padding: 8,
+    padding: 6,
     borderRadius: 6,
   },
   serviceName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
     flex: 1,
@@ -1134,7 +1134,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dropdownItemText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#334155',
   },
@@ -1167,7 +1167,7 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#374151',
   },
   userActions: {

@@ -942,7 +942,7 @@ export function VendorSettings() {
                 style={styles.dropdownItem}
                 onPress={() => handleEditVendor(item)}
               >
-                <Edit2 size={16} color="#3b82f6" />
+                <Edit2 size={15} color="#3b82f6" />
                 <Text style={styles.dropdownItemText}>Edit</Text>
               </TouchableOpacity>
               <View style={styles.dropdownDivider} />
@@ -969,7 +969,7 @@ export function VendorSettings() {
         {item.contactNumber ? (
           <View style={styles.detailItem}>
             <View style={styles.iconCircle}>
-              <Phone size={14} color="#3b82f6" />
+              <Phone size={13} color="#3b82f6" />
             </View>
             <Text style={styles.detailText}>{item.contactNumber}</Text>
           </View>
@@ -978,7 +978,7 @@ export function VendorSettings() {
         {item.email ? (
           <View style={styles.detailItem}>
             <View style={styles.iconCircle}>
-              <Mail size={14} color="#8b5cf6" />
+              <Mail size={13} color="#8b5cf6" />
             </View>
             <Text style={styles.detailText}>{item.email}</Text>
           </View>
@@ -987,7 +987,7 @@ export function VendorSettings() {
         {item.address ? (
           <View style={styles.detailItem}>
             <View style={[styles.iconCircle, { backgroundColor: '#f0fdf4' }]}>
-              <MapPin size={14} color="#10b981" />
+              <MapPin size={13} color="#10b981" />
             </View>
             <View>
               <Text style={styles.detailText}>{item.address}</Text>
@@ -1449,13 +1449,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f1f5f9',
   },
   navTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: '#0f172a',
   },
-  navSub: { fontSize: 13, color: '#64748b', marginTop: 4 },
+  navSub: { fontSize: 12, color: '#64748b', marginTop: 1 },
   actionRow: {
-    marginTop: 16,
+    marginTop: 14,
     gap: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1487,7 +1487,7 @@ const styles = StyleSheet.create({
   // Search Styles
   searchContainer: {
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    // paddingVertical: 10,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
@@ -1535,9 +1535,9 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: 'white',
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
     paddingBottom: 20,
-    marginBottom: 20,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#f1f5f9',
     shadowColor: '#000',
@@ -1551,7 +1551,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  vendorName: { fontSize: 18, fontWeight: '700', color: '#1e293b' },
+  vendorName: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
   badgeRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   regBadge: {
     backgroundColor: '#eff6ff',
@@ -1559,12 +1559,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 8,
   },
-  regBadgeText: { color: '#2563eb', fontSize: 11, fontWeight: '700' },
+  regBadgeText: { color: '#2563eb', fontSize: 10, fontWeight: '700' },
   tdsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    // paddingVertical: 4,
     borderRadius: 8,
     gap: 4,
   },
@@ -1572,7 +1572,7 @@ const styles = StyleSheet.create({
   bgTdsOff: { backgroundColor: '#fef2f2' },
   textTdsOn: { color: '#166534' },
   textTdsOff: { color: '#991b1b' },
-  tdsBadgeText: { fontSize: 11, fontWeight: '700' },
+  tdsBadgeText: { fontSize: 10, fontWeight: '700' },
   moreBtn: {
     padding: 8,
     borderRadius: 8,
@@ -1612,18 +1612,18 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#f1f5f9',
   },
-  detailsSection: { marginTop: 16, gap: 12 },
-  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  detailsSection: { marginTop: 16, gap: 10 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   iconCircle: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 16,
     backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  detailText: { fontSize: 14, color: '#334155', fontWeight: '500' },
-  subDetailText: { fontSize: 12, color: '#64748b' },
+  detailText: { fontSize: 12, color: '#334155', fontWeight: '500' },
+  subDetailText: { fontSize: 10, color: '#64748b' },
   footerPagination: {
     position: 'absolute',
     bottom: 0,
