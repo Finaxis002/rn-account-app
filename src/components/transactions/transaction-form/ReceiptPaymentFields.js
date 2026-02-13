@@ -323,7 +323,6 @@ export const ReceiptPaymentFields = props => {
                       }
                     }}
                     maximumDate={new Date()}
-                    
                   />
                 )}
               </>
@@ -517,7 +516,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 12,
-    paddingTop:14
+    paddingTop: 14,
   },
   fieldContainer: {
     marginBottom: 16,
@@ -529,7 +528,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   input: {
-    height: 40,
+    height: 45,
     borderColor: '#D1D5DB',
     borderWidth: 1,
     borderRadius: 8,

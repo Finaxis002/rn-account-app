@@ -1578,6 +1578,7 @@ const styles = StyleSheet.create({
   },
   mobileTypeSelector: {
     marginBottom: 0,
+    marginTop: -4,
   },
   mobileSelectorLabel: {
     fontSize: 14,
