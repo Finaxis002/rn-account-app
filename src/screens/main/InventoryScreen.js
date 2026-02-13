@@ -88,7 +88,7 @@ const formatDate = dateString => {
 const ProductCard = memo(
   ({ item, index, isSelected, onSelect, onEdit }) => {
     const isLowStock = (item.stocks ?? 0) <= 10;
-    
+
     // Memoize company name extraction
     const companyName = useMemo(() => {
       return typeof item.company === 'object' && item.company
@@ -195,8 +195,8 @@ const ProductCard = memo(
               stockQuantity={item.stocks}
             />
           </View>
-          <TouchableOpacity 
-            style={styles.editButton} 
+          <TouchableOpacity
+            style={styles.editButton}
             onPress={handleEdit}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -218,7 +218,7 @@ const ProductCard = memo(
       prevProps.item.unit === nextProps.item.unit &&
       prevProps.item.hsn === nextProps.item.hsn
     );
-  }
+  },
 );
 
 ProductCard.displayName = 'ProductCard';
@@ -299,7 +299,7 @@ const ServiceCard = memo(
       prevProps.item.sac === nextProps.item.sac &&
       prevProps.item.serviceName === nextProps.item.serviceName
     );
-  }
+  },
 );
 
 ServiceCard.displayName = 'ServiceCard';
@@ -323,7 +323,7 @@ const QuantityControl = memo(({ productId, quantity, onQuantityChange }) => {
       val = Math.max(1, Math.min(100, val));
       onQuantityChange(productId, val);
     },
-    [productId, onQuantityChange]
+    [productId, onQuantityChange],
   );
 
   return (
@@ -419,7 +419,11 @@ export default function InventoryScreen() {
       userCaps?.canCreateProducts ?? userCaps?.canCreateInventory ?? false;
     const webCanCreate = permissions?.canCreateProducts ?? false;
     return canCreateProducts || webCanCreate;
-  }, [userCaps?.canCreateProducts, userCaps?.canCreateInventory, permissions?.canCreateProducts]);
+  }, [
+    userCaps?.canCreateProducts,
+    userCaps?.canCreateInventory,
+    permissions?.canCreateProducts,
+  ]);
 
   // Load user data once on mount
   useEffect(() => {
@@ -441,7 +445,7 @@ export default function InventoryScreen() {
   useFocusEffect(
     React.useCallback(() => {
       triggerCompaniesRefresh();
-    }, [triggerCompaniesRefresh])
+    }, [triggerCompaniesRefresh]),
   );
 
   // Initialize bulk print quantities - optimized with useMemo
@@ -468,32 +472,35 @@ export default function InventoryScreen() {
   // ==========================================
   // Fetch functions - Optimized with AbortController
   // ==========================================
-  const fetchCompanies = useCallback(async (signal) => {
-    setIsLoadingCompanies(true);
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) throw new Error('Authentication token not found.');
+  const fetchCompanies = useCallback(
+    async signal => {
+      setIsLoadingCompanies(true);
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (!token) throw new Error('Authentication token not found.');
 
-      const res = await fetch(`${BASE_URL}/api/companies/my`, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal,
-      });
-      if (!res.ok) throw new Error('Failed to fetch companies.');
-      const data = await res.json();
-      setCompanies(Array.isArray(data) ? data : data.companies || []);
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.error(err);
-        toast({
-          variant: 'destructive',
-          title: 'Failed to load companies',
-          description: err.message || 'Something went wrong.',
+        const res = await fetch(`${BASE_URL}/api/companies/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal,
         });
+        if (!res.ok) throw new Error('Failed to fetch companies.');
+        const data = await res.json();
+        setCompanies(Array.isArray(data) ? data : data.companies || []);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+          toast({
+            variant: 'destructive',
+            title: 'Failed to load companies',
+            description: err.message || 'Something went wrong.',
+          });
+        }
+      } finally {
+        setIsLoadingCompanies(false);
       }
-    } finally {
-      setIsLoadingCompanies(false);
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
   const fetchProducts = useCallback(
     async (isSilent = false, signal) => {
@@ -527,7 +534,7 @@ export default function InventoryScreen() {
         if (!isSilent) setIsLoadingProducts(false);
       }
     },
-    [toast, selectedCompanyId]
+    [toast, selectedCompanyId],
   );
 
   const fetchServices = useCallback(
@@ -558,7 +565,7 @@ export default function InventoryScreen() {
         if (!isSilent) setIsLoadingServices(false);
       }
     },
-    [toast]
+    [toast],
   );
 
   // Initial data fetch with AbortController
@@ -569,7 +576,7 @@ export default function InventoryScreen() {
     Promise.all([
       fetchCompanies(signal),
       fetchProducts(false, signal),
-      fetchServices(false, signal)
+      fetchServices(false, signal),
     ]).catch(err => {
       if (err.name !== 'AbortError') {
         console.error('Initial load error:', err);
@@ -598,7 +605,10 @@ export default function InventoryScreen() {
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
       fetchCompaniesSilent().catch(err =>
-        console.error('Inventory fetchCompaniesSilent after trigger failed:', err)
+        console.error(
+          'Inventory fetchCompaniesSilent after trigger failed:',
+          err,
+        ),
       );
     }
   }, [refreshTrigger, fetchCompaniesSilent]);
@@ -606,7 +616,7 @@ export default function InventoryScreen() {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     const controller = new AbortController();
-    
+
     Promise.all([
       fetchCompanies(controller.signal),
       fetchProducts(false, controller.signal),
@@ -665,7 +675,7 @@ export default function InventoryScreen() {
         description: 'Product has been saved successfully.',
       });
     },
-    [toast]
+    [toast],
   );
 
   const onServiceSaved = useCallback(
@@ -684,7 +694,7 @@ export default function InventoryScreen() {
         description: 'Service has been saved successfully.',
       });
     },
-    [toast]
+    [toast],
   );
 
   const confirmDeleteProduct = useCallback(p => {
@@ -710,7 +720,7 @@ export default function InventoryScreen() {
           {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         if (!res.ok) throw new Error('Failed to delete product.');
         setProducts(prev => prev.filter(p => p._id !== productToDelete._id));
@@ -721,7 +731,7 @@ export default function InventoryScreen() {
           {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${token}` },
-          }
+          },
         );
         if (!res.ok) throw new Error('Failed to delete service.');
         setServices(prev => prev.filter(s => s._id !== serviceToDelete._id));
@@ -751,7 +761,7 @@ export default function InventoryScreen() {
       setIsPrinting(true);
 
       const productsToPrint = products.filter(p =>
-        selectedProducts.includes(p._id)
+        selectedProducts.includes(p._id),
       );
 
       let labelsHtml = '';
@@ -828,7 +838,7 @@ export default function InventoryScreen() {
 
       Alert.alert(
         'Bulk Print Started',
-        `Printing ${totalLabels} labels for ${selectedProducts.length} products`
+        `Printing ${totalLabels} labels for ${selectedProducts.length} products`,
       );
 
       setIsBulkPrintDialogOpen(false);
@@ -858,7 +868,7 @@ export default function InventoryScreen() {
           setSelectedProducts(prev => [...new Set([...prev, ...rangeIds])]);
         } else {
           setSelectedProducts(prev =>
-            prev.filter(id => !rangeIds.includes(id))
+            prev.filter(id => !rangeIds.includes(id)),
           );
         }
         setLastSelectedIndex(index);
@@ -871,7 +881,7 @@ export default function InventoryScreen() {
         setLastSelectedIndex(index ?? null);
       }
     },
-    [lastSelectedIndex, products]
+    [lastSelectedIndex, products],
   );
 
   const handleQuantityChange = useCallback((productId, newQuantity) => {
@@ -936,12 +946,12 @@ export default function InventoryScreen() {
 
   const productTotalPages = useMemo(
     () => Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1,
-    [filteredProducts.length]
+    [filteredProducts.length],
   );
 
   const serviceTotalPages = useMemo(
     () => Math.ceil(filteredServices.length / ITEMS_PER_PAGE) || 1,
-    [filteredServices.length]
+    [filteredServices.length],
   );
 
   const paginatedProducts = useMemo(() => {
@@ -1017,7 +1027,7 @@ export default function InventoryScreen() {
                 const companyName = item['Company']?.trim();
                 const foundCompany = companies.find(
                   c =>
-                    c.businessName.toLowerCase() === companyName?.toLowerCase()
+                    c.businessName.toLowerCase() === companyName?.toLowerCase(),
                 );
 
                 return {
@@ -1112,7 +1122,7 @@ export default function InventoryScreen() {
       openEditProduct,
       openEditService,
       confirmDeleteService,
-    ]
+    ],
   );
 
   const keyExtractor = useCallback(item => item._id, []);
@@ -1123,7 +1133,7 @@ export default function InventoryScreen() {
       offset: 200 * index,
       index,
     }),
-    []
+    [],
   );
 
   const getData = useMemo(() => {
@@ -1180,10 +1190,7 @@ export default function InventoryScreen() {
         <View style={styles.tabsContainer}>
           <View style={styles.tabs}>
             <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'products' && styles.activeTab,
-              ]}
+              style={[styles.tab, activeTab === 'products' && styles.activeTab]}
               onPress={() => setActiveTab('products')}
             >
               <Text
@@ -1196,10 +1203,7 @@ export default function InventoryScreen() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'services' && styles.activeTab,
-              ]}
+              style={[styles.tab, activeTab === 'services' && styles.activeTab]}
               onPress={() => setActiveTab('services')}
             >
               <Text
@@ -1289,7 +1293,7 @@ export default function InventoryScreen() {
             Showing {(productCurrentPage - 1) * ITEMS_PER_PAGE + 1} to{' '}
             {Math.min(
               productCurrentPage * ITEMS_PER_PAGE,
-              filteredProducts.length
+              filteredProducts.length,
             )}{' '}
             of {filteredProducts.length} products
           </Text>
@@ -1354,7 +1358,7 @@ export default function InventoryScreen() {
             Showing {(serviceCurrentPage - 1) * ITEMS_PER_PAGE + 1} to{' '}
             {Math.min(
               serviceCurrentPage * ITEMS_PER_PAGE,
-              filteredServices.length
+              filteredServices.length,
             )}{' '}
             of {filteredServices.length} services
           </Text>
@@ -1459,8 +1463,7 @@ export default function InventoryScreen() {
             </View>
             <Text style={styles.noCompanyTitle}>Company Setup Required</Text>
             <Text style={styles.noCompanyDescription}>
-              Contact us to enable your company account and access all
-              features.
+              Contact us to enable your company account and access all features.
             </Text>
             <View style={styles.noCompanyButtons}>
               <TouchableOpacity
@@ -1559,7 +1562,7 @@ export default function InventoryScreen() {
                     Total Labels:{' '}
                     {Object.values(bulkPrintQuantities).reduce(
                       (sum, qty) => sum + qty,
-                      0
+                      0,
                     )}
                   </Text>
                 </View>
@@ -1698,9 +1701,7 @@ export default function InventoryScreen() {
               setIsServiceFormOpen(false);
               setServiceToEdit(null);
             }}
-            headerTitle={
-              serviceToEdit ? 'Edit Service' : 'Create New Service'
-            }
+            headerTitle={serviceToEdit ? 'Edit Service' : 'Create New Service'}
             headerSubtitle={
               serviceToEdit
                 ? 'Update service details'
@@ -1833,7 +1834,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 4,
-    marginBottom: 12,
+    marginBottom: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -1890,7 +1891,7 @@ const styles = StyleSheet.create({
   cardHeader: {
     // padding: 16,
     paddingHorizontal: 16,
-    paddingVertical:8,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
@@ -2499,5 +2500,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: 'white',
-  }, 
+  },
 });
