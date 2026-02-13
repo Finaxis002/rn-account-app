@@ -1609,9 +1609,7 @@ const TransactionsScreen = ({ navigation }) => {
               >
                 {/* <Icon name="add" size={14} color="#ffffff" /> */}
                 <PlusCircle size={14} color="#ffffff" strokeWidth={2.5} />
-                <Text style={styles.headerPrimaryButtonText}>
-                  Transaction
-                </Text>
+                <Text style={styles.headerPrimaryButtonText}>Transaction</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1705,258 +1703,284 @@ const TransactionsScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-        {/* 1. Jab tak initial loading hai, sirf Skeleton dikhao */}
-        {isLoading ? (
-          <View style={styles.skeletonContainer}>
-            <LoadingSkeleton isMobile={width <= 768} />
+      {/* 1. Jab tak initial loading hai, sirf Skeleton dikhao */}
+      {isLoading ? (
+        <View style={styles.skeletonContainer}>
+          <LoadingSkeleton isMobile={width <= 768} />
+        </View>
+      ) : /* 2. Loading khatam hone ke baad check karo company hai ya nahi */
+      companies.length === 0 ? (
+        renderMainContent() // Yeh tabhi chalega jab sach mein 0 companies hongi
+      ) : (
+        <View style={styles.mainContainer}>{renderMainContent()}</View>
+      )}
+
+      {/* Modals */}
+
+      <Modal
+        visible={isFormOpen}
+        animationType="slide"
+        onRequestClose={() => {
+          setIsFormOpen(false);
+          setTransactionToEdit(null);
+          setPrefillFromTransaction(null);
+          setDefaultTransactionType(null);
+        }}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {transactionToEdit
+                ? 'Edit Transaction'
+                : 'Create a New Transaction'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setIsFormOpen(false);
+                setTransactionToEdit(null);
+                setPrefillFromTransaction(null);
+                setDefaultTransactionType(null);
+              }}
+            >
+              <Icon name="close" size={24} color="#374151" />
+            </TouchableOpacity>
           </View>
-        ) : /* 2. Loading khatam hone ke baad check karo company hai ya nahi */
-        companies.length === 0 ? (
-          renderMainContent() // Yeh tabhi chalega jab sach mein 0 companies hongi
-        ) : (
-          <View style={styles.mainContainer}>{renderMainContent()}</View>
-        )}
 
-        {/* Modals */}
+          <ScrollView style={styles.modalScroll}>
+            <TransactionForm
+              transactionToEdit={transactionToEdit}
+              onFormSubmit={() => {
+                setIsFormOpen(false);
+                setTransactionToEdit(null);
+                setPrefillFromTransaction(null);
+                fetchTransactions();
+                setRefreshTrigger(prev => prev + 1);
+              }}
+              defaultType={
+                defaultTransactionType ||
+                tabToFormType(activeTab) ||
+                allowedTypes[0] ||
+                'sales'
+              }
+              serviceNameById={serviceNameById}
+              prefillFrom={prefillFromTransaction}
+            />
+          </ScrollView>
+        </View>
+      </Modal>
 
-        <Modal
-          visible={isFormOpen}
-          animationType="slide"
-          onRequestClose={() => {
-            setIsFormOpen(false);
-            setTransactionToEdit(null);
-            setPrefillFromTransaction(null);
-            setDefaultTransactionType(null);
-          }}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {transactionToEdit
-                  ? 'Edit Transaction'
-                  : 'Create a New Transaction'}
-              </Text>
+      {/* Proforma Form Modal */}
+      <Modal
+        visible={isProformaFormOpen}
+        animationType="slide"
+        onRequestClose={() => {
+          setIsProformaFormOpen(false);
+          setTransactionToEdit(null);
+        }}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {transactionToEdit?.type === 'proforma'
+                ? 'Edit Proforma Invoice'
+                : 'Create Proforma Invoice'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setIsProformaFormOpen(false);
+                setTransactionToEdit(null);
+              }}
+            >
+              <Icon name="close" size={24} color="#374151" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalScroll}>
+            <ProformaForm
+              transactionToEdit={transactionToEdit}
+              onFormSubmit={() => {
+                setIsProformaFormOpen(false);
+                setTransactionToEdit(null);
+                fetchTransactions();
+                setRefreshTrigger(prev => prev + 1);
+              }}
+              serviceNameById={serviceNameById}
+            />
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Alert Dialog */}
+      <Modal
+        visible={isAlertOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsAlertOpen(false)}
+      >
+        <View style={styles.alertOverlay}>
+          <View style={styles.alertDialog}>
+            <Text style={styles.alertTitle}>Are you absolutely sure?</Text>
+            <Text style={styles.alertDescription}>
+              This action cannot be undone. This will permanently delete the
+              transaction.
+            </Text>
+
+            <View style={styles.alertButtons}>
               <TouchableOpacity
-                onPress={() => {
-                  setIsFormOpen(false);
-                  setTransactionToEdit(null);
-                  setPrefillFromTransaction(null);
-                  setDefaultTransactionType(null);
-                }}
+                style={[styles.alertButton, styles.cancelButton]}
+                onPress={() => setIsAlertOpen(false)}
               >
-                <Icon name="close" size={24} color="#374151" />
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.alertButton, styles.deleteButton]}
+                onPress={handleDeleteTransaction}
+              >
+                <Text style={styles.deleteButtonText}>Delete</Text>
               </TouchableOpacity>
             </View>
-
-            <ScrollView style={styles.modalScroll}>
-              <TransactionForm
-                transactionToEdit={transactionToEdit}
-                onFormSubmit={() => {
-                  setIsFormOpen(false);
-                  setTransactionToEdit(null);
-                  setPrefillFromTransaction(null);
-                  fetchTransactions();
-                  setRefreshTrigger(prev => prev + 1);
-                }}
-                defaultType={
-                  defaultTransactionType ||
-                  tabToFormType(activeTab) ||
-                  allowedTypes[0] ||
-                  'sales'
-                }
-                serviceNameById={serviceNameById}
-                prefillFrom={prefillFromTransaction}
-              />
-            </ScrollView>
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
-        {/* Proforma Form Modal */}
-        <Modal
-          visible={isProformaFormOpen}
-          animationType="slide"
-          onRequestClose={() => {
-            setIsProformaFormOpen(false);
-            setTransactionToEdit(null);
-          }}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {transactionToEdit?.type === 'proforma'
-                  ? 'Edit Proforma Invoice'
-                  : 'Create Proforma Invoice'}
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setIsProformaFormOpen(false);
-                  setTransactionToEdit(null);
-                }}
-              >
-                <Icon name="close" size={24} color="#374151" />
-              </TouchableOpacity>
-            </View>
+      {/* Invoice preview now uses navigation; removed modal rendering here */}
 
-            <ScrollView style={styles.modalScroll}>
-              <ProformaForm
-                transactionToEdit={transactionToEdit}
-                onFormSubmit={() => {
-                  setIsProformaFormOpen(false);
-                  setTransactionToEdit(null);
-                  fetchTransactions();
-                  setRefreshTrigger(prev => prev + 1);
-                }}
-                serviceNameById={serviceNameById}
-              />
-            </ScrollView>
-          </View>
-        </Modal>
-
-        {/* Alert Dialog */}
-        <Modal
-          visible={isAlertOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setIsAlertOpen(false)}
-        >
-          <View style={styles.alertOverlay}>
-            <View style={styles.alertDialog}>
-              <Text style={styles.alertTitle}>Are you absolutely sure?</Text>
-              <Text style={styles.alertDescription}>
-                This action cannot be undone. This will permanently delete the
-                transaction.
-              </Text>
-
-              <View style={styles.alertButtons}>
+      {/* PDF Viewer Modal */}
+      <Modal
+        visible={isPdfViewOpen}
+        animationType="slide"
+        onRequestClose={() => {
+          setIsPdfViewOpen(false);
+          setPdfUri(null);
+        }}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Invoice PDF</Text>
+            <View style={styles.pdfActions}>
+              {pdfUri && (
                 <TouchableOpacity
-                  style={[styles.alertButton, styles.cancelButton]}
-                  onPress={() => setIsAlertOpen(false)}
+                  style={styles.pdfActionButton}
+                  onPress={() =>
+                    handleShareInvoice(
+                      pdfUri.replace('file://', ''),
+                      'invoice.pdf',
+                    )
+                  }
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Icon name="share" size={20} color="#3b82f6" />
+                  <Text style={styles.pdfActionText}>Share</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.alertButton, styles.deleteButton]}
-                  onPress={handleDeleteTransaction}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Invoice preview now uses navigation; removed modal rendering here */}
-
-        {/* PDF Viewer Modal */}
-        <Modal
-          visible={isPdfViewOpen}
-          animationType="slide"
-          onRequestClose={() => {
-            setIsPdfViewOpen(false);
-            setPdfUri(null);
-          }}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Invoice PDF</Text>
-              <View style={styles.pdfActions}>
-                {pdfUri && (
-                  <TouchableOpacity
-                    style={styles.pdfActionButton}
-                    onPress={() =>
-                      handleShareInvoice(
-                        pdfUri.replace('file://', ''),
-                        'invoice.pdf',
-                      )
-                    }
-                  >
-                    <Icon name="share" size={20} color="#3b82f6" />
-                    <Text style={styles.pdfActionText}>Share</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => {
-                    setIsPdfViewOpen(false);
-                    setPdfUri(null);
-                  }}
-                >
-                  <Icon name="close" size={24} color="#374151" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.pdfContainer}>
-              {isLoadingPdf ? (
-                <View style={styles.pdfLoading}>
-                  <ActivityIndicator size="large" color="#3b82f6" />
-                  <Text style={styles.pdfLoadingText}>Loading PDF...</Text>
-                </View>
-              ) : pdfUri ? (
-                <Pdf
-                  source={{ uri: pdfUri, cache: true }}
-                  onLoadComplete={(numberOfPages, filePath) => {}}
-                  onPageChanged={(page, numberOfPages) => {}}
-                  onError={error => {
-                    console.error('PDF Error:', error);
-                    toast('Failed to load PDF', 'error');
-                  }}
-                  onPressLink={uri => {}}
-                  style={styles.pdf}
-                />
-              ) : (
-                <View style={styles.pdfError}>
-                  <Icon name="error" size={48} color="#ef4444" />
-                  <Text style={styles.pdfErrorText}>No PDF available</Text>
-                </View>
               )}
+              <TouchableOpacity
+                onPress={() => {
+                  setIsPdfViewOpen(false);
+                  setPdfUri(null);
+                }}
+              >
+                <Icon name="close" size={24} color="#374151" />
+              </TouchableOpacity>
             </View>
           </View>
-        </Modal>
 
-        {/* Items Dialog Modal */}
-        <Modal
-          visible={isItemsDialogOpen}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setIsItemsDialogOpen(false)}
-        >
-          <View style={styles.itemsDialogContainer}>
-            <View style={styles.itemsDialog}>
-              <View style={styles.itemsDialogHeader}>
-                <Text style={styles.itemsDialogTitle}>Item Details</Text>
-                <Text style={styles.itemsDialogDescription}>
-                  A detailed list of all items in this transaction
-                </Text>
-                <TouchableOpacity
-                  style={styles.closeItemsButton}
-                  onPress={() => setIsItemsDialogOpen(false)}
-                >
-                  <Icon name="close" size={24} color="#374151" />
-                </TouchableOpacity>
+          <View style={styles.pdfContainer}>
+            {isLoadingPdf ? (
+              <View style={styles.pdfLoading}>
+                <ActivityIndicator size="large" color="#3b82f6" />
+                <Text style={styles.pdfLoadingText}>Loading PDF...</Text>
               </View>
+            ) : pdfUri ? (
+              <Pdf
+                source={{ uri: pdfUri, cache: true }}
+                onLoadComplete={(numberOfPages, filePath) => {}}
+                onPageChanged={(page, numberOfPages) => {}}
+                onError={error => {
+                  console.error('PDF Error:', error);
+                  toast('Failed to load PDF', 'error');
+                }}
+                onPressLink={uri => {}}
+                style={styles.pdf}
+              />
+            ) : (
+              <View style={styles.pdfError}>
+                <Icon name="error" size={48} color="#ef4444" />
+                <Text style={styles.pdfErrorText}>No PDF available</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
 
-              <ScrollView style={styles.itemsList}>
-                {/* Summary Section */}
-                {itemsToView.length > 0 && (
-                  <View style={styles.summaryContainer}>
-                    <View style={styles.summaryRow}>
-                      <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Subtotal</Text>
-                        <Text style={styles.summaryValue}>
-                          {formatCurrency(
-                            itemsToView.reduce(
-                              (sum, item) => sum + Number(item.amount || 0),
-                              0,
-                            ),
-                          )}
-                        </Text>
-                      </View>
+      {/* Items Dialog Modal */}
+      <Modal
+        visible={isItemsDialogOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsItemsDialogOpen(false)}
+      >
+        <View style={styles.itemsDialogContainer}>
+          <View style={styles.itemsDialog}>
+            <View style={styles.itemsDialogHeader}>
+              <Text style={styles.itemsDialogTitle}>Item Details</Text>
+              <Text style={styles.itemsDialogDescription}>
+                A detailed list of all items in this transaction
+              </Text>
+              <TouchableOpacity
+                style={styles.closeItemsButton}
+                onPress={() => setIsItemsDialogOpen(false)}
+              >
+                <Icon name="close" size={24} color="#374151" />
+              </TouchableOpacity>
+            </View>
 
-                      <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Tax Total</Text>
-                        <Text style={styles.summaryValue}>
-                          {formatCurrency(
+            <ScrollView style={styles.itemsList}>
+              {/* Summary Section */}
+              {itemsToView.length > 0 && (
+                <View style={styles.summaryContainer}>
+                  <View style={styles.summaryRow}>
+                    <View style={styles.summaryItem}>
+                      <Text style={styles.summaryLabel}>Subtotal</Text>
+                      <Text style={styles.summaryValue}>
+                        {formatCurrency(
+                          itemsToView.reduce(
+                            (sum, item) => sum + Number(item.amount || 0),
+                            0,
+                          ),
+                        )}
+                      </Text>
+                    </View>
+
+                    <View style={styles.summaryItem}>
+                      <Text style={styles.summaryLabel}>Tax Total</Text>
+                      <Text style={styles.summaryValue}>
+                        {formatCurrency(
+                          itemsToView.reduce((sum, item) => {
+                            const lineTax = item.lineTax;
+                            if (lineTax !== undefined && lineTax !== null) {
+                              return sum + Number(lineTax);
+                            }
+                            const gstRate =
+                              item.gstPercentage ||
+                              item.gstRate ||
+                              item.gst ||
+                              0;
+                            const taxableValue = item.amount || 0;
+                            const taxAmount = (taxableValue * gstRate) / 100;
+                            return sum + taxAmount;
+                          }, 0),
+                        )}
+                      </Text>
+                    </View>
+
+                    <View style={styles.summaryItem}>
+                      <Text style={styles.summaryLabel}>Grand Total</Text>
+                      <Text style={styles.grandTotal}>
+                        {formatCurrency(
+                          itemsToView.reduce(
+                            (sum, item) => sum + Number(item.amount || 0),
+                            0,
+                          ) +
                             itemsToView.reduce((sum, item) => {
                               const lineTax = item.lineTax;
                               if (lineTax !== undefined && lineTax !== null) {
@@ -1971,307 +1995,276 @@ const TransactionsScreen = ({ navigation }) => {
                               const taxAmount = (taxableValue * gstRate) / 100;
                               return sum + taxAmount;
                             }, 0),
-                          )}
-                        </Text>
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Items List */}
+              {itemsToView.map((item, index) => {
+                const isService = item.itemType === 'service';
+                const qty =
+                  !isService && item.quantity
+                    ? `${item.quantity} ${item.unitType || 'Piece'}`
+                    : '—';
+                const rate = !isService
+                  ? formatCurrency(Number(item.pricePerUnit || 0))
+                  : '—';
+                const total = formatCurrency(Number(item.amount || 0));
+                const hsnSacCode = isService ? item.sacCode : item.hsnCode;
+
+                return (
+                  <View key={index} style={styles.itemCard}>
+                    {/* Item Header */}
+                    <View style={styles.itemHeader}>
+                      <Icon
+                        name={isService ? 'dns' : 'inventory'}
+                        size={20}
+                        color="#6b7280"
+                      />
+                      <View style={styles.itemHeaderInfo}>
+                        <Text style={styles.itemName}>{item.name || '—'}</Text>
+                        <View style={styles.itemBadges}>
+                          <View style={styles.itemTypeBadge}>
+                            <Text style={styles.itemTypeText}>
+                              {item.itemType || '—'}
+                            </Text>
+                          </View>
+                          <Text style={styles.hsnSacText}>
+                            HSN/SAC: {hsnSacCode || '—'}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Service Description */}
+                    {isService && item.description && (
+                      <Text style={styles.itemDescription}>
+                        {item.description}
+                      </Text>
+                    )}
+
+                    {/* Item Details */}
+                    <View style={styles.itemDetails}>
+                      <View style={styles.detailColumn}>
+                        <Text style={styles.detailLabel}>Quantity</Text>
+                        <Text style={styles.detailValue}>{qty}</Text>
                       </View>
 
-                      <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Grand Total</Text>
-                        <Text style={styles.grandTotal}>
-                          {formatCurrency(
-                            itemsToView.reduce(
-                              (sum, item) => sum + Number(item.amount || 0),
-                              0,
-                            ) +
-                              itemsToView.reduce((sum, item) => {
-                                const lineTax = item.lineTax;
-                                if (lineTax !== undefined && lineTax !== null) {
-                                  return sum + Number(lineTax);
-                                }
-                                const gstRate =
-                                  item.gstPercentage ||
-                                  item.gstRate ||
-                                  item.gst ||
-                                  0;
-                                const taxableValue = item.amount || 0;
-                                const taxAmount =
-                                  (taxableValue * gstRate) / 100;
-                                return sum + taxAmount;
-                              }, 0),
-                          )}
-                        </Text>
+                      <View style={styles.detailColumn}>
+                        <Text style={styles.detailLabel}>Price/Unit</Text>
+                        <Text style={styles.detailValue}>{rate}</Text>
+                      </View>
+
+                      <View style={styles.totalContainer}>
+                        <Text style={styles.totalLabel}>Total Amount</Text>
+                        <Text style={styles.totalValue}>{total}</Text>
                       </View>
                     </View>
                   </View>
-                )}
-
-                {/* Items List */}
-                {itemsToView.map((item, index) => {
-                  const isService = item.itemType === 'service';
-                  const qty =
-                    !isService && item.quantity
-                      ? `${item.quantity} ${item.unitType || 'Piece'}`
-                      : '—';
-                  const rate = !isService
-                    ? formatCurrency(Number(item.pricePerUnit || 0))
-                    : '—';
-                  const total = formatCurrency(Number(item.amount || 0));
-                  const hsnSacCode = isService ? item.sacCode : item.hsnCode;
-
-                  return (
-                    <View key={index} style={styles.itemCard}>
-                      {/* Item Header */}
-                      <View style={styles.itemHeader}>
-                        <Icon
-                          name={isService ? 'dns' : 'inventory'}
-                          size={20}
-                          color="#6b7280"
-                        />
-                        <View style={styles.itemHeaderInfo}>
-                          <Text style={styles.itemName}>
-                            {item.name || '—'}
-                          </Text>
-                          <View style={styles.itemBadges}>
-                            <View style={styles.itemTypeBadge}>
-                              <Text style={styles.itemTypeText}>
-                                {item.itemType || '—'}
-                              </Text>
-                            </View>
-                            <Text style={styles.hsnSacText}>
-                              HSN/SAC: {hsnSacCode || '—'}
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-
-                      {/* Service Description */}
-                      {isService && item.description && (
-                        <Text style={styles.itemDescription}>
-                          {item.description}
-                        </Text>
-                      )}
-
-                      {/* Item Details */}
-                      <View style={styles.itemDetails}>
-                        <View style={styles.detailColumn}>
-                          <Text style={styles.detailLabel}>Quantity</Text>
-                          <Text style={styles.detailValue}>{qty}</Text>
-                        </View>
-
-                        <View style={styles.detailColumn}>
-                          <Text style={styles.detailLabel}>Price/Unit</Text>
-                          <Text style={styles.detailValue}>{rate}</Text>
-                        </View>
-
-                        <View style={styles.totalContainer}>
-                          <Text style={styles.totalLabel}>Total Amount</Text>
-                          <Text style={styles.totalValue}>{total}</Text>
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })}
-              </ScrollView>
-            </View>
+                );
+              })}
+            </ScrollView>
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
-        {/* Filter by Date Modal */}
-        <Modal
-          visible={isFilterModalOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setIsFilterModalOpen(false)}
+      {/* Filter by Date Modal */}
+      <Modal
+        visible={isFilterModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsFilterModalOpen(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.filterModalOverlay}
+          onPress={() => setIsFilterModalOpen(false)}
         >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={styles.filterModalOverlay}
-            onPress={() => setIsFilterModalOpen(false)}
-          >
-            <View style={styles.filterModalContent}>
-              <View style={styles.filterModalHeader}>
-                <Text style={styles.filterModalTitle}>Filter by Date</Text>
-                <TouchableOpacity onPress={() => setIsFilterModalOpen(false)}>
-                  <Icon name="close" size={24} color="#374151" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.filterDateSection}>
-                <Text style={styles.filterDateLabel}>From Date</Text>
-                <TouchableOpacity
-                  style={styles.filterDateButton}
-                  onPress={() => setShowStartDatePicker(true)}
-                >
-                  <Feather name="calendar" size={18} color="#3b82f6" />
-                  <Text style={styles.filterDateText}>
-                    {dateRange.startDate || 'Select date'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.filterDateSection}>
-                <Text style={styles.filterDateLabel}>To Date</Text>
-                <TouchableOpacity
-                  style={styles.filterDateButton}
-                  onPress={() => setShowEndDatePicker(true)}
-                >
-                  <Feather name="calendar" size={18} color="#3b82f6" />
-                  <Text style={styles.filterDateText}>
-                    {dateRange.endDate || 'Select date'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.filterModalActions}>
-                <TouchableOpacity
-                  style={styles.filterResetButton}
-                  onPress={() => {
-                    setDateRange({
-                      startDate: '',
-                      endDate: new Date().toISOString().split('T')[0],
-                    });
-                    setIsFilterModalOpen(false);
-                  }}
-                >
-                  <Text style={styles.filterResetButtonText}>Reset</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.filterApplyButton}
-                  onPress={() => setIsFilterModalOpen(false)}
-                >
-                  <Text style={styles.filterApplyButtonText}>Apply</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={styles.filterModalContent}>
+            <View style={styles.filterModalHeader}>
+              <Text style={styles.filterModalTitle}>Filter by Date</Text>
+              <TouchableOpacity onPress={() => setIsFilterModalOpen(false)}>
+                <Icon name="close" size={24} color="#374151" />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </Modal>
 
-        {/* DateTimePicker for Start Date */}
-        {showStartDatePicker && (
-          <DateTimePicker
-            value={
-              dateRange.startDate ? new Date(dateRange.startDate) : new Date()
-            }
-            mode="date"
-            display="spinner"
-            onChange={(event, selectedDate) => {
-              if (selectedDate) {
-                setDateRange({
-                  ...dateRange,
-                  startDate: selectedDate.toISOString().split('T')[0],
-                });
-              }
-              setShowStartDatePicker(false);
-            }}
-          />
-        )}
-
-        {/* DateTimePicker for End Date */}
-        {showEndDatePicker && (
-          <DateTimePicker
-            value={dateRange.endDate ? new Date(dateRange.endDate) : new Date()}
-            mode="date"
-            display="spinner"
-            onChange={(event, selectedDate) => {
-              if (selectedDate) {
-                setDateRange({
-                  ...dateRange,
-                  endDate: selectedDate.toISOString().split('T')[0],
-                });
-              }
-              setShowEndDatePicker(false);
-            }}
-          />
-        )}
-
-        {/* Transaction manager modals (action sheet, PDF viewer, email dialogs, copy success) */}
-        {transactionManager?.renderActionSheet &&
-          transactionManager.renderActionSheet()}
-        {transactionManager?.renderMailStatusDialog &&
-          transactionManager.renderMailStatusDialog()}
-        {transactionManager?.renderPdfViewer &&
-          transactionManager.renderPdfViewer()}
-        {transactionManager?.renderEmailNotConnectedDialog &&
-          transactionManager.renderEmailNotConnectedDialog()}
-        {transactionManager?.renderCopySuccess &&
-          transactionManager.renderCopySuccess()}
-
-        {/* Email Status Dialog */}
-        <Modal
-          visible={isEmailDialogOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setIsEmailDialogOpen(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.emailDialogContainer}>
-              <View style={styles.emailDialogContent}>
-                <Text style={styles.emailDialogTitle}>{emailDialogTitle}</Text>
-                <Text style={styles.emailDialogMessage}>
-                  {emailDialogMessage}
-                </Text>
-              </View>
+            <View style={styles.filterDateSection}>
+              <Text style={styles.filterDateLabel}>From Date</Text>
               <TouchableOpacity
-                style={styles.emailDialogButton}
-                onPress={() => setIsEmailDialogOpen(false)}
+                style={styles.filterDateButton}
+                onPress={() => setShowStartDatePicker(true)}
               >
-                <Text style={styles.emailDialogButtonText}>OK</Text>
+                <Feather name="calendar" size={18} color="#3b82f6" />
+                <Text style={styles.filterDateText}>
+                  {dateRange.startDate || 'Select date'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.filterDateSection}>
+              <Text style={styles.filterDateLabel}>To Date</Text>
+              <TouchableOpacity
+                style={styles.filterDateButton}
+                onPress={() => setShowEndDatePicker(true)}
+              >
+                <Feather name="calendar" size={18} color="#3b82f6" />
+                <Text style={styles.filterDateText}>
+                  {dateRange.endDate || 'Select date'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.filterModalActions}>
+              <TouchableOpacity
+                style={styles.filterResetButton}
+                onPress={() => {
+                  setDateRange({
+                    startDate: '',
+                    endDate: new Date().toISOString().split('T')[0],
+                  });
+                  setIsFilterModalOpen(false);
+                }}
+              >
+                <Text style={styles.filterResetButtonText}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.filterApplyButton}
+                onPress={() => setIsFilterModalOpen(false)}
+              >
+                <Text style={styles.filterApplyButtonText}>Apply</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        </TouchableOpacity>
+      </Modal>
 
-        {/* Gmail Not Connected Dialog */}
-        <Modal
-          visible={isGmailNotConnected}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setIsGmailNotConnected(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.gmailDialogContainer}>
-              <View style={styles.gmailDialogHeader}>
-                <Icon name="email" size={32} color="#ef4444" />
-                <Text style={styles.gmailDialogTitle}>
-                  Email Not Configured
-                </Text>
-              </View>
+      {/* DateTimePicker for Start Date */}
+      {showStartDatePicker && (
+        <DateTimePicker
+          value={
+            dateRange.startDate ? new Date(dateRange.startDate) : new Date()
+          }
+          mode="date"
+          display="spinner"
+          onChange={(event, selectedDate) => {
+            if (selectedDate) {
+              setDateRange({
+                ...dateRange,
+                startDate: selectedDate.toISOString().split('T')[0],
+              });
+            }
+            setShowStartDatePicker(false);
+          }}
+        />
+      )}
 
-              <Text style={styles.gmailDialogMessage}>
-                You need to connect your Gmail account to send invoices via
-                email. Please go to Settings to configure it.
+      {/* DateTimePicker for End Date */}
+      {showEndDatePicker && (
+        <DateTimePicker
+          value={dateRange.endDate ? new Date(dateRange.endDate) : new Date()}
+          mode="date"
+          display="spinner"
+          onChange={(event, selectedDate) => {
+            if (selectedDate) {
+              setDateRange({
+                ...dateRange,
+                endDate: selectedDate.toISOString().split('T')[0],
+              });
+            }
+            setShowEndDatePicker(false);
+          }}
+        />
+      )}
+
+      {/* Transaction manager modals (action sheet, PDF viewer, email dialogs, copy success) */}
+      {transactionManager?.renderActionSheet &&
+        transactionManager.renderActionSheet()}
+      {transactionManager?.renderMailStatusDialog &&
+        transactionManager.renderMailStatusDialog()}
+      {transactionManager?.renderPdfViewer &&
+        transactionManager.renderPdfViewer()}
+      {transactionManager?.renderEmailNotConnectedDialog &&
+        transactionManager.renderEmailNotConnectedDialog()}
+      {transactionManager?.renderCopySuccess &&
+        transactionManager.renderCopySuccess()}
+
+      {/* Email Status Dialog */}
+      <Modal
+        visible={isEmailDialogOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsEmailDialogOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.emailDialogContainer}>
+            <View style={styles.emailDialogContent}>
+              <Text style={styles.emailDialogTitle}>{emailDialogTitle}</Text>
+              <Text style={styles.emailDialogMessage}>
+                {emailDialogMessage}
               </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.emailDialogButton}
+              onPress={() => setIsEmailDialogOpen(false)}
+            >
+              <Text style={styles.emailDialogButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
-              <View style={styles.gmailDialogButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.gmailDialogButton,
-                    styles.gmailDialogButtonCancel,
-                  ]}
-                  onPress={() => setIsGmailNotConnected(false)}
-                >
-                  <Text style={styles.gmailDialogButtonCancelText}>Cancel</Text>
-                </TouchableOpacity>
+      {/* Gmail Not Connected Dialog */}
+      <Modal
+        visible={isGmailNotConnected}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsGmailNotConnected(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.gmailDialogContainer}>
+            <View style={styles.gmailDialogHeader}>
+              <Icon name="email" size={32} color="#ef4444" />
+              <Text style={styles.gmailDialogTitle}>Email Not Configured</Text>
+            </View>
 
-                <TouchableOpacity
-                  style={[
-                    styles.gmailDialogButton,
-                    styles.gmailDialogButtonPrimary,
-                  ]}
-                  onPress={() => {
-                    setIsGmailNotConnected(false);
-                    navigation.navigate('ProfileScreen', { tab: 'email' });
-                  }}
-                >
-                  <Text style={styles.gmailDialogButtonPrimaryText}>
-                    Go to Settings
-                  </Text>
-                </TouchableOpacity>
-              </View>
+            <Text style={styles.gmailDialogMessage}>
+              You need to connect your Gmail account to send invoices via email.
+              Please go to Settings to configure it.
+            </Text>
+
+            <View style={styles.gmailDialogButtons}>
+              <TouchableOpacity
+                style={[
+                  styles.gmailDialogButton,
+                  styles.gmailDialogButtonCancel,
+                ]}
+                onPress={() => setIsGmailNotConnected(false)}
+              >
+                <Text style={styles.gmailDialogButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.gmailDialogButton,
+                  styles.gmailDialogButtonPrimary,
+                ]}
+                onPress={() => {
+                  setIsGmailNotConnected(false);
+                  navigation.navigate('ProfileScreen', { tab: 'email' });
+                }}
+              >
+                <Text style={styles.gmailDialogButtonPrimaryText}>
+                  Go to Settings
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </Modal>
-      </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
@@ -2635,14 +2628,26 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: 'white',
+    borderRadius: 12,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   modalTitle: {
     fontSize: 20,
