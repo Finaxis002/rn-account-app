@@ -1361,42 +1361,50 @@ export const SalesPurchasesFields = props => {
             <View style={styles.pairRow}>
               <View style={[styles.inputContainer, styles.pairItem]}>
                 <Text style={styles.inputLabel}>Price/Unit</Text>
-                <TextInput
-                  key={`price-${index}-${itemRenderKeys[index] || 0}`}
-                  style={[
-                    styles.textInput,
-                    styles.rightAlignedInput,
-                    errors?.items?.[index]?.pricePerUnit
-                      ? styles.errorBorder
-                      : {},
-                  ]}
-                  ref={ref =>
-                    registerFieldRef(`items.${index}.pricePerUnit`, ref)
-                  }
-                  value={watch(`items.${index}.pricePerUnit`)?.toString() || ''}
-                  onChangeText={text => handlePriceChange(text, index)}
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                />
+                {/* Is wrapper se UI change nahi hoga, bas scroll enable ho jayega */}
+                <View onStartShouldSetResponderCapture={() => false}>
+                  <TextInput
+                    key={`price-${index}-${itemRenderKeys[index] || 0}`}
+                    style={[
+                      styles.textInput,
+                      styles.rightAlignedInput,
+                      errors?.items?.[index]?.pricePerUnit
+                        ? styles.errorBorder
+                        : {},
+                    ]}
+                    ref={ref =>
+                      registerFieldRef(`items.${index}.pricePerUnit`, ref)
+                    }
+                    value={
+                      watch(`items.${index}.pricePerUnit`)?.toString() || ''
+                    }
+                    onChangeText={text => handlePriceChange(text, index)}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                  />
+                </View>
                 <FormMessage error={errors?.items?.[index]?.pricePerUnit} />
               </View>
 
               <View style={[styles.inputContainer, styles.pairItem]}>
                 <Text style={styles.inputLabel}>Amount</Text>
-                <TextInput
-                  style={[
-                    styles.textInput,
-                    styles.rightAlignedInput,
-                    errors?.items?.[index]?.amount ? styles.errorBorder : {},
-                  ]}
-                  ref={ref => registerFieldRef(`items.${index}.amount`, ref)}
-                  value={formatWithCommas(watch(`items.${index}.amount`))}
-                  onChangeText={text =>
-                    handleAmountChange(text, index, 'amount')
-                  }
-                  keyboardType="decimal-pad"
-                  placeholder="0.00"
-                />
+                {/* Same fix for Amount field */}
+                <View onStartShouldSetResponderCapture={() => false}>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      styles.rightAlignedInput,
+                      errors?.items?.[index]?.amount ? styles.errorBorder : {},
+                    ]}
+                    ref={ref => registerFieldRef(`items.${index}.amount`, ref)}
+                    value={formatWithCommas(watch(`items.${index}.amount`))}
+                    onChangeText={text =>
+                      handleAmountChange(text, index, 'amount')
+                    }
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                  />
+                </View>
                 <FormMessage error={errors?.items?.[index]?.amount} />
               </View>
             </View>
@@ -1487,8 +1495,12 @@ export const SalesPurchasesFields = props => {
 
             {gstEnabled && (
               <View style={styles.pairRow}>
-                <View style={[styles.inputContainer, styles.pairItem]}>
+                <View
+                  style={[styles.inputContainer, styles.pairItem]}
+                  pointerEvents="none"
+                >
                   <Text style={styles.inputLabel}>Tax</Text>
+
                   <TextInput
                     style={[
                       styles.textInput,
@@ -1505,7 +1517,10 @@ export const SalesPurchasesFields = props => {
                   <FormMessage error={errors?.items?.[index]?.lineTax} />
                 </View>
 
-                <View style={[styles.inputContainer, styles.pairItem]}>
+                <View
+                  style={[styles.inputContainer, styles.pairItem]}
+                  pointerEvents="none"
+                >
                   <Text style={styles.inputLabel}>Total</Text>
                   <TextInput
                     style={[
@@ -1770,7 +1785,10 @@ export const SalesPurchasesFields = props => {
 
             {gstEnabled && (
               <View style={styles.pairRow}>
-                <View style={[styles.inputContainer, styles.pairItem]}>
+                <View
+                  style={[styles.inputContainer, styles.pairItem]}
+                  pointerEvents="none"
+                >
                   <Text style={styles.inputLabel}>Tax</Text>
                   <TextInput
                     style={[
@@ -1788,7 +1806,10 @@ export const SalesPurchasesFields = props => {
                   <FormMessage error={errors?.items?.[index]?.lineTax} />
                 </View>
 
-                <View style={[styles.inputContainer, styles.pairItem]}>
+                <View
+                  style={[styles.inputContainer, styles.pairItem]}
+                  pointerEvents="none"
+                >
                   <Text style={styles.inputLabel}>Total</Text>
                   <TextInput
                     style={[
@@ -1825,6 +1846,7 @@ export const SalesPurchasesFields = props => {
     <View style={styles.container}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         scrollEnabled={true}
         nestedScrollEnabled={true}
       >
@@ -2469,21 +2491,26 @@ export const SalesPurchasesFields = props => {
                   <View style={styles.totalsContainer}>
                     <View style={styles.totalRow}>
                       <Text style={styles.totalLabel}>Subtotal</Text>
-                      <TextInput
-                        style={styles.totalInputField}
-                        value={formatGrandTotal(watch('totalAmount'))}
-                        editable={false}
-                      />
+                      {/* View wrap karein pointerEvents="none" ke saath */}
+                      <View pointerEvents="none">
+                        <TextInput
+                          style={styles.totalInputField}
+                          value={formatGrandTotal(watch('totalAmount'))}
+                          editable={false}
+                        />
+                      </View>
                     </View>
 
                     {gstEnabled && (
                       <View style={styles.totalRow}>
                         <Text style={styles.totalLabel}>GST</Text>
-                        <TextInput
-                          style={styles.totalInputField}
-                          value={formatGrandTotal(watch('taxAmount'))}
-                          editable={false}
-                        />
+                        <View pointerEvents="none">
+                          <TextInput
+                            style={styles.totalInputField}
+                            value={formatGrandTotal(watch('taxAmount'))}
+                            editable={false}
+                          />
+                        </View>
                       </View>
                     )}
 
@@ -2491,7 +2518,10 @@ export const SalesPurchasesFields = props => {
                       <Text style={styles.invoiceTotalLabel}>
                         Invoice Total{gstEnabled ? ' (GST incl.)' : ''}
                       </Text>
-                      <View style={styles.invoiceTotalInputContainer}>
+                      <View
+                        style={styles.invoiceTotalInputContainer}
+                        pointerEvents="none"
+                      >
                         <TextInput
                           style={styles.invoiceTotalInput}
                           value={`₹${formatGrandTotal(watch('invoiceTotal'))}`}
