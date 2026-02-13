@@ -1367,7 +1367,7 @@ export const SalesPurchasesFields = props => {
                     key={`price-${index}-${itemRenderKeys[index] || 0}`}
                     style={[
                       styles.textInput,
-                      styles.rightAlignedInput,
+                      // styles.rightAlignedInput,
                       errors?.items?.[index]?.pricePerUnit
                         ? styles.errorBorder
                         : {},
@@ -1393,7 +1393,7 @@ export const SalesPurchasesFields = props => {
                   <TextInput
                     style={[
                       styles.textInput,
-                      styles.rightAlignedInput,
+                      // styles.rightAlignedInput,
                       errors?.items?.[index]?.amount ? styles.errorBorder : {},
                     ]}
                     ref={ref => registerFieldRef(`items.${index}.amount`, ref)}
