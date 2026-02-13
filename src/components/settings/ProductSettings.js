@@ -413,7 +413,7 @@ export default function ProductSettings() {
 
         {/* Created date */}
         <View style={styles.createdDate}>
-          <Calendar size={14} color="#9ca3af" />
+          <Calendar size={12} color="#9ca3af" />
           <Text style={styles.dateText}>
             Created:{' '}
             {new Intl.DateTimeFormat('en-GB').format(
@@ -622,7 +622,7 @@ export default function ProductSettings() {
                       style={styles.addButton}
                       onPress={() => handleOpenForm()}
                     >
-                      <PlusCircle size={16} color="white" />
+                      <PlusCircle size={15} color="white" />
                       <Text style={styles.addButtonText}>Add Product</Text>
                     </TouchableOpacity>
                   </View>
@@ -865,14 +865,14 @@ const styles = StyleSheet.create({
     // paddingHorizontal: 10,
   },
   title: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 4,
-    marginTop: 8,
+    // marginBottom: 4,
+    marginTop: 4,
   },
   description: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6b7280',
     marginBottom: 16,
   },
@@ -894,7 +894,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: 'white',
     fontWeight: '500',
-    fontSize: 14,
+    fontSize: 12,
   },
   bulkActions: {
     flexDirection: 'row',
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   bulkText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: '#374151',
   },
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
   productCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
+    padding: 10,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -947,6 +947,7 @@ const styles = StyleSheet.create({
   checkbox: {
     marginRight: 12,
     marginTop: 2,
+    
   },
   productInfo: {
     flex: 1,
@@ -955,10 +956,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   productName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
     flex: 1,
@@ -977,7 +978,7 @@ const styles = StyleSheet.create({
     color: '#8b5cf6',
   },
   companyName: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#6b7280',
     marginLeft: 24,
   },
@@ -1028,7 +1029,7 @@ const styles = StyleSheet.create({
     marginLeft: 28,
   },
   dateText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#6b7280',
     fontWeight: '500',
   },
@@ -1055,16 +1056,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   stockIndicator: {
-    width: 8,
-    height: 8,
+    width: 6,
+    height: 6,
     borderRadius: 4,
   },
   stockText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#374151',
     fontWeight: '600',
   },
@@ -1085,7 +1086,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   priceValue: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#374151',
   },
