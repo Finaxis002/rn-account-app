@@ -900,7 +900,7 @@ const styles = StyleSheet.create({
   },
   dataContainer: {
     gap: 12,
-    // marginTop: 8,
+    marginTop: -6,
     // margin: 8,
     marginHorizontal: 8,
   },
