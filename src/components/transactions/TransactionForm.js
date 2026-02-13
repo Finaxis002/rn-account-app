@@ -3044,11 +3044,9 @@ export function TransactionForm({
             console.warn('Media scan warning:', scanErr);
           }
 
-          Alert.alert(
-            'Download Successful ✅',
-            `Invoice saved as:\n${fname}\n\nLocation: Downloads folder`,
-            [{ text: 'OK' }],
-          );
+          Alert.alert('Download Successful ✅', `Invoice saved as: ${fname}`, [
+            { text: 'OK' },
+          ]);
         } catch (copyErr) {
           // If copy fails, fall back to temp path success
           setSnackbar({
