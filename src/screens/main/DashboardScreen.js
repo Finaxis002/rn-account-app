@@ -519,8 +519,6 @@ export default function DashboardPage() {
                 Proforma Invoice
               </Text>
             </AnimatedTouchable>
-
-            
           </View>
         </View>
       </Animated.View>
@@ -902,9 +900,9 @@ const styles = StyleSheet.create({
   },
   dataContainer: {
     gap: 12,
-    // marginTop: 8,  
+    // marginTop: 8,
     // margin: 8,
-    marginHorizontal:8
+    marginHorizontal: 8,
   },
   productStockSkeleton: {
     height: 200,
@@ -928,7 +926,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
     ...Platform.select({
@@ -939,7 +937,7 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
       },
       android: {
-        elevation: 2,
+        elevation: 1,
       },
     }),
   },
