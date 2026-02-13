@@ -952,7 +952,7 @@ const styles = StyleSheet.create({
   },
   titleSection: {
     flex: 1,
-    marginTop: 4,
+    // marginTop: 4,
   },
   mainTitle: {
     fontSize: 20,
@@ -961,7 +961,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   mainSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#8e8e93',
     letterSpacing: 0.8,
   },
