@@ -608,7 +608,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContent: {
-    padding: 16,
+    // padding: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
   },
   cardListContent: {},
   card: {
