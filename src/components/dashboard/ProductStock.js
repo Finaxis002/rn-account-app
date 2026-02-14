@@ -140,9 +140,30 @@ const CustomButton = ({
   textStyle,
   disabled = false,
   compact = false,
+  iconPosition = 'left', // Naya prop: 'left' ya 'right'
 }) => {
   const isOutlined = mode === 'outlined';
   const isContained = mode === 'contained';
+
+  // Icon component ko ek variable mein rakh lete hain
+  const IconComponent = icon && (
+    <Icon
+      name={icon}
+      size={compact ? 16 : 20}
+      color={
+        isContained
+          ? '#fff'
+          : isOutlined
+          ? '#3b82f6'
+          : disabled
+          ? '#9ca3af'
+          : '#3b82f6'
+      }
+      style={
+        iconPosition === 'left' ? styles.buttonIconLeft : styles.buttonIconRight
+      }
+    />
+  );
 
   return (
     <TouchableOpacity
@@ -158,22 +179,9 @@ const CustomButton = ({
       disabled={disabled}
       activeOpacity={0.7}
     >
-      {icon && (
-        <Icon
-          name={icon}
-          size={compact ? 16 : 20}
-          color={
-            isContained
-              ? '#fff'
-              : isOutlined
-              ? '#3b82f6'
-              : disabled
-              ? '#9ca3af'
-              : '#3b82f6'
-          }
-          style={styles.buttonIcon}
-        />
-      )}
+      {/* Agar position left hai toh icon pehle render hoga */}
+      {iconPosition === 'left' && IconComponent}
+
       <Text
         style={[
           styles.customButtonText,
@@ -186,6 +194,9 @@ const CustomButton = ({
       >
         {children}
       </Text>
+
+      {/* Agar position right hai toh icon baad mein render hoga */}
+      {iconPosition === 'right' && IconComponent}
     </TouchableOpacity>
   );
 };
@@ -743,6 +754,7 @@ const ProductStock = ({
               style={styles.viewMoreButton}
               textStyle={styles.viewMoreButtonText}
               icon="chevron-right"
+              iconPosition="right"
             >
               View More
             </CustomButton>
