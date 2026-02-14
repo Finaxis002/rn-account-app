@@ -26,6 +26,7 @@ const ExcelImportExport = ({
   expectedColumns,
   transformImportData,
   activeTab,
+  companies,
 }) => {
   const { toast } = useToast();
   const [importFile, setImportFile] = useState(null);
@@ -41,7 +42,7 @@ const ExcelImportExport = ({
   const [failedItems, setFailedItems] = useState([]);
 
   // Download template function - Fixed for Android permissions
-   const handleDownloadTemplate = async () => {
+  const handleDownloadTemplate = async () => {
     try {
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.json_to_sheet(templateData);
@@ -121,7 +122,8 @@ const ExcelImportExport = ({
               try {
                 await RNFS.copyFile(filePath, downloadPath);
                 try {
-                  if (typeof RNFS.scanFile === 'function') await RNFS.scanFile(downloadPath);
+                  if (typeof RNFS.scanFile === 'function')
+                    await RNFS.scanFile(downloadPath);
                 } catch (sErr) {}
                 filePath = downloadPath;
                 successMessage = `File saved to Downloads\n\nName: ${fileName}`;
@@ -138,7 +140,8 @@ const ExcelImportExport = ({
 
         // Try scanning to make it appear in file manager
         try {
-          if (typeof RNFS.scanFile === 'function') await RNFS.scanFile(filePath);
+          if (typeof RNFS.scanFile === 'function')
+            await RNFS.scanFile(filePath);
         } catch (scanErr) {}
 
         // Show success Alert for mobile with Open option
@@ -147,7 +150,8 @@ const ExcelImportExport = ({
           {
             text: 'Open File',
             onPress: () => {
-              const fileUri = Platform.OS === 'ios' ? `file://${filePath}` : filePath;
+              const fileUri =
+                Platform.OS === 'ios' ? `file://${filePath}` : filePath;
               FileViewer.open(fileUri).catch(err => {
                 console.warn('FileViewer open failed', err);
                 Alert.alert('File Saved', `Location:\n${filePath}`);
@@ -432,15 +436,15 @@ const ExcelImportExport = ({
 
   return (
     <View>
-      {/* Import/Export Button */}
-      <TouchableOpacity
-        style={styles.importButton}
-        onPress={() => setIsDialogOpen(true)}
-      >
-        <Icon name="upload" size={18} color="#007AFF" />
-        <Text style={styles.buttonText}>Import/Export</Text>
-      </TouchableOpacity>
-
+      {/* Import/Export Button - Updated to match design spec */}
+      <View style={styles.triggerContainer}>
+        <TouchableOpacity
+          style={styles.circularImportButton}
+          onPress={() => setIsDialogOpen(true)}
+        >
+          <Icon name="upload" size={16} color="#007AFF" />
+        </TouchableOpacity>
+      </View>
       {/* Import Dialog */}
       <Portal>
         <Dialog
@@ -627,23 +631,32 @@ const ExcelImportExport = ({
 };
 
 const styles = StyleSheet.create({
-  importButton: {
-    flexDirection: 'row',
+  triggerContainer: {
     alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#007AFF',
+    justifyContent: 'center',
     paddingHorizontal: 4,
-    // paddingVertical: 12,
-    borderRadius: 8,
-    gap: 8,
-    minHeight: 31,
+    height: 35,
   },
-  buttonText: {
-    color: '#007AFF',
-    fontWeight: '600',
-    fontSize: 12,
+  circularImportButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.2,
+    borderColor: '#007AFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    marginBottom: 4,
   },
+  subheadingText: {
+    color: '#64748b',
+    fontWeight: '700',
+    fontSize: 7,
+    textAlign: 'center',
+    marginTop: 1,
+    letterSpacing: -0.2,
+  },
+
   dialog: {
     borderRadius: 12,
     backgroundColor: '#fff',
