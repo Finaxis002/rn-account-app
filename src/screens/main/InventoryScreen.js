@@ -1369,7 +1369,14 @@ export default function InventoryScreen() {
       {/* FIXED HEADER - Add this BEFORE FlatList (matches UserScreen exactly) */}
       <View style={styles.fixedHeader}>
         <View style={styles.headerTitle}>
-          <Text style={styles.title}>Inventory Management</Text>
+          <Text
+            style={styles.title}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.7}
+          >
+            Inventory Management
+          </Text>
           <Text style={styles.subtitle}>
             {selectedProducts.length > 0
               ? `${selectedProducts.length} selected`
@@ -1736,7 +1743,7 @@ const styles = StyleSheet.create({
   fixedHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start', // CompaniesScreen jesa match karne ke liye
+    alignItems: 'center', // CompaniesScreen jesa match karne ke liye
     paddingHorizontal: 16,
     paddingTop: 4, // 12 se hata kar 4 kar dein (CompaniesScreen se match)
     paddingBottom: 6, // CompaniesScreen se match
@@ -1746,10 +1753,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    justifyContent: 'center',
+    marginRight: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: 'bold',
     color: '#1a1a1a',
   },
