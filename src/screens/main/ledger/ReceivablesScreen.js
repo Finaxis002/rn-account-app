@@ -995,6 +995,13 @@ const ReceivablesLedger = () => {
     setShowEndDatePicker(true);
   }, []);
 
+  useEffect(() => {
+  if (parties.length > 0) {
+    calculateAllCustomerBalances(parties, companyIdForBalances);
+    calculateOverallTotals();
+  }
+}, [parties.length, companyIdForBalances]);
+
   // Auto-refresh when company changes
   useEffect(() => {
     if (parties.length > 0) {
@@ -2226,6 +2233,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontWeight: '500',
   },
-});
+}); 
 
 export default ReceivablesLedger;
